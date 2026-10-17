@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.19.54 — 2026-10-18
+
+- Include executable clock-resource loading and its ABI smoke tests in Common's CMake build, matching the existing Make build.
+- Add a reusable validated clock presentation handle for system resources. Decimal, Internet, Unix, hexadecimal and binary modes now require their installed executable resource when using this interface, without silently selecting a compiled duplicate.
+- Preserve the existing legacy formatter and stable public contracts for consumers not yet migrated.
+
+
 This file records user-visible and contract-relevant changes to Common. Detailed commit history remains in Git; this document is for changes that matter to consumers.
 
 ## 1.19.46 - 2026-10-17
