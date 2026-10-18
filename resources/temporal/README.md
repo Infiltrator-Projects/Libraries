@@ -18,3 +18,6 @@ implementations remain unavailable rather than using an embedded custom copy.
 `ORIGIN` records the preserved source import. The build has no dependency on
 the Calendar repository, its private headers, its application library or its
 release pipeline.
+
+Neutral civil/JDN coordinate arithmetic also lives in Common. Provider and
+application ABI adapters delegate to it rather than retaining arithmetic copies.

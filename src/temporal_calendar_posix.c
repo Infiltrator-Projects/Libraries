@@ -17,61 +17,6 @@ struct InfiltratrTemporalDateProvider {
     uint64_t retry_after_nanoseconds;
 };
 
-static int64_t floor_divide(int64_t value, int64_t divisor)
-{
-    int64_t quotient;
-    int64_t remainder;
-
-    quotient = value / divisor;
-    remainder = value % divisor;
-    if (remainder != 0 && ((remainder < 0) != (divisor < 0))) {
-        quotient--;
-    }
-    return quotient;
-}
-
-static bool gregorian_is_leap(int32_t year)
-{
-    return year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
-}
-
-static bool gregorian_date_valid(int32_t year, int32_t month, int32_t day)
-{
-    static const int32_t lengths[] = {
-        31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
-    };
-    int32_t maximum;
-
-    (void)year;
-    if (month < 1 || month > 12 || day < 1) {
-        return false;
-    }
-    maximum = lengths[month - 1];
-    if (month == 2 && gregorian_is_leap(year)) {
-        maximum++;
-    }
-    return day <= maximum;
-}
-
-static bool gregorian_to_jdn(int32_t year, int32_t month, int32_t day,
-                             int64_t *jdn)
-{
-    int64_t a;
-    int64_t y;
-    int64_t m;
-
-    if (jdn == NULL || !gregorian_date_valid(year, month, day)) {
-        return false;
-    }
-    a = (14 - (int64_t)month) / 12;
-    y = (int64_t)year + 4800 - a;
-    m = (int64_t)month + 12 * a - 3;
-    *jdn = (int64_t)day + (153 * m + 2) / 5 + 365 * y +
-        floor_divide(y, 4) - floor_divide(y, 100) +
-        floor_divide(y, 400) - 32045;
-    return true;
-}
-
 static bool copy_id(char destination[INFILTRATR_TEMPORAL_ID_CAPACITY],
                     const char *source)
 {
@@ -216,9 +161,10 @@ bool infiltratr_temporal_posix_format_date(
     size_t size = 0U;
 
     if (buffer == NULL || capacity == 0U || part == NULL ||
-        !gregorian_to_jdn(gregorian_year, gregorian_month, gregorian_day, &jdn)) {
+        !infiltratr_temporal_gregorian_date_valid(gregorian_year, gregorian_month, gregorian_day)) {
         return false;
     }
+    jdn = infiltratr_temporal_gregorian_to_jdn(gregorian_year, gregorian_month, gregorian_day);
     if (strcmp(part, "short") == 0) {
         calendar_part = INFILTRATR_TEMPORAL_CALENDAR_DATE_PART_SHORT;
     } else if (strcmp(part, "full") == 0) {

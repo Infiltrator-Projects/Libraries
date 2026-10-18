@@ -292,6 +292,15 @@ bool infiltratr_temporal_policy_v3_serialize(
     size_t capacity,
     size_t *length);
 
+/** Neutral Gregorian/JDN coordinates; custom chronology lives only in modules. */
+bool infiltratr_temporal_gregorian_is_leap(int64_t year);
+int32_t infiltratr_temporal_gregorian_month_length(int64_t year, int32_t month);
+bool infiltratr_temporal_gregorian_date_valid(int32_t year, int32_t month, int32_t day);
+int64_t infiltratr_temporal_gregorian_to_jdn(int64_t year, int32_t month, int32_t day);
+void infiltratr_temporal_jdn_to_gregorian(int64_t jdn, int32_t *year, int32_t *month, int32_t *day);
+int32_t infiltratr_temporal_gregorian_day_of_year(int32_t year, int32_t month, int32_t day);
+int32_t infiltratr_temporal_iso_weekday(int64_t jdn);
+
 #ifdef __cplusplus
 }
 #endif
