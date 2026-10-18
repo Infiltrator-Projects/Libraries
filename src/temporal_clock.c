@@ -5,7 +5,7 @@
  * Interim absolute-clock formatting for modes not yet extracted, and
  * independent elapsed-duration projections.
  *
- * The sixteen extracted clocks are rendered solely by installed native .so
+ * The eighteen extracted clocks are rendered solely by installed native .so
  * modules through Common's validated resource ABI. Their old clock-face
  * implementations and language tables do not belong here. Duration
  * representation is distinct from formatting a canonical instant.
@@ -1944,54 +1944,6 @@ static bool format_clock_mode(const InfiltratrI18n *language,
             buffer, capacity, length,
             vertical ? "%sの刻\n%sつ" : "%sの刻 · %sつ",
             toki->character, toki->bell);
-    }
-
-    if (strcmp(mode, "babylonian-ancient") == 0) {
-        int64_t start;
-        int64_t elapsed_seconds;
-        int beru;
-        int ush;
-        const char *field_separator = vertical ? "\n" : " · ";
-
-        if (!solar_origin_window(
-                unix_microseconds, latitude, longitude,
-                SOLAR_ORIGIN_SUNSET, &start)) {
-            return write_text(
-                buffer, capacity, length,
-                vertical ? "N/A\nBAB-A" : "N/A BAB-A");
-        }
-        elapsed_seconds = floor_divide(
-            unix_microseconds - start, MICROSECONDS_PER_SECOND);
-        beru = (int)(elapsed_seconds / INT64_C(7200)) + 1;
-        ush = (int)((elapsed_seconds % INT64_C(7200)) / INT64_C(240));
-        return write_printf(
-            buffer, capacity, length,
-            "bēru %02d%sUŠ %02d", beru, field_separator, ush);
-    }
-
-    if (strcmp(mode, "indian-ghati") == 0) {
-        int64_t start;
-        int64_t elapsed_seconds;
-        int ghati;
-        int vighati;
-
-        if (!solar_origin_window(
-                unix_microseconds, latitude, longitude,
-                SOLAR_ORIGIN_SUNRISE, &start)) {
-            return write_text(
-                buffer, capacity, length,
-                vertical ? "N/A\nGH" : "N/A GH");
-        }
-        elapsed_seconds = floor_divide(
-            unix_microseconds - start, MICROSECONDS_PER_SECOND);
-        ghati = (int)(elapsed_seconds /
-                      (INT64_C(24) * SECONDS_PER_MINUTE));
-        vighati =
-            (int)((elapsed_seconds / INT64_C(24)) % INT64_C(60));
-        return write_printf(
-            buffer, capacity, length,
-            vertical ? "%d ghaṭī\n%d pala" : "%d ghaṭī · %d pala",
-            ghati, vighati);
     }
 
     if (strcmp(mode, "nuremberg-hours") == 0) {

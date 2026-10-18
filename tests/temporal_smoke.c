@@ -472,13 +472,12 @@ static void test_clock_mode_formats(void)
         0, true, false, false, 0.0, 0.0,
         text, sizeof(text), NULL));
 
-    CHECK(infiltratr_temporal_format_clock_mode(
+    /* Ancient Babylonian notation belongs only to its installed module. */
+    CHECK(!infiltratr_temporal_format_clock_mode(
         "babylonian-ancient",
         INT64_C(1789990000) * INT64_C(1000000),
         0, true, false, true, 49.45, 11.08,
         text, sizeof(text), NULL));
-    CHECK(strstr(text, "bēru") != NULL);
-    CHECK(strstr(text, "UŠ") != NULL);
 
     CHECK(infiltratr_temporal_format_clock_mode(
         "nuremberg-hours",
@@ -495,7 +494,8 @@ static void test_clock_mode_formats(void)
             "decimal", "internet", "unix", "hexadecimal", "binary",
             "julian", "modified-julian", "chinese-ke", "mean-solar",
             "sidereal", "chinese-time", "solar", "italian-hours",
-        "babylonian-hours", "standard-12", "standard-24"
+        "babylonian-hours", "babylonian-ancient",
+        "indian-ghati", "standard-12", "standard-24"
         };
         bool retired = info != NULL && strcmp(info->id, "standard") == 0;
         for (size_t j = 0U; j < sizeof(migrated) / sizeof(migrated[0]); ++j) {

@@ -187,7 +187,8 @@ static bool clock_requires_native_resource(const char *mode)
         "decimal", "internet", "unix", "hexadecimal", "binary",
         "julian", "modified-julian", "chinese-ke", "mean-solar",
         "sidereal", "chinese-time", "solar", "italian-hours",
-        "babylonian-hours", "standard-12", "standard-24"
+        "babylonian-hours", "babylonian-ancient",
+        "indian-ghati", "standard-12", "standard-24"
     };
     size_t i;
     if (mode == NULL) return false;
@@ -228,7 +229,7 @@ infiltratr_temporal_clock_presentation_new(const char *clock_id)
      * in the compiled capability catalogue. This avoids a new Common-side
      * routing exception whenever another clock is extracted.
      *
-     * All sixteen extracted clocks are resource-only: an absent or
+     * All eighteen extracted clocks are resource-only: an absent or
      * invalid module must fail closed rather than silently invoke a
      * duplicate compiled formatter. Unmigrated modes retain the
      * compatibility renderer until their resources have been extracted.
