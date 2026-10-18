@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.19.58
+
+- Migrate the three mandatory MB Corpo typography resource identities from older version 1.000 fonts to version 1.010 Title fonts with unchanged glyphs and metrics.
+- Restore consistency across the Common design contract, JSON, C, CMake, bootstrap and test expectations.
+- Prefer verified local InfiltratorOS font seeds, fall back to immutable verified source downloads for standalone installations, and avoid recreating the obsolete filenames.
+- Keep the 23-face extended installer and system-wide Fontconfig registration intact.
+
 ## 1.19.57 — 2026-10-18
 
 - Add a verified shared 23-face native typography bootstrap, consuming the exact immutable InfiltratorOS MB/Daimler font snapshot and preserving cache independence from any application uninstall.

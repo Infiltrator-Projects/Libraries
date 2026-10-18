@@ -8,9 +8,9 @@
     "ui_bold_weight": 700,
     "brand_weight": 400,
     "font_files": {
-      "brand_regular": "mb_corpo_a_cond_regular.ttf",
-      "ui_bold": "mb_corpo_s_bold.ttf",
-      "ui_regular": "mb_corpo_s_regular.ttf"
+      "brand_regular": "mb_corpo_a_title_cond_regular.ttf",
+      "ui_bold": "mb_corpo_s_title_bold.ttf",
+      "ui_regular": "mb_corpo_s_title_regular.ttf"
     },
     "fallbacks": {
       "gtk": "Sans",
@@ -54,15 +54,14 @@
       }
     },
     "assets": {
-      "provenance": "immutable first-party archive",
-      "source_repository": "Infiltrator-Projects/MBLink",
-      "source_commit": "aa161e7342112beab8feb7669f072c870f742765",
-      "archive_path": "assets/fonts/mb-corpo-fonts.tar.xz",
-      "archive_sha256": "bdb6063f838a7fab22b4d6b412170640c69511df53aa3dfa9a4ea8431c9d8274",
+      "provenance": "immutable InfiltratorOS font revision",
+      "source_repository": "Infiltrator-Projects/InfiltratorOS",
+      "source_commit": "66c17fe9ea3ea9678b4028ffea1862a37d488f79",
+      "font_base_path": "assets/fonts",
       "file_sha256": {
-        "brand_regular": "c8bcd7e1a7d71169b38491d9b7c1ffe7ba7b46e888f0c1219931343a47bc0e05",
-        "ui_bold": "d37ea986e2344d83390f94f170e6272b56efd00bfec808afe8314c4ca45d43b4",
-        "ui_regular": "94ede6629443c03d4362dcef425fb3ff520be5d654370021a34e81286804465c"
+        "brand_regular": "db395c845eeec3a2d24dc7879e0c69029368fb4c7390a531369e0c8157ce3e85",
+        "ui_bold": "b046af5f32cd166643630f4a70876ec2a13403c01f7cd64958d1d43616dc7e9d",
+        "ui_regular": "d452c95fd1017bfee6ad5c7f9d5378a4b1b77a3e03911f85ed3ce0893f69f9c1"
       }
     }
   },

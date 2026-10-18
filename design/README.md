@@ -14,9 +14,9 @@ Owned graphical interfaces use these roles when the faces are available:
 
 The canonical private/local filenames understood by existing applications are:
 
-- `mb_corpo_a_cond_regular.ttf`;
-- `mb_corpo_s_bold.ttf`;
-- `mb_corpo_s_regular.ttf`.
+- `mb_corpo_a_title_cond_regular.ttf`;
+- `mb_corpo_s_title_bold.ttf`;
+- `mb_corpo_s_title_regular.ttf`.
 
 Common publishes the canonical family names, role weights, filenames and immutable first-party asset provenance. The general design policy still permits normal platform fallbacks when those faces are unavailable, while a consumer that bundles the exact verified faces may deliberately impose a stricter no-fallback contract. Common does not contain the font binaries themselves.
 

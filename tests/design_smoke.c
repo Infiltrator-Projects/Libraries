@@ -79,9 +79,9 @@ int main(void)
     if (strcmp(type->brand_family, "MB Corpo A Title Cond WEB") != 0) return 18;
     if (type->ui_regular_weight != 400U || type->ui_bold_weight != 700U ||
         type->brand_weight != 400U) return 19;
-    if (strcmp(type->brand_regular_filename, "mb_corpo_a_cond_regular.ttf") != 0 ||
-        strcmp(type->ui_bold_filename, "mb_corpo_s_bold.ttf") != 0 ||
-        strcmp(type->ui_regular_filename, "mb_corpo_s_regular.ttf") != 0) return 20;
+    if (strcmp(type->brand_regular_filename, "mb_corpo_a_title_cond_regular.ttf") != 0 ||
+        strcmp(type->ui_bold_filename, "mb_corpo_s_title_bold.ttf") != 0 ||
+        strcmp(type->ui_regular_filename, "mb_corpo_s_title_regular.ttf") != 0) return 20;
     if (!infiltratr_typography_is_valid(type) ||
         infiltratr_typography_is_valid(NULL)) return 51;
     InfiltratrTypography type_copy = *type;

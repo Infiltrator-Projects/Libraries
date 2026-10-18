@@ -70,9 +70,11 @@ grep -Fq -- ".brand_family = \"$brand_family\"" "$root/src/design.c"
 
 assets="$root/cmake/InfiltratrTypographyAssets.cmake"
 source_commit=$(jq -er '.typography.assets.source_commit' "$json")
-archive_sha=$(jq -er '.typography.assets.archive_sha256' "$json")
+source_repository=$(jq -er '.typography.assets.source_repository' "$json")
+source_path=$(jq -er '.typography.assets.font_base_path' "$json")
 grep -Fq -- "\"$source_commit\"" "$assets"
-grep -Fq -- "\"$archive_sha\"" "$assets"
+grep -Fq -- "\"$source_repository\"" "$assets"
+grep -Fq -- "\"$source_path\"" "$assets"
 for role in brand_regular ui_bold ui_regular; do
   filename=$(jq -er ".typography.font_files.$role" "$json")
   sha=$(jq -er ".typography.assets.file_sha256.$role" "$json")
@@ -91,7 +93,8 @@ grep -Fq '/System/Resources/Fonts' "$font_bootstrap"
 grep -Fq 'native_path /etc/fonts/conf.d' "$font_bootstrap"
 grep -Fq '90-infiltrator-native-fonts.conf' "$font_bootstrap"
 grep -Fq "$source_commit" "$font_bootstrap"
-grep -Fq "$archive_sha" "$font_bootstrap"
+grep -Fq "$source_repository" "$font_bootstrap"
+grep -Fq "$source_path" "$font_bootstrap"
 for role in brand_regular ui_bold ui_regular; do
   filename=$(jq -er ".typography.font_files.$role" "$json")
   sha=$(jq -er ".typography.assets.file_sha256.$role" "$json")
