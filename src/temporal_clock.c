@@ -5,7 +5,7 @@
  * Interim absolute-clock formatting for modes not yet extracted, and
  * independent elapsed-duration projections.
  *
- * The thirteen extracted clocks are rendered solely by installed native .so
+ * The fourteen extracted clocks are rendered solely by installed native .so
  * modules through Common's validated resource ABI. Their old clock-face
  * implementations and language tables do not belong here. Duration
  * representation is distinct from formatting a canonical instant.
@@ -1908,17 +1908,6 @@ static bool format_clock_mode(const InfiltratrI18n *language,
 
     if (strcmp(mode, "standard") == 0) {
         return false;
-    }
-
-    if (strcmp(mode, "solar") == 0) {
-        const long double clock_seconds =
-            apparent_solar_seconds(unix_microseconds, longitude);
-        int hour, minute, second;
-        split_clock_seconds(
-            (int64_t)floorl(clock_seconds), &hour, &minute, &second);
-        return write_clock_fields(
-            buffer, capacity, length, hour, minute, second,
-            show_seconds, vertical, "SOL");
     }
 
     if (strcmp(mode, "roman-temporal") == 0) {
