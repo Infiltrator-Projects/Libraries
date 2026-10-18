@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.19.59 — 2026-10-18
+
+- Make local sidereal time a mandatory executable system clock resource rather than a duplicate Common portable clock-face algorithm.
+- Preserve canonical elapsed-duration representation and the still-unmigrated apparent solar renderer; enforce fail-closed behaviour for missing sidereal resources.
+- Keep the independent clock-module ABI unchanged and add sidereal to the migrated regression catalogue.
+
 ## 1.19.58
 
 - Migrate the three mandatory MB Corpo typography resource identities from older version 1.000 fonts to version 1.010 Title fonts with unchanged glyphs and metrics.
