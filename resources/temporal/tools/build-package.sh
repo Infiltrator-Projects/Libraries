@@ -28,7 +28,7 @@ Section: libs
 Priority: optional
 Maintainer: Infiltrator Projects <noreply@infiltrator-projects.invalid>
 Homepage: https://github.com/Infiltrator-Projects/Libraries
-Depends: libc6 (>= 2.34), libglib2.0-0t64 | libglib2.0-0, libicu72 | libicu73 | libicu74 | libicu75 | libicu76 | libicu77 | libicu78 | libicu79 | libicu80 | libicu81
+Depends: libc6 (>= 2.36), libglib2.0-0t64 (>= 2.74) | libglib2.0-0 (>= 2.74), libicu72 | libicu73 | libicu74 | libicu75 | libicu76 | libicu77 | libicu78 | libicu79 | libicu80 | libicu81
 Description: Shared system calendar and clock implementations from Infiltrator Common
  Installs independently loadable modules in /System/Resources/Calendars and
  /System/Resources/Clocks. Common owns their source, build, ABI and release.

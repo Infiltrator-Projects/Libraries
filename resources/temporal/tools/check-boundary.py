@@ -17,6 +17,8 @@ for directory, count, entry in [
     for module in modules:
         dependencies = subprocess.check_output(["readelf", "-d", str(module)], text=True)
         assert "libcalendar" not in dependencies, module
+        undefined = subprocess.check_output(["nm", "-D", "--undefined-only", str(module)], text=True)
+        assert "g_free_sized" not in undefined, (module, "requires GLib newer than the supported 2.74 baseline")
         symbols = subprocess.check_output(["nm", "-D", "--defined-only", "--format=posix", str(module)], text=True)
         exported = {line.split()[0].split("@")[0] for line in symbols.splitlines()
                     if line.startswith("infiltratr_")}

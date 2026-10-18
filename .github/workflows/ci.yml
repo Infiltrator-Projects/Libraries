@@ -16,17 +16,18 @@ jobs:
   temporal-resources:
     name: System temporal resources / ${{ matrix.compiler }}
     runs-on: ubuntu-24.04
+    container: debian:12
     timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
         compiler: [gcc, clang]
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - name: Install resource build dependencies
+      - name: Install the oldest supported binary build baseline
         run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential clang pkg-config libglib2.0-dev libicu-dev gettext
+          apt-get update
+          apt-get install -y build-essential clang git ca-certificates python3 binutils pkg-config libglib2.0-dev libicu-dev gettext
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - name: Build and test the independent system modules
         run: make CC=${{ matrix.compiler }} temporal-resource-check
       - name: Package, reproduce and install the exact qualified resources
@@ -43,7 +44,7 @@ jobs:
           make -C resources/temporal clean
           make temporal-resource-package
           cmp "$RUNNER_TEMP/resources-first.deb" "$deb"
-          sudo apt-get install -y "$PWD/$deb"
+          apt-get install -y "$PWD/$deb"
           python3 resources/temporal/tools/check-package.py "$deb" --installed
           git rev-parse HEAD > resources/temporal/build/dist/SOURCE_COMMIT
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -52,6 +53,34 @@ jobs:
           name: common-temporal-resources
           path: resources/temporal/build/dist/*
           if-no-files-found: error
+
+  temporal-resource-runtime:
+    name: Published module ABI / ${{ matrix.image }}
+    needs: temporal-resources
+    runs-on: ubuntu-24.04
+    container: ${{ matrix.image }}
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [ubuntu:24.04, debian:13]
+    steps:
+      - name: Install runtime qualification dependencies
+        run: |
+          apt-get update
+          apt-get install -y build-essential git ca-certificates python3 pkg-config libglib2.0-dev libicu-dev
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: common-temporal-resources
+          path: qualified-resources
+      - name: Exercise exact packaged modules on the newer runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(cat qualified-resources/SOURCE_COMMIT)" = "$GITHUB_SHA"
+          apt-get install -y "$PWD"/qualified-resources/*.deb
+          python3 resources/temporal/tools/check-package.py qualified-resources/*.deb --installed
+          resources/temporal/tools/check-installed.sh
 
   release-policy:
     runs-on: ubuntu-latest

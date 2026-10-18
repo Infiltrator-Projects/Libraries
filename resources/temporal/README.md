@@ -21,3 +21,9 @@ release pipeline.
 
 Neutral civil/JDN coordinate arithmetic also lives in Common. Provider and
 application ABI adapters delegate to it rather than retaining arithmetic copies.
+
+Release modules are built on Debian 12 (glibc 2.36 / GLib 2.74 / ICU 72).
+Common CI installs and executes those exact package bytes on Debian 12, Debian 13
+and Ubuntu 24.04. Newer build-host headers must not raise the shipped GLib ABI.
+`tools/check-installed.sh` tests every installed provider through the public ABI
+without rebuilding any implementation.

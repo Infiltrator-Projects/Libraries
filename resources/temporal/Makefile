@@ -10,6 +10,7 @@ VERSION := $(strip $(file <../../VERSION))
 INFILTRATR_COMMON_ARCHIVE := $(BUILD_DIR)/common/libinfiltratr-common.a
 INFILTRATR_COMMON_HEADERS := $(wildcard ../../include/infiltratr/*.h)
 CPPFLAGS += -Isrc/support -Isrc/calendars -Isrc/calendars/engine -I../../include \
+    -DGLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_74 -DGLIB_VERSION_MAX_ALLOWED=GLIB_VERSION_2_74 \
     -DGETTEXT_PACKAGE=\"infiltrator-temporal-resources\" -DU_DISABLE_RENAMING=1
 CFLAGS ?= -O2 -g
 CFLAGS += -std=c11 -fPIC -Wall -Wextra -Wpedantic -Werror -Wformat=2 \
