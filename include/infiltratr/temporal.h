@@ -147,8 +147,10 @@ int64_t infiltratr_temporal_local_microseconds_of_day(
  * deliberately not formatted here because locale/platform policy belongs to
  * the platform adapter. UTC offset is supplied by the caller and includes DST.
  *
- * Decimal time divides one civil day into 10 hours, each 100 minutes, each 100
- * seconds. Formatting uses exact integer/rational partition arithmetic.
+ * The legacy compatibility symbol deliberately returns false for every
+ * profile. Install the system clock resource and render through the Common
+ * temporal_clock_resource presentation ABI instead; no duplicate arithmetic
+ * or silent fallback is permitted in this portable policy layer.
  */
 bool infiltratr_temporal_format_clock(InfiltratrClockProfile profile,
                                       int64_t unix_microseconds,
@@ -162,8 +164,10 @@ bool infiltratr_temporal_format_clock(InfiltratrClockProfile profile,
  * Format any explicit clock mode in the system-wide temporal catalogue.
  *
  * "standard" deliberately returns false because OS-locale rendering belongs
- * to the platform adapter. Explicit 12/24-hour modes and every extended clock
- * mode are portable and deterministic. Location-aware modes require
+ * to the platform adapter. Extracted modes (including explicit 12/24-hour
+ * and Chinese hundred-kè/mean-solar) also return false here: use the native
+ * temporal_clock_resource presentation ABI instead. Unmigrated modes retain
+ * their portable formatter temporarily. Location-aware modes require
  * @location_configured plus finite coordinates when their catalogue metadata
  * declares latitude and/or longitude.
  *
@@ -192,7 +196,9 @@ bool infiltratr_temporal_format_clock_mode(const char *mode,
  * bell counts retain Japanese numerals; other profiles keep their notation.
  * Locale tags accept POSIX or BCP 47 forms. Missing, C/POSIX and unavailable
  * translations use English. No process locale or environment is mutated.
- * The original formatter remains the native-notation compatibility API.
+ * This legacy entry point only formats modes not yet extracted to native
+ * resources. It must not provide an alternative implementation of a migrated
+ * clock; use the Common resource presentation API for those modes.
  */
 bool infiltratr_temporal_format_clock_mode_localized(
     const char *locale, const char *mode,

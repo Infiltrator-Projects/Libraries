@@ -258,52 +258,22 @@ static void test_local_microseconds_of_day(void)
 
 static void test_clock_formats(void)
 {
-    char text[64];
-
-    CHECK(infiltratr_temporal_format_clock(
+    static const InfiltratrClockProfile retired[] = {
         INFILTRATR_CLOCK_PROFILE_DECIMAL_10,
-        INT64_C(0), 0, true, text, sizeof(text), NULL));
-    CHECK(strcmp(text, "0:00:00") == 0);
-
-    CHECK(infiltratr_temporal_format_clock(
-        INFILTRATR_CLOCK_PROFILE_DECIMAL_10,
-        INT64_C(864000), 0, true, text, sizeof(text), NULL));
-    CHECK(strcmp(text, "0:00:01") == 0);
-
-    CHECK(infiltratr_temporal_format_clock(
-        INFILTRATR_CLOCK_PROFILE_DECIMAL_10,
-        INT64_C(43200) * INT64_C(1000000), 0, true,
-        text, sizeof(text), NULL));
-    CHECK(strcmp(text, "5:00:00") == 0);
-
-    CHECK(infiltratr_temporal_format_clock(
-        INFILTRATR_CLOCK_PROFILE_CONVENTIONAL_24,
-        INT64_C(19) * INT64_C(3600) * INT64_C(1000000) +
-            INT64_C(42) * INT64_C(60) * INT64_C(1000000),
-        0, false, text, sizeof(text), NULL));
-    CHECK(strcmp(text, "19:42") == 0);
-
-    CHECK(infiltratr_temporal_format_clock(
         INFILTRATR_CLOCK_PROFILE_CONVENTIONAL_12,
-        INT64_C(19) * INT64_C(3600) * INT64_C(1000000) +
-            INT64_C(42) * INT64_C(60) * INT64_C(1000000),
-        0, false, text, sizeof(text), NULL));
-    CHECK(strcmp(text, "7:42 PM") == 0);
-
-    CHECK(infiltratr_temporal_format_clock(
-        INFILTRATR_CLOCK_PROFILE_DECIMAL_10,
-        INT64_MIN, INT32_MIN, true, text, sizeof(text), NULL));
-    CHECK(text[0] != '\0');
-    CHECK(infiltratr_temporal_format_clock(
-        INFILTRATR_CLOCK_PROFILE_DECIMAL_10,
-        INT64_MAX, INT32_MAX, true, text, sizeof(text), NULL));
-    CHECK(text[0] != '\0');
-
-    CHECK(!infiltratr_temporal_format_clock(
-        INFILTRATR_CLOCK_PROFILE_SYSTEM,
-        0, 0, false, text, sizeof(text), NULL));
+        INFILTRATR_CLOCK_PROFILE_CONVENTIONAL_24,
+        INFILTRATR_CLOCK_PROFILE_SYSTEM
+    };
+    char text[64] = "untouched";
+    for (size_t i = 0U; i < sizeof(retired) / sizeof(retired[0]); ++i) {
+        /* Portable policy IDs persist. Legacy profile formatting must not
+         * recreate any of the independent clock implementations. */
+        CHECK(!infiltratr_temporal_format_clock(
+            retired[i], INT64_C(43200000000), 0,
+            true, text, sizeof(text), NULL));
+    }
+    CHECK(strcmp(text, "untouched") == 0);
 }
-
 
 static void test_duration_mode_formats(void)
 {
@@ -492,21 +462,15 @@ static void test_clock_mode_formats(void)
         "standard", INT64_C(0), 0, true, false, false,
         0.0, 0.0, text, sizeof(text), &length));
 
-    CHECK(infiltratr_temporal_format_clock_mode(
+    CHECK(!infiltratr_temporal_format_clock_mode(
         "standard-24",
-        INT64_C(19) * INT64_C(3600) * INT64_C(1000000) +
-            INT64_C(42) * INT64_C(60) * INT64_C(1000000),
+        INT64_C(19) * INT64_C(3600) * INT64_C(1000000),
         0, false, false, false, 0.0, 0.0,
         text, sizeof(text), &length));
-    CHECK(strcmp(text, "19:42") == 0);
-    CHECK(length == strlen(text));
-
-    CHECK(infiltratr_temporal_format_clock_mode(
-        "decimal",
-        INT64_C(43200) * INT64_C(1000000),
+    CHECK(!infiltratr_temporal_format_clock_mode(
+        "decimal", INT64_C(43200000000),
         0, true, false, false, 0.0, 0.0,
         text, sizeof(text), NULL));
-    CHECK(strcmp(text, "5:00:00") == 0);
 
     CHECK(infiltratr_temporal_format_clock_mode(
         "babylonian-ancient",
@@ -527,18 +491,23 @@ static void test_clock_mode_formats(void)
          index < infiltratr_temporal_clock_mode_count(); ++index) {
         const InfiltratrTemporalClockModeInfo *info =
             infiltratr_temporal_clock_mode_at(index);
-        const bool standard =
-            info != NULL && strcmp(info->id, "standard") == 0;
-
-        CHECK(info != NULL);
-        CHECK(infiltratr_temporal_format_clock_mode(
-                  info->id,
-                  INT64_C(1789990000) * INT64_C(1000000),
-                  36000, true, false, true, -36.39, 145.36,
-                  text, sizeof(text), NULL) != standard);
-        if (!standard) {
-            CHECK(text[0] != '\0');
+        static const char *const migrated[] = {
+            "decimal", "internet", "unix", "hexadecimal", "binary",
+            "julian", "modified-julian", "chinese-ke", "mean-solar",
+            "standard-12", "standard-24"
+        };
+        bool retired = info != NULL && strcmp(info->id, "standard") == 0;
+        for (size_t j = 0U; j < sizeof(migrated) / sizeof(migrated[0]); ++j) {
+            if (info != NULL && strcmp(info->id, migrated[j]) == 0)
+                retired = true;
         }
+        CHECK(info != NULL);
+        const bool available = infiltratr_temporal_format_clock_mode(
+            info->id, INT64_C(1789990000) * INT64_C(1000000),
+            36000, true, false, true, -36.39, 145.36,
+            text, sizeof(text), NULL);
+        CHECK(available != retired);
+        if (!retired) CHECK(text[0] != '\0');
         if (info->requires_latitude || info->requires_longitude) {
             CHECK(!infiltratr_temporal_format_clock_mode(
                 info->id,
@@ -655,51 +624,25 @@ static void test_localized_clock_modes(void)
         INT64_C(45000000000), 0, true, false, true, 0.0, 0.0,
         text, sizeof(text), NULL));
     CHECK(strncmp(text, "Heure ", 6U) == 0);
-    CHECK(infiltratr_temporal_format_clock_mode_localized("en", "chinese-ke",
+    CHECK(!infiltratr_temporal_format_clock_mode_localized("en", "chinese-ke",
         0, 0, false, false, false, 0.0, 0.0, text, sizeof(text), NULL));
-    CHECK(strcmp(text, "00 kè") == 0);
 }
 
 static void test_localized_twelve_hour_clock(void)
 {
-    static const struct {
-        const char *locale;
-        int64_t instant;
-        int32_t offset;
-        bool fine;
-        bool vertical;
-        const char *expected;
-    } vectors[] = {
-        { "en_AU", 0, 0, false, false, "12:00 AM" },
-        { "en_AU", INT64_C(43200000000), 0, true, false, "12:00:00 PM" },
-        { "ja_JP.UTF-8", 0, 0, false, false, "午前12:00" },
-        { "ja", INT64_C(43200000000), 0, false, false, "午後12:00" },
-        { "zh_TW.UTF-8", -1, 0, true, false, "下午11:59:59" },
-        { "zh-Hant-TW", INT64_C(43200000000), -3600, false, false,
-          "上午11:00" },
-        { "zh_CN", INT64_C(43200000000), 0, true, true, "下午\n12\n00\n00" },
-        { "ko_KR", INT64_C(46800000000), 0, false, false, "오후 1:00" },
-        { "es_ES", INT64_C(46800000000), 0, false, false, "1:00 p. m." },
-        { "en", 0, 0, false, true, "12\n00\nAM" },
-        { "xx_XX", 0, 0, false, false, "12:00 AM" }
+    static const char *const locales[] = {
+        "en_AU", "ja_JP.UTF-8", "zh-Hant-TW", "es_ES", "ko_KR"
     };
     char text[192];
-    size_t length = 0U;
-    for (size_t i = 0U; i < sizeof(vectors) / sizeof(vectors[0]); ++i) {
-        CHECK(infiltratr_temporal_format_clock_mode_localized(
-            vectors[i].locale, "standard-12", vectors[i].instant,
-            vectors[i].offset, vectors[i].fine, vectors[i].vertical,
-            false, 0.0, 0.0, text, sizeof(text), &length));
-        CHECK(strcmp(text, vectors[i].expected) == 0);
-        CHECK(length == strlen(text));
+    /* No old compiled AM/PM translations may stand in for standard-12.so. */
+    for (size_t i = 0U; i < sizeof(locales) / sizeof(locales[0]); ++i) {
+        CHECK(!infiltratr_temporal_format_clock_mode_localized(
+            locales[i], "standard-12", INT64_C(43200000000), 0,
+            false, false, false, 0.0, 0.0, text, sizeof(text), NULL));
+        CHECK(!infiltratr_temporal_format_clock_mode_localized(
+            locales[i], "standard-24", INT64_C(43200000000), 0,
+            false, false, false, 0.0, 0.0, text, sizeof(text), NULL));
     }
-    CHECK(!infiltratr_temporal_format_clock_mode_localized("zh-TW", "standard-12",
-        0, 0, false, false, false, 0.0, 0.0, text, 8U, &length));
-    CHECK(text[0] == '\0');
-    /* The old locale-free API retains its conventional compatibility form. */
-    CHECK(infiltratr_temporal_format_clock_mode("standard-12", 0, 0,
-        false, false, false, 0.0, 0.0, text, sizeof(text), NULL));
-    CHECK(strcmp(text, "12:00 AM") == 0);
 }
 
 static void test_localized_edo_clock(void)
