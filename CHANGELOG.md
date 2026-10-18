@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.19.60 — 2026-10-18
+
+- Require independent Chinese double-hour clock resources and retire Common's duplicate absolute-time Zi/Chou arithmetic and translated branch labels.
+- Retain canonical Chinese elapsed-duration formatting, which is distinct from rendering the clock-face instant.
+- Keep Common's nonmigrated Roman/Edo translations intact and update the fail-closed clock contract tests.
+
 ## 1.19.59 — 2026-10-18
 
 - Make local sidereal time a mandatory executable system clock resource rather than a duplicate Common portable clock-face algorithm.
