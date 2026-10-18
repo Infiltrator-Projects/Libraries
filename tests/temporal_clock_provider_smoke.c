@@ -57,6 +57,10 @@ static int test_system_presentation(void)
                 true, false, false, 0.0, 0.0, buffer, sizeof(buffer),
                 &length));
             CHECK(length == expected_length && strcmp(buffer, expected) == 0);
+            CHECK(infiltratr_temporal_clock_presentation_next_tick(
+                presentation, INT64_C(43200000000), 0, true,
+                0.0, 0.0, &delay));
+            CHECK(delay > 0U);
         }
         infiltratr_temporal_clock_presentation_free(presentation);
         infiltratr_temporal_clock_module_free(installed);
