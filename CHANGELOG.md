@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.19.61 — 2026-10-18
+
+- Require the independent apparent-solar clock module. Delete Common's duplicate absolute-time SOL renderer; missing or invalid solar resources now fail closed.
+- Keep canonical elapsed-duration equation-of-time calculations, which are not wall-clock presentation fallbacks.
+- Extend resource-only and retired-formatter tests to all fourteen extracted clocks without changing the provider ABI.
+
+
 ## 1.19.60 — 2026-10-18
 
 - Require independent Chinese double-hour clock resources and retire Common's duplicate absolute-time Zi/Chou arithmetic and translated branch labels.
