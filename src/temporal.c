@@ -19,7 +19,6 @@
 #define MICROSECONDS_PER_SECOND INT64_C(1000000)
 #define SECONDS_PER_DAY INT64_C(86400)
 #define MICROSECONDS_PER_DAY (SECONDS_PER_DAY * MICROSECONDS_PER_SECOND)
-#define DECIMAL_SECONDS_PER_DAY UINT64_C(100000)
 
 typedef struct ClockProfileEntry {
     InfiltratrClockProfile profile;
@@ -292,6 +291,7 @@ bool infiltratr_temporal_policy_serialize(const InfiltratrTemporalPolicy *policy
     return true;
 }
 
+/* ABI-preserved legacy symbol: authoritative clock faces require native resources. */
 bool infiltratr_temporal_format_clock(InfiltratrClockProfile profile,
                                       int64_t unix_microseconds,
                                       int32_t utc_offset_seconds,
@@ -300,75 +300,10 @@ bool infiltratr_temporal_format_clock(InfiltratrClockProfile profile,
                                       size_t capacity,
                                       size_t *length)
 {
-    char temporary[64];
-    const int64_t local =
-        infiltratr_temporal_local_microseconds_of_day(
-            unix_microseconds, utc_offset_seconds);
-    int written = -1;
-
-    if (buffer == NULL || capacity == 0U || !profile_valid(profile) ||
-        profile == INFILTRATR_CLOCK_PROFILE_SYSTEM) {
-        return false;
-    }
-
-    if (profile == INFILTRATR_CLOCK_PROFILE_DECIMAL_10) {
-        uint64_t ticks = 0U;
-        const uint64_t ticks_per_day =
-            show_seconds ? DECIMAL_SECONDS_PER_DAY : UINT64_C(1000);
-
-        if (!infiltratr_cycle_partition_u64((uint64_t)local,
-                                            (uint64_t)MICROSECONDS_PER_DAY,
-                                            ticks_per_day,
-                                            &ticks,
-                                            NULL)) {
-            return false;
-        }
-        if (show_seconds) {
-            written = snprintf(temporary, sizeof(temporary),
-                               "%llu:%02llu:%02llu",
-                               (unsigned long long)(ticks / UINT64_C(10000)),
-                               (unsigned long long)((ticks / UINT64_C(100)) % UINT64_C(100)),
-                               (unsigned long long)(ticks % UINT64_C(100)));
-        } else {
-            written = snprintf(temporary, sizeof(temporary),
-                               "%llu:%02llu",
-                               (unsigned long long)(ticks / UINT64_C(100)),
-                               (unsigned long long)(ticks % UINT64_C(100)));
-        }
-    } else {
-        const int64_t whole_seconds = local / MICROSECONDS_PER_SECOND;
-        const int hour24 = (int)(whole_seconds / INT64_C(3600));
-        const int minute = (int)((whole_seconds / INT64_C(60)) % INT64_C(60));
-        const int second = (int)(whole_seconds % INT64_C(60));
-
-        if (profile == INFILTRATR_CLOCK_PROFILE_CONVENTIONAL_24) {
-            written = show_seconds
-                ? snprintf(temporary, sizeof(temporary), "%02d:%02d:%02d",
-                           hour24, minute, second)
-                : snprintf(temporary, sizeof(temporary), "%02d:%02d",
-                           hour24, minute);
-        } else {
-            const int hour12 = hour24 % 12 == 0 ? 12 : hour24 % 12;
-            const char *suffix = hour24 < 12 ? "AM" : "PM";
-            written = show_seconds
-                ? snprintf(temporary, sizeof(temporary), "%d:%02d:%02d %s",
-                           hour12, minute, second, suffix)
-                : snprintf(temporary, sizeof(temporary), "%d:%02d %s",
-                           hour12, minute, suffix);
-        }
-    }
-
-    if (written < 0 || (size_t)written >= sizeof(temporary) ||
-        capacity <= (size_t)written) {
-        return false;
-    }
-    memcpy(buffer, temporary, (size_t)written + 1U);
-    if (length != NULL) {
-        *length = (size_t)written;
-    }
-    return true;
+    (void)profile; (void)unix_microseconds; (void)utc_offset_seconds;
+    (void)show_seconds; (void)buffer; (void)capacity; (void)length;
+    return false;
 }
-
 
 static bool copy_temporal_id(char destination[INFILTRATR_TEMPORAL_ID_CAPACITY],
                              const char *source)

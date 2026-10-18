@@ -103,19 +103,6 @@ static int64_t positive_modulo(int64_t value, int64_t modulus)
     return remainder;
 }
 
-static uint64_t day_tick(int64_t microseconds, uint64_t ticks_per_day)
-{
-    uint64_t tick = 0U;
-
-    if (microseconds < 0 || ticks_per_day == 0U ||
-        !infiltratr_cycle_partition_u64((uint64_t)microseconds,
-                                        (uint64_t)MICROSECONDS_PER_DAY,
-                                        ticks_per_day, &tick, NULL)) {
-        return 0U;
-    }
-    return tick;
-}
-
 static void split_clock_seconds(int64_t whole_seconds,
                                 int *hour, int *minute, int *second)
 {
@@ -1844,80 +1831,63 @@ bool infiltratr_temporal_format_duration_mode(
     { "jp-tori", "酉" }, { "jp-inu", "戌" }, { "jp-i", "亥" }
 #define EDO_WORDS(horizontal, vertical) \
     { "edo", horizontal }, { "edo-vertical", vertical }
-/* Fixed AM/PM markers, not flexible morning/evening periods. CLDR uses
- * AM/PM in several European languages too; East Asian markers precede time. */
-#define TWELVE_WORDS(am, pm, horizontal, vertical) \
-    { "am", am }, { "pm", pm }, \
-    { "twelve", horizontal }, { "twelve-vertical", vertical }
-
 static const InfiltratrI18nEntry clock_en[] = {
     CLOCK_WORDS("{branch} hour", "{branch}, {half}", "Hour",
                 "first half", "second half", "Watch", "kè", "twelfth", "twelfths"),
     PINYIN_BRANCHES, JAPANESE_BRANCHES,
     EDO_WORDS("{branch} · {bell} bells", "{branch}\n{bell} bells"),
-    TWELVE_WORDS("AM", "PM", "{time} {period}", "{time}\n{period}")
 };
 static const InfiltratrI18nEntry clock_de[] = {
     CLOCK_WORDS("{branch}-Stunde", "{branch}, {half}", "Stunde",
                 "erste Hälfte", "zweite Hälfte", "Wache", "kè", "Zwölftel", "Zwölftel"),
     EDO_WORDS("{branch} · {bell} Schläge", "{branch}\n{bell} Schläge"),
-    TWELVE_WORDS("AM", "PM", "{time} {period}", "{time}\n{period}")
 };
 static const InfiltratrI18nEntry clock_es[] = {
     CLOCK_WORDS("Hora {branch}", "{branch}, {half}", "Hora",
                 "primera mitad", "segunda mitad", "Vigilia", "kè", "doceavo", "doceavos"),
     EDO_WORDS("{branch} · {bell} campanadas", "{branch}\n{bell} campanadas"),
-    TWELVE_WORDS("a. m.", "p. m.", "{time} {period}", "{time}\n{period}")
 };
 static const InfiltratrI18nEntry clock_fr[] = {
     CLOCK_WORDS("Heure {branch}", "{branch}, {half}", "Heure",
                 "première moitié", "seconde moitié", "Veille", "kè", "douzième", "douzièmes"),
     EDO_WORDS("{branch} · {bell} coups", "{branch}\n{bell} coups"),
-    TWELVE_WORDS("AM", "PM", "{time} {period}", "{time}\n{period}")
 };
 static const InfiltratrI18nEntry clock_it[] = {
     CLOCK_WORDS("Ora {branch}", "{branch}, {half}", "Ora",
                 "prima metà", "seconda metà", "Vigilia", "kè", "dodicesimo", "dodicesimi"),
     EDO_WORDS("{branch} · {bell} rintocchi", "{branch}\n{bell} rintocchi"),
-    TWELVE_WORDS("AM", "PM", "{time} {period}", "{time}\n{period}")
 };
 static const InfiltratrI18nEntry clock_pt[] = {
     CLOCK_WORDS("Hora {branch}", "{branch}, {half}", "Hora",
                 "primeira metade", "segunda metade", "Vigília", "kè", "duodécimo", "duodécimos"),
     EDO_WORDS("{branch} · {bell} badaladas", "{branch}\n{bell} badaladas"),
-    TWELVE_WORDS("AM", "PM", "{time} {period}", "{time}\n{period}")
 };
 static const InfiltratrI18nEntry clock_ru[] = {
     CLOCK_WORDS("Час {branch}", "{branch}, {half}", "Час",
                 "первая половина", "вторая половина", "Стража", "кэ", "двенадцатая", "двенадцатых"),
     EDO_WORDS("{branch} · {bell} ударов", "{branch}\n{bell} ударов"),
-    TWELVE_WORDS("AM", "PM", "{time} {period}", "{time}\n{period}")
 };
 static const InfiltratrI18nEntry clock_ja[] = {
     CLOCK_WORDS("{branch}時", "{branch}{half}", "時",
                 "初", "正", "夜番", "刻", "十二分の一", "十二分の一"),
     NATIVE_BRANCHES, JAPANESE_NATIVE_BRANCHES,
     EDO_WORDS("{branch}の刻 · {bell}つ", "{branch}の刻\n{bell}つ"),
-    TWELVE_WORDS("午前", "午後", "{period}{time}", "{period}\n{time}")
 };
 static const InfiltratrI18nEntry clock_zh[] = {
     CLOCK_WORDS("{branch}时", "{branch}{half}", "时",
                 "初", "正", "更", "刻", "十二分之一时", "十二分之一时"),
     NATIVE_BRANCHES, JAPANESE_NATIVE_BRANCHES,
     EDO_WORDS("{branch}刻 · {bell}声", "{branch}刻\n{bell}声"),
-    TWELVE_WORDS("上午", "下午", "{period}{time}", "{period}\n{time}")
 };
 static const InfiltratrI18nEntry clock_zh_hant[] = {
     CLOCK_WORDS("{branch}時", "{branch}{half}", "時",
                 "初", "正", "更", "刻", "十二分之一時", "十二分之一時"),
     NATIVE_BRANCHES, JAPANESE_NATIVE_BRANCHES,
     EDO_WORDS("{branch}刻 · {bell}聲", "{branch}刻\n{bell}聲"),
-    TWELVE_WORDS("上午", "下午", "{period}{time}", "{period}\n{time}")
 };
 static const InfiltratrI18nEntry clock_ko[] = {
     /* Other specialized-clock wording keeps the documented English fallback. */
     EDO_WORDS("{branch} · {bell}타", "{branch}\n{bell}타"),
-    TWELVE_WORDS("오전", "오후", "{period} {time}", "{period}\n{time}")
 };
 #undef CLOCK_WORDS
 #undef PINYIN_BRANCHES
@@ -1925,7 +1895,6 @@ static const InfiltratrI18nEntry clock_ko[] = {
 #undef JAPANESE_BRANCHES
 #undef JAPANESE_NATIVE_BRANCHES
 #undef EDO_WORDS
-#undef TWELVE_WORDS
 
 #define CLOCK_CATALOG(locale, entries) \
     { locale, entries, sizeof(entries) / sizeof((entries)[0]) }
@@ -1975,8 +1944,6 @@ static bool format_clock_mode(const InfiltratrI18n *language,
     const int64_t local =
         infiltratr_temporal_local_microseconds_of_day(
             unix_microseconds, utc_offset_seconds);
-    const char *separator = vertical ? "\n" : ":";
-    char temporary[192];
 
     if (buffer == NULL || capacity == 0U || mode == NULL) {
         return false;
@@ -1994,121 +1961,8 @@ static bool format_clock_mode(const InfiltratrI18n *language,
         return false;
     }
 
-    if (language != NULL && strcmp(mode, "standard-12") == 0) {
-        int hour, minute, second;
-        split_clock_seconds(local / MICROSECONDS_PER_SECOND,
-                            &hour, &minute, &second);
-        const int hour12 = hour % 12 == 0 ? 12 : hour % 12;
-        if (!(show_seconds
-            ? write_printf(temporary, sizeof(temporary), NULL,
-                           "%d%s%02d%s%02d", hour12, separator, minute,
-                           separator, second)
-            : write_printf(temporary, sizeof(temporary), NULL,
-                           "%d%s%02d", hour12, separator, minute))) {
-            return false;
-        }
-        const InfiltratrI18nArgument arguments[] = {
-            { "time", temporary },
-            { "period", infiltratr_i18n_get(language, hour < 12 ? "am" : "pm") }
-        };
-        return write_localized(buffer, capacity, length,
-            infiltratr_i18n_get(language, vertical ? "twelve-vertical" : "twelve"),
-            arguments, sizeof(arguments) / sizeof(arguments[0]));
-    }
-
-    if (strcmp(mode, "standard-24") == 0 ||
-        strcmp(mode, "standard-12") == 0 ||
-        strcmp(mode, "decimal") == 0) {
-        const InfiltratrClockProfile profile =
-            strcmp(mode, "standard-24") == 0
-                ? INFILTRATR_CLOCK_PROFILE_CONVENTIONAL_24
-                : strcmp(mode, "standard-12") == 0
-                    ? INFILTRATR_CLOCK_PROFILE_CONVENTIONAL_12
-                    : INFILTRATR_CLOCK_PROFILE_DECIMAL_10;
-        char *cursor;
-
-        if (!infiltratr_temporal_format_clock(
-                profile, unix_microseconds, utc_offset_seconds,
-                show_seconds, temporary, sizeof(temporary), NULL)) {
-            return false;
-        }
-        if (vertical) {
-            for (cursor = temporary; *cursor != '\0'; ++cursor) {
-                if (*cursor == ':') {
-                    *cursor = '\n';
-                }
-            }
-        }
-        return write_text(buffer, capacity, length, temporary);
-    }
-
-    if (strcmp(mode, "internet") == 0) {
-        const int64_t phase = positive_modulo(
-            positive_modulo(unix_microseconds, MICROSECONDS_PER_DAY) +
-                SECONDS_PER_HOUR * MICROSECONDS_PER_SECOND,
-            MICROSECONDS_PER_DAY);
-        const uint64_t ticks = day_tick(
-            phase, show_seconds
-                ? INTERNET_TICKS_PER_DAY * UINT64_C(100)
-                : INTERNET_TICKS_PER_DAY);
-
-        return show_seconds
-            ? write_printf(buffer, capacity, length, "@%03llu.%02llu",
-                           (unsigned long long)(ticks / UINT64_C(100)),
-                           (unsigned long long)(ticks % UINT64_C(100)))
-            : write_printf(buffer, capacity, length, "@%03llu",
-                           (unsigned long long)ticks);
-    }
-
-    if (strcmp(mode, "unix") == 0) {
-        return write_printf(
-            buffer, capacity, length, "%lld",
-            (long long)floor_divide(
-                unix_microseconds, MICROSECONDS_PER_SECOND));
-    }
-
-    if (strcmp(mode, "hexadecimal") == 0) {
-        return write_printf(
-            buffer, capacity, length, "%04llX",
-            (unsigned long long)day_tick(local, HEX_TICKS_PER_DAY));
-    }
-
-    if (strcmp(mode, "binary") == 0) {
-        int hour;
-        int minute;
-        int second;
-        char hour_bits[6];
-        char minute_bits[7];
-        char second_bits[7];
-        unsigned bit;
-
-        split_clock_seconds(
-            local / MICROSECONDS_PER_SECOND, &hour, &minute, &second);
-        for (bit = 0U; bit < 5U; ++bit) {
-            hour_bits[bit] =
-                ((unsigned)hour & (1U << (4U - bit))) ? '1' : '0';
-        }
-        hour_bits[5] = '\0';
-        for (bit = 0U; bit < 6U; ++bit) {
-            minute_bits[bit] =
-                ((unsigned)minute & (1U << (5U - bit))) ? '1' : '0';
-            second_bits[bit] =
-                ((unsigned)second & (1U << (5U - bit))) ? '1' : '0';
-        }
-        minute_bits[6] = '\0';
-        second_bits[6] = '\0';
-
-        return show_seconds
-            ? write_printf(buffer, capacity, length, "%s%s%s%s%s",
-                           hour_bits, separator, minute_bits, separator,
-                           second_bits)
-            : write_printf(buffer, capacity, length, "%s%s%s",
-                           hour_bits, separator, minute_bits);
-    }
-
     if (strcmp(mode, "sidereal") == 0 ||
-        strcmp(mode, "solar") == 0 ||
-        strcmp(mode, "mean-solar") == 0) {
+        strcmp(mode, "solar") == 0) {
         long double clock_seconds;
         const char *suffix;
         int hour;
@@ -2119,14 +1973,10 @@ static bool format_clock_mode(const InfiltratrI18n *language,
             clock_seconds =
                 local_sidereal_seconds(unix_microseconds, longitude);
             suffix = "LST";
-        } else if (strcmp(mode, "solar") == 0) {
+        } else {
             clock_seconds =
                 apparent_solar_seconds(unix_microseconds, longitude);
             suffix = "SOL";
-        } else {
-            clock_seconds =
-                mean_solar_seconds(unix_microseconds, longitude);
-            suffix = "LMT";
         }
 
         split_clock_seconds(
@@ -2134,30 +1984,6 @@ static bool format_clock_mode(const InfiltratrI18n *language,
         return write_clock_fields(
             buffer, capacity, length, hour, minute, second,
             show_seconds, vertical, suffix);
-    }
-
-    if (strcmp(mode, "julian") == 0 ||
-        strcmp(mode, "modified-julian") == 0) {
-        const int digits = show_seconds ? 5 : 3;
-        const int64_t scale =
-            show_seconds ? INT64_C(100000) : INT64_C(1000);
-        const long double date =
-            julian_date(unix_microseconds) -
-            (strcmp(mode, "modified-julian") == 0 ? 2400000.5L : 0.0L);
-        const int64_t whole_days = (int64_t)floorl(date);
-        int64_t fraction = (int64_t)floorl(
-            (date - (long double)whole_days) * scale + 1.0e-10L);
-
-        if (fraction >= scale) {
-            fraction = scale - 1;
-        }
-        return write_printf(
-            buffer, capacity, length,
-            strcmp(mode, "modified-julian") == 0
-                ? "MJD%s%lld.%0*lld"
-                : "JD%s%lld.%0*lld",
-            vertical ? "\n" : " ",
-            (long long)whole_days, digits, (long long)fraction);
     }
 
     if (strcmp(mode, "chinese-time") == 0) {
@@ -2201,18 +2027,6 @@ static bool format_clock_mode(const InfiltratrI18n *language,
             buffer, capacity, length,
             vertical ? "%s\n%s" : "%s%s",
             branches[branch], suffix);
-    }
-
-    if (strcmp(mode, "chinese-ke") == 0) {
-        const uint64_t ke = day_tick(local, CHINESE_KE_PER_DAY);
-
-        return write_printf(
-            buffer, capacity, length,
-            language != NULL
-                ? (vertical ? "%02llu\n%s" : "%02llu %s")
-                : (vertical ? "%02llu\n%s" : "%02llu%s"),
-            (unsigned long long)ke,
-            language != NULL ? infiltratr_i18n_get(language, "ke") : "刻");
     }
 
     if (strcmp(mode, "roman-temporal") == 0) {
