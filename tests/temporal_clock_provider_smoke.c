@@ -30,16 +30,37 @@ static int test_system_presentation(void)
     CHECK(infiltratr_temporal_clock_presentation_new("standard") == NULL);
     CHECK(infiltratr_temporal_clock_presentation_new("absent-clock") == NULL);
 
-    presentation = infiltratr_temporal_clock_presentation_new("standard-24");
-    CHECK(presentation != NULL);
-    CHECK(infiltratr_temporal_clock_presentation_format(
-        presentation, "en", INT64_C(43200000000), 0,
-        false, false, false, 0.0, 0.0, buffer, sizeof(buffer), &length));
-    CHECK(strcmp(buffer, "12:00") == 0 && length == 5U);
-    CHECK(!infiltratr_temporal_clock_presentation_next_tick(
-        presentation, 0, 0, true, 0.0, 0.0, &delay));
-    CHECK(delay == 999U);
-    infiltratr_temporal_clock_presentation_free(presentation);
+    /*
+     * Even compiled IDs are resource-first when an independently installed
+     * provider claims the same ID. Absent a resource, the conventional mode
+     * still retains its portable compatibility behaviour.
+     */
+    {
+        InfiltratrTemporalClockModule *installed =
+            infiltratr_temporal_clock_module_open_id("standard-24");
+        presentation = infiltratr_temporal_clock_presentation_new("standard-24");
+        CHECK(presentation != NULL);
+        CHECK(infiltratr_temporal_clock_presentation_format(
+            presentation, "en", INT64_C(43200000000), 0,
+            false, false, false, 0.0, 0.0, buffer, sizeof(buffer), &length));
+        if (installed != NULL) {
+            char expected[64] = {0};
+            size_t expected_length = 0U;
+            CHECK(infiltratr_temporal_clock_format(
+                installed, "en", INT64_C(43200000000), 0, false, false,
+                0.0, 0.0, expected, sizeof(expected), &expected_length));
+            CHECK(length == expected_length && strcmp(buffer, expected) == 0);
+            CHECK(infiltratr_temporal_clock_presentation_next_tick(
+                presentation, 0, 0, true, 0.0, 0.0, &delay));
+        } else {
+            CHECK(strcmp(buffer, "12:00") == 0 && length == 5U);
+            CHECK(!infiltratr_temporal_clock_presentation_next_tick(
+                presentation, 0, 0, true, 0.0, 0.0, &delay));
+            CHECK(delay == 999U);
+        }
+        infiltratr_temporal_clock_presentation_free(presentation);
+        infiltratr_temporal_clock_module_free(installed);
+    }
 
     for (i = 0U; i < sizeof(migrated) / sizeof(migrated[0]); ++i) {
         InfiltratrTemporalClockModule *installed =

@@ -82,9 +82,11 @@ bool infiltratr_temporal_clock_next_tick(
     uint32_t *milliseconds);
 
 /**
- * Long-lived system presentation handle. The five migrated clocks are loaded
- * only from executable system resources; they have no legacy format fallback.
- * Other compiled clock modes retain the portable formatter during migration.
+ * Long-lived system presentation handle. Validated installed executable
+ * resources take precedence for all IDs, even IDs with compiled metadata.
+ * The five migrated clocks require their resource and never fall back.
+ * Other compiled clock modes retain a portable compatibility fallback only
+ * while they have not completed migration. Unknown IDs require a resource.
  * Callers may retain this handle across repeated UI refreshes.
  */
 typedef struct InfiltratrTemporalClockPresentation InfiltratrTemporalClockPresentation;

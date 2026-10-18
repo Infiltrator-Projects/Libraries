@@ -32,11 +32,13 @@ Directory bundles remain reserved for a later resource ABI. Freezing a bundle sc
 
 ## Merged catalogues
 
-Common exposes process-stable merged metadata views for installed calendars and clocks. Existing compiled entries come first. Valid native resources are appended in deterministic filesystem order. A native resource may not replace a built-in identifier: the built-in wins duplicate IDs.
+Common exposes process-stable merged metadata views for installed calendars and clocks. Existing compiled entries come first. Valid native resources are appended in deterministic filesystem order. A native resource may not replace a built-in **metadata** entry: the built-in label wins duplicate IDs.
 
 The merged catalogue is snapshotted on first use in a process. Installing or removing resources therefore takes effect for newly started consumers rather than invalidating pointers or executable code underneath a running application.
 
-Metadata discovery and behaviour ownership remain separate. Calendar owns chronology and must validate its Calendar-specific provider ABI before executing a discovered calendar module. Likewise, clock metadata must not be treated as executable clock support until the clock runtime validates and binds a clock implementation ABI.
+Metadata discovery and behaviour ownership remain separate. Native Calendar Resources own chronology and must validate their provider ABI before executing a discovered calendar module. Clock metadata alone does not prove executable clock support; the clock runtime must validate and bind the implementation ABI.
+
+The shared clock presentation handle is **resource-first**, even when the stable clock ID is also present in the compiled metadata catalogue. The first five migrated clocks (decimal, Internet, Unix, hexadecimal and binary) have no fallback to compiled clock arithmetic when their executable resource is absent. Other modes retain their legacy portable implementation only as a temporary, explicit compatibility boundary while they are migrated. The portable clock-formatting API and the elapsed-duration formatters remain supported for existing clients; deleting them would break the portable ABI and consumers still using it.
 
 ## Trust boundary
 

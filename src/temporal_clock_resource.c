@@ -219,12 +219,22 @@ infiltratr_temporal_clock_presentation_new(const char *clock_id)
     }
     memcpy(presentation->mode, clock_id, length + 1U);
 
-    if (resource_required || builtin == NULL) {
-        presentation->module = infiltratr_temporal_clock_module_open_id(clock_id);
-        if (presentation->module == NULL) {
-            infiltratr_temporal_clock_presentation_free(presentation);
-            return NULL;
-        }
+    /*
+     * Executable system resources take precedence over legacy portable
+     * formatting for every stable clock ID, including an ID already present
+     * in the compiled capability catalogue. This avoids a new Common-side
+     * routing exception whenever another clock is extracted.
+     *
+     * The five migrated clocks are already resource-only: an absent or
+     * invalid module may not silently fall back to their older algorithms.
+     * Unmigrated built-in modes retain compatibility until explicitly
+     * removed from the portable ABI.
+     */
+    presentation->module = infiltratr_temporal_clock_module_open_id(clock_id);
+    if (presentation->module == NULL &&
+        (resource_required || builtin == NULL)) {
+        infiltratr_temporal_clock_presentation_free(presentation);
+        return NULL;
     }
     return presentation;
 }

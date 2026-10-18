@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.19.55 — 2026-10-18
+
+- Resolve installed native clock resources before compiled compatibility formatting for every clock ID, including IDs also present in the built-in metadata catalogue.
+- Keep migrated decimal, Internet, Unix, hexadecimal and binary modes fail-closed when their module is absent, while retaining the published portable ABI for remaining consumers.
+- Extend provider-smoke coverage to assert resource precedence for an installed conventional clock resource and portable fallback when one is absent.
+- Document why the legacy portable APIs and duration algorithms must not be deleted before their consumers and compatibility policy are migrated.
+
 ## 1.19.54 — 2026-10-18
 
 - Include executable clock-resource loading and its ABI smoke tests in Common's CMake build, matching the existing Make build.
