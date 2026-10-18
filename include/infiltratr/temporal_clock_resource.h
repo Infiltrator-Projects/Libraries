@@ -82,11 +82,9 @@ bool infiltratr_temporal_clock_next_tick(
     uint32_t *milliseconds);
 
 /**
- * Long-lived system presentation handle. Validated installed executable
- * resources take precedence for all IDs, even IDs with compiled metadata.
- * The eighteen migrated clocks require their resource and never fall back.
- * Other compiled clock modes retain a portable compatibility fallback only
- * while they have not completed migration. Unknown IDs require a resource.
+ * Long-lived system presentation handle. Every explicit clock requires its
+ * validated installed resource. Compiled metadata never supplies arithmetic.
+ * Missing or invalid modules fail without changing the caller's output.
  * Callers may retain this handle across repeated UI refreshes.
  */
 typedef struct InfiltratrTemporalClockPresentation InfiltratrTemporalClockPresentation;
@@ -105,7 +103,7 @@ bool infiltratr_temporal_clock_presentation_format(
     char *buffer, size_t capacity, size_t *length);
 
 /**
- * Exact resource tick boundary; returns false for legacy built-in modes.
+ * Exact resource tick boundary; returns false when the resource fails.
  * Does not change milliseconds on failure.
  */
 bool infiltratr_temporal_clock_presentation_next_tick(

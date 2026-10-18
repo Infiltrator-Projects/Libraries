@@ -181,35 +181,15 @@ struct InfiltratrTemporalClockPresentation {
     char *mode;
 };
 
-static bool clock_requires_native_resource(const char *mode)
-{
-    static const char *const migrated[] = {
-        "decimal", "internet", "unix", "hexadecimal", "binary",
-        "julian", "modified-julian", "chinese-ke", "mean-solar",
-        "sidereal", "chinese-time", "solar", "italian-hours",
-        "babylonian-hours", "babylonian-ancient",
-        "indian-ghati", "standard-12", "standard-24"
-    };
-    size_t i;
-    if (mode == NULL) return false;
-    for (i = 0U; i < sizeof(migrated) / sizeof(migrated[0]); ++i) {
-        if (strcmp(mode, migrated[i]) == 0) return true;
-    }
-    return false;
-}
-
 InfiltratrTemporalClockPresentation *
 infiltratr_temporal_clock_presentation_new(const char *clock_id)
 {
     InfiltratrTemporalClockPresentation *presentation;
-    const InfiltratrTemporalClockModeInfo *builtin;
-    const bool resource_required = clock_requires_native_resource(clock_id);
     const size_t length = clock_id != NULL ? strlen(clock_id) : 0U;
 
     if (!infiltratr_temporal_id_valid(clock_id) ||
         strcmp(clock_id, "standard") == 0) return NULL;
 
-    builtin = infiltratr_temporal_clock_mode_find(clock_id);
     presentation = calloc(1U, sizeof(*presentation));
     if (presentation == NULL) return NULL;
     if (length == SIZE_MAX) {
@@ -223,20 +203,9 @@ infiltratr_temporal_clock_presentation_new(const char *clock_id)
     }
     memcpy(presentation->mode, clock_id, length + 1U);
 
-    /*
-     * Executable system resources take precedence over legacy portable
-     * formatting for every stable clock ID, including an ID already present
-     * in the compiled capability catalogue. This avoids a new Common-side
-     * routing exception whenever another clock is extracted.
-     *
-     * All eighteen extracted clocks are resource-only: an absent or
-     * invalid module must fail closed rather than silently invoke a
-     * duplicate compiled formatter. Unmigrated modes retain the
-     * compatibility renderer until their resources have been extracted.
-     */
+    /* Every executable clock is an independently installed resource. */
     presentation->module = infiltratr_temporal_clock_module_open_id(clock_id);
-    if (presentation->module == NULL &&
-        (resource_required || builtin == NULL)) {
+    if (presentation->module == NULL) {
         infiltratr_temporal_clock_presentation_free(presentation);
         return NULL;
     }
@@ -272,9 +241,7 @@ bool infiltratr_temporal_clock_presentation_format(
             presentation->module, locale, instant, offset, seconds,
             vertical, latitude, longitude, buffer, capacity, length);
     }
-    return infiltratr_temporal_format_clock_mode_localized(
-        locale, presentation->mode, instant, offset, seconds, vertical,
-        location_configured, latitude, longitude, buffer, capacity, length);
+    return false;
 }
 
 bool infiltratr_temporal_clock_presentation_next_tick(

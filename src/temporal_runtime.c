@@ -6,6 +6,8 @@
 #include "infiltratr/temporal_runtime.h"
 
 #include "infiltratr/dynlib.h"
+#include "infiltratr/temporal_calendar.h"
+#include "infiltratr/temporal_clock_resource.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -258,7 +260,6 @@ static bool clock_duplicate(const char *id)
 {
     size_t index;
 
-    if (infiltratr_temporal_clock_mode_find(id) != NULL) return true;
     for (index = 0U; index < runtime_clock_count; ++index) {
         if (strcmp(runtime_clocks[index].info.id, id) == 0) return true;
     }
@@ -279,6 +280,15 @@ static bool append_calendar(
     (void)module_path;
     (void)user_data;
     if (calendar_duplicate(metadata->id)) return true;
+    InfiltratrTemporalCalendarModule *module =
+        infiltratr_temporal_calendar_module_open(module_path);
+    if (module == NULL) return true;
+    const InfiltratrTemporalResourceMetadata *loaded =
+        infiltratr_temporal_calendar_module_metadata(module);
+    const bool valid = loaded != NULL && strcmp(loaded->id, metadata->id) == 0;
+    infiltratr_temporal_calendar_module_free(module);
+    if (!valid) return true;
+
 
     if (runtime_calendar_count == runtime_calendar_capacity) {
         capacity = runtime_calendar_capacity == 0U
@@ -322,6 +332,15 @@ static bool append_clock(
     (void)module_path;
     (void)user_data;
     if (clock_duplicate(metadata->id)) return true;
+    InfiltratrTemporalClockModule *module =
+        infiltratr_temporal_clock_module_open(module_path);
+    if (module == NULL) return true;
+    const InfiltratrTemporalResourceMetadata *loaded =
+        infiltratr_temporal_clock_module_metadata(module);
+    const bool valid = loaded != NULL && strcmp(loaded->id, metadata->id) == 0;
+    infiltratr_temporal_clock_module_free(module);
+    if (!valid) return true;
+
 
     if (runtime_clock_count == runtime_clock_capacity) {
         capacity = runtime_clock_capacity == 0U
@@ -442,17 +461,16 @@ infiltratr_temporal_installed_calendar_find(const char *id)
 size_t infiltratr_temporal_installed_clock_mode_count(void)
 {
     catalogue_initialise();
-    return infiltratr_temporal_clock_mode_count() + runtime_clock_count;
+    return 1U + runtime_clock_count;
 }
 
 const InfiltratrTemporalClockModeInfo *
 infiltratr_temporal_installed_clock_mode_at(size_t index)
 {
-    const size_t builtin_count = infiltratr_temporal_clock_mode_count();
-
     catalogue_initialise();
-    if (index < builtin_count) return infiltratr_temporal_clock_mode_at(index);
-    index -= builtin_count;
+    /* OS-following standard is a policy choice, not a native implementation. */
+    if (index == 0U) return infiltratr_temporal_clock_mode_find("standard");
+    index--;
     if (index >= runtime_clock_count) return NULL;
     return &runtime_clocks[index].info;
 }
@@ -460,12 +478,11 @@ infiltratr_temporal_installed_clock_mode_at(size_t index)
 const InfiltratrTemporalClockModeInfo *
 infiltratr_temporal_installed_clock_mode_find(const char *id)
 {
-    const InfiltratrTemporalClockModeInfo *builtin;
     size_t index;
 
     if (id == NULL) return NULL;
-    builtin = infiltratr_temporal_clock_mode_find(id);
-    if (builtin != NULL) return builtin;
+    if (strcmp(id, "standard") == 0)
+        return infiltratr_temporal_clock_mode_find("standard");
     catalogue_initialise();
     for (index = 0U; index < runtime_clock_count; ++index) {
         if (strcmp(runtime_clocks[index].info.id, id) == 0) {

@@ -53,21 +53,13 @@ static void test_catalogue(void)
     CHECK(strcmp(
         infiltratr_temporal_clock_mode_find("solar")->name,
         "Apparent solar time (compact Sun-position approximation)") == 0);
-    CHECK(strcmp(
-        infiltratr_temporal_calendar_find("japanese")->name,
-        "Japanese imperial era (modern Meiji–Reiwa)") == 0);
-    CHECK(strcmp(
-        infiltratr_temporal_calendar_find("bahai")->name,
-        "Bahá’í (Badíʿ; modern Naw-Rúz from Tehran equinox)") == 0);
+
+
     CHECK(strcmp(
         infiltratr_temporal_clock_mode_find("indian-ghati")->name,
         "Indian ghaṭī time (60 per sunrise day; 1 ghaṭī = 24 min)") == 0);
-    CHECK(strcmp(
-        infiltratr_temporal_calendar_find("mayan")->name,
-        "Maya Long Count (Goodman–Martínez–Thompson 584283 correlation)") == 0);
-    CHECK(strcmp(
-        infiltratr_temporal_calendar_find("positivist")->name,
-        "Positivist calendar (Comte; 13 × 28-day months + festival days; Year 1 = 1789)") == 0);
+
+
     CHECK(infiltratr_temporal_clock_mode_find("nuremberg-solar") != NULL);
 
     for (size_t index = 0U;
@@ -233,7 +225,7 @@ static void test_policy_v3(void)
     CHECK(!infiltratr_temporal_policy_v3_serialize(
         &policy, text, sizeof(text), &length));
 
-    CHECK(infiltratr_temporal_calendar_count() == 26U);
+    CHECK(infiltratr_temporal_calendar_count() == 0U);
     CHECK(infiltratr_temporal_calendar_find("hebrew") == NULL);
     CHECK(infiltratr_temporal_calendar_find("gregorian") == NULL);
     CHECK(infiltratr_temporal_calendar_find("persian") == NULL);
@@ -455,202 +447,16 @@ static void test_duration_mode_formats(void)
 
 static void test_clock_mode_formats(void)
 {
-    char text[192];
-    size_t length = 0U;
-
-    CHECK(!infiltratr_temporal_format_clock_mode(
-        "standard", INT64_C(0), 0, true, false, false,
-        0.0, 0.0, text, sizeof(text), &length));
-
-    CHECK(!infiltratr_temporal_format_clock_mode(
-        "standard-24",
-        INT64_C(19) * INT64_C(3600) * INT64_C(1000000),
-        0, false, false, false, 0.0, 0.0,
-        text, sizeof(text), &length));
-    CHECK(!infiltratr_temporal_format_clock_mode(
-        "decimal", INT64_C(43200000000),
-        0, true, false, false, 0.0, 0.0,
-        text, sizeof(text), NULL));
-
-    /* Ancient Babylonian notation belongs only to its installed module. */
-    CHECK(!infiltratr_temporal_format_clock_mode(
-        "babylonian-ancient",
-        INT64_C(1789990000) * INT64_C(1000000),
-        0, true, false, true, 49.45, 11.08,
-        text, sizeof(text), NULL));
-
-    CHECK(infiltratr_temporal_format_clock_mode(
-        "nuremberg-hours",
-        INT64_C(1789990000) * INT64_C(1000000),
-        0, true, false, true, 49.45, 11.08,
-        text, sizeof(text), NULL));
-    CHECK(strstr(text, "NUR-D") != NULL || strstr(text, "NUR-N") != NULL);
-
-    for (size_t index = 0U;
-         index < infiltratr_temporal_clock_mode_count(); ++index) {
-        const InfiltratrTemporalClockModeInfo *info =
-            infiltratr_temporal_clock_mode_at(index);
-        static const char *const migrated[] = {
-            "decimal", "internet", "unix", "hexadecimal", "binary",
-            "julian", "modified-julian", "chinese-ke", "mean-solar",
-            "sidereal", "chinese-time", "solar", "italian-hours",
-        "babylonian-hours", "babylonian-ancient",
-        "indian-ghati", "standard-12", "standard-24"
-        };
-        bool retired = info != NULL && strcmp(info->id, "standard") == 0;
-        for (size_t j = 0U; j < sizeof(migrated) / sizeof(migrated[0]); ++j) {
-            if (info != NULL && strcmp(info->id, migrated[j]) == 0)
-                retired = true;
-        }
-        CHECK(info != NULL);
-        const bool available = infiltratr_temporal_format_clock_mode(
-            info->id, INT64_C(1789990000) * INT64_C(1000000),
-            36000, true, false, true, -36.39, 145.36,
-            text, sizeof(text), NULL);
-        CHECK(available != retired);
-        if (!retired) CHECK(text[0] != '\0');
-        if (info->requires_latitude || info->requires_longitude) {
-            CHECK(!infiltratr_temporal_format_clock_mode(
-                info->id,
-                INT64_C(1789990000) * INT64_C(1000000),
-                36000, true, false, false, -36.39, 145.36,
-                text, sizeof(text), NULL));
-        }
-    }
-
-    /* Chinese double-hour notation is no longer present in Common. */
-    CHECK(!infiltratr_temporal_format_clock_mode(
-        "chinese-time", INT64_C(1800000000), 0,
-        true, false, false, 0.0, 0.0,
-        text, sizeof(text), NULL));
-
-    CHECK(infiltratr_temporal_format_clock_mode(
-        "roman-temporal",
-        INT64_C(1789990000) * INT64_C(1000000),
-        36000, false, false, true, -36.39, 145.36,
-        text, sizeof(text), NULL));
-    CHECK(strncmp(text, "Hora ", 5U) == 0 ||
-          strncmp(text, "Vigilia ", 8U) == 0);
-
-    CHECK(infiltratr_temporal_format_clock_mode(
-        "roman-temporal",
-        (INT64_C(12) * INT64_C(3600) + INT64_C(30) * INT64_C(60)) *
-            INT64_C(1000000),
-        0, true, false, true, 0.0, 0.0,
-        text, sizeof(text), NULL));
-    CHECK(strncmp(text, "Hora ", 5U) == 0);
-    CHECK(strstr(text, "uncia") != NULL);
-    CHECK(strchr(text, ':') == NULL);
-
-    CHECK(!infiltratr_temporal_format_clock_mode(
-        "roman-temporal",
-        INT64_C(1789990000) * INT64_C(1000000),
-        36000, false, false, true, -90.0001, 145.36,
-        text, sizeof(text), NULL));
-    CHECK(!infiltratr_temporal_format_clock_mode(
-        "solar",
-        INT64_C(1789990000) * INT64_C(1000000),
-        36000, false, false, true, 0.0, -180.0001,
-        text, sizeof(text), NULL));
-
-    CHECK(!infiltratr_temporal_format_clock_mode(
-        "missing-mode", INT64_C(0), 0, false, false, false,
-        0.0, 0.0, text, sizeof(text), NULL));
-}
-
-static void test_localized_clock_modes(void)
-{
-    char text[192];
-    /* Locale-specific Chinese notation is tested against chinese-time.so
-     * in Calendar's independent native resource suite. Common is only
-     * responsible for refusing its retired compatibility renderer. */
-    CHECK(!infiltratr_temporal_format_clock_mode_localized(
-        "zh-Hant-TW", "chinese-time", 0, 0, true, false,
-        false, 0.0, 0.0, text, sizeof(text), NULL));
-
-    CHECK(!infiltratr_temporal_format_clock_mode_localized("en", "missing-mode",
-        0, 0, true, false, false, 0.0, 0.0, text, sizeof(text), NULL));
-    CHECK(infiltratr_temporal_format_clock_mode_localized("en", "roman-temporal",
-        INT64_C(45000000000), 0, true, false, true, 0.0, 0.0,
-        text, sizeof(text), NULL));
-    CHECK(strncmp(text, "Hour ", 5U) == 0);
-    CHECK(strstr(text, "twelfth") != NULL);
-    CHECK(strchr(text, ':') == NULL);
-    CHECK(infiltratr_temporal_format_clock_mode_localized("fr", "roman-temporal",
-        INT64_C(45000000000), 0, true, false, true, 0.0, 0.0,
-        text, sizeof(text), NULL));
-    CHECK(strncmp(text, "Heure ", 6U) == 0);
-    CHECK(!infiltratr_temporal_format_clock_mode_localized("en", "chinese-ke",
-        0, 0, false, false, false, 0.0, 0.0, text, sizeof(text), NULL));
-}
-
-static void test_localized_twelve_hour_clock(void)
-{
-    static const char *const locales[] = {
-        "en_AU", "ja_JP.UTF-8", "zh-Hant-TW", "es_ES", "ko_KR"
-    };
-    char text[192];
-    /* No old compiled AM/PM translations may stand in for standard-12.so. */
-    for (size_t i = 0U; i < sizeof(locales) / sizeof(locales[0]); ++i) {
-        CHECK(!infiltratr_temporal_format_clock_mode_localized(
-            locales[i], "standard-12", INT64_C(43200000000), 0,
-            false, false, false, 0.0, 0.0, text, sizeof(text), NULL));
-        CHECK(!infiltratr_temporal_format_clock_mode_localized(
-            locales[i], "standard-24", INT64_C(43200000000), 0,
-            false, false, false, 0.0, 0.0, text, sizeof(text), NULL));
-    }
-}
-
-static void test_localized_edo_clock(void)
-{
-    static const struct {
-        const char *locale;
-        bool vertical;
-        const char *expected;
-    } vectors[] = {
-        { "en_AU", false, "Mi · 四 bells" },
-        { "ja_JP", false, "巳の刻 · 四つ" },
-        { "ja", true, "巳の刻\n四つ" },
-        { "zh_CN", false, "巳刻 · 四声" },
-        { "zh_TW.UTF-8", true, "巳刻\n四聲" },
-        { "fr_FR", false, "Mi · 四 coups" },
-        { "de_DE", false, "Mi · 四 Schläge" },
-        { "ko_KR", false, "Mi · 四타" },
-        { "xx_XX", false, "Mi · 四 bells" }
-    };
-    static const char *const modes[] = {
-        "japanese-temporal", "japanese-temporal-early"
-    };
-    char text[192];
-    for (size_t mode = 0U; mode < sizeof(modes) / sizeof(modes[0]); ++mode) {
-        for (size_t i = 0U; i < sizeof(vectors) / sizeof(vectors[0]); ++i) {
-            size_t length = 0U;
-            CHECK(infiltratr_temporal_format_clock_mode_localized(
-                vectors[i].locale, modes[mode], INT64_C(946728000000000),
-                0, false, vectors[i].vertical, true, 0.0, 0.0,
-                text, sizeof(text), &length));
-            CHECK(strcmp(text, vectors[i].expected) == 0);
-            CHECK(length == strlen(text));
-        }
-        /* Branches distinguish repeated daytime/nighttime bell counts. */
-        char day[192];
-        CHECK(infiltratr_temporal_format_clock_mode_localized("en", modes[mode],
-            INT64_C(946731600000000), 0, false, false, true, 0.0, 0.0,
-            day, sizeof(day), NULL));
-        CHECK(infiltratr_temporal_format_clock_mode_localized("en", modes[mode],
-            INT64_C(946688400000000), 0, false, false, true, 0.0, 0.0,
-            text, sizeof(text), NULL));
-        CHECK(strstr(day, "九 bells") != NULL);
-        CHECK(strstr(text, "九 bells") != NULL);
-        CHECK(strcmp(day, text) != 0);
-        CHECK(!infiltratr_temporal_format_clock_mode_localized("ja", modes[mode],
-            INT64_C(946728000000000), 0, false, false, true, 0.0, 0.0,
-            text, 8U, NULL));
-        CHECK(text[0] == '\0');
-        CHECK(infiltratr_temporal_format_clock_mode(modes[mode],
-            INT64_C(946728000000000), 0, false, false, true, 0.0, 0.0,
-            text, sizeof(text), NULL));
-        CHECK(strcmp(text, "巳の刻 · 四つ") == 0);
+    for (size_t index=0;index<infiltratr_temporal_clock_mode_count();index++) {
+        const char *id=infiltratr_temporal_clock_mode_at(index)->id;
+        char text[192]="unchanged";size_t length=777U;
+        CHECK(!infiltratr_temporal_format_clock_mode(id,INT64_C(1789990000000000),
+            36000,true,false,true,-36.39,145.36,text,sizeof(text),&length));
+        CHECK(strcmp(text,"unchanged")==0 && length==777U);
+        CHECK(!infiltratr_temporal_format_clock_mode_localized("en",id,
+            INT64_C(1789990000000000),36000,true,false,true,-36.39,145.36,
+            text,sizeof(text),&length));
+        CHECK(strcmp(text,"unchanged")==0 && length==777U);
     }
 }
 
@@ -663,8 +469,5 @@ int main(void)
     test_clock_formats();
     test_duration_mode_formats();
     test_clock_mode_formats();
-    test_localized_clock_modes();
-    test_localized_twelve_hour_clock();
-    test_localized_edo_clock();
     return 0;
 }

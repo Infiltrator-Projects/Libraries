@@ -2,12 +2,11 @@
 
 ## Status
 
-Common now supports two temporal capability sources in parallel:
-
-1. the existing compiled calendar and clock catalogues; and
-2. validated native resource modules installed in the InfiltratorOS resource namespace.
-
-The existing compiled catalogues remain authoritative compatibility capability. Nothing in this design removes them.
+All calendar and explicit clock implementations are independently installed native
+resources. Common owns the ABI, validation, discovery, loading and policy bridge.
+Its portable calendar catalogue functions remain empty ABI compatibility symbols.
+The compiled clock table describes persisted modes and duration projections; it
+is never evidence that an executable clock is installed.
 
 ## Native resource directories
 
@@ -30,15 +29,24 @@ A directory entry, arbitrary file, malformed module or module of the wrong kind 
 
 Directory bundles remain reserved for a later resource ABI. Freezing a bundle schema before a real resource needs one would add format policy without evidence.
 
-## Merged catalogues
+## Installed catalogues and execution
 
-Common exposes process-stable merged metadata views for installed calendars and clocks. Existing compiled entries come first. Valid native resources are appended in deterministic filesystem order. A native resource may not replace a built-in **metadata** entry: the built-in label wins duplicate IDs.
+The installed calendar and clock catalogues admit only modules whose metadata and
+executable provider ABIs both validate. Entries have stable IDs and deterministic
+filesystem order. The OS-following `standard` clock remains a policy selector.
+A metadata-only file is never an executable capability. One invalid optional
+module is ignored without removing unrelated valid modules.
 
-The merged catalogue is snapshotted on first use in a process. Installing or removing resources therefore takes effect for newly started consumers rather than invalidating pointers or executable code underneath a running application.
+The catalogue is snapshotted on first use in each process. Installing or removing
+resources affects newly started consumers without invalidating live pointers.
+Every one of the twenty-three explicit clocks uses its native implementation for
+both formatting and next-visible-tick scheduling. All thirty supplied calendars
+use native providers for fields, formatting and navigation. Missing, mismatched
+or malformed resources cannot invoke a compiled fallback.
 
-Metadata discovery and behaviour ownership remain separate. Native Calendar Resources own chronology and must validate their provider ABI before executing a discovered calendar module. Clock metadata alone does not prove executable clock support; the clock runtime must validate and bind the implementation ABI.
-
-The shared clock presentation handle is **resource-only** for all eighteen extracted clocks, even when the stable ID is listed in Common's compiled capability metadata: decimal, Internet, Unix, hexadecimal, binary, Julian, modified Julian, Chinese hundred-kè, mean solar, local sidereal, Chinese double-hours, apparent solar, Italian sunset hours, Renaissance Babylonian sunrise hours, ancient Babylonian bēru/UŠ, Indian ghaṭī/pala, standard 12-hour and standard 24-hour. An absent, invalid or mismatched native module must fail closed. The compiled capability catalogue is **metadata**, not an alternative implementation. The remaining five alternative modes retain an interim portable formatter until extracted. The old legacy profile formatting symbol remains for ABI linkage but deliberately no longer performs clock-face calculations; clients must use the resource presentation ABI. The duration API still formats elapsed time intervals, which have different semantics from clock faces.
+The legacy absolute clock formatting symbols remain ABI stubs that return false
+without changing caller output. Elapsed-duration projection is a separate API;
+it does not render an absolute clock face or replace a missing resource.
 
 ## Trust boundary
 
@@ -47,7 +55,7 @@ These directories are system resource namespaces. Native module code runs with t
 ## Design rules
 
 - The filesystem directory is the installed-capability catalogue for additional temporal resources.
-- Existing built-in calendars and clocks continue to work during migration.
+- No consumer owns a duplicate implementation or a hidden fallback.
 - Calendar and clock remain independently selectable capabilities.
 - A stable ID is semantic identity; array position and filename are not identity.
 - One bad optional resource must not invalidate unrelated temporal systems.

@@ -60,39 +60,6 @@ static const InfiltratrTemporalClockModeInfo temporal_clock_modes[] = {
     { "nuremberg-solar", "Nuremberg-style seasonal reconstruction (location-based, not the fixed civic schedule)", true, true, true }
 };
 
-/*
- * Compiled base capabilities only. Filesystem resources are deliberately absent
- * from this array and are merged by temporal_runtime.c at runtime.
- */
-static const InfiltratrTemporalCalendarInfo temporal_calendars[] = {
-    { "iso-week", "ISO week calendar" },
-    { "julian", "Julian" },
-    { "revised-julian", "Revised Julian" },
-    { "islamic-umalqura", "Islamic (Umm al-Qura table; AH 1300–1600)" },
-    { "islamic-civil", "Islamic (civil/tabular)" },
-    { "islamic-tbla", "Islamic (tabular, astronomical epoch)" },
-    { "islamic", "Islamic (computational/astronomical; not local sighting)" },
-    { "bahai", "Bahá’í (Badíʿ; modern Naw-Rúz from Tehran equinox)" },
-    { "buddhist", "Buddhist Era (Gregorian-derived; +543 years)" },
-    { "ethiopian", "Ethiopian Amete Mihret (13-month calendar)" },
-    { "ethiopic-amete-alem", "Ethiopic Amete Alem (Amete Mihret + 5500 years)" },
-    { "chinese", "Chinese traditional (computational lunisolar)" },
-    { "dangi", "Dangi (traditional Korean computational lunisolar)" },
-    { "indian", "Indian National (Saka)" },
-    { "japanese", "Japanese imperial era (modern Meiji–Reiwa)" },
-    { "minguo", "Minguo / Republic of China (Year 1 = 1912)" },
-    { "roman", "Roman civil date notation (Julian; inclusive Kalends/Nones/Ides; Varronian A.U.C.)" },
-    { "byzantine", "Byzantine Anno Mundi — Constantinople (Julian; year begins 1 September)" },
-    { "egyptian-nabonassar", "Ptolemaic Nabonassar-era Egyptian civil calendar (365-day wandering year; epoch 747 BC)" },
-    { "armenian-traditional", "Traditional Armenian wandering calendar (365-day year; era begins 11 July 552 Julian)" },
-    { "mayan", "Maya Long Count (Goodman–Martínez–Thompson 584283 correlation)" },
-    { "french-republican", "French Republican (epoch 22 September 1792; Romme arithmetic continuation after historical use)" },
-    { "swedish-historical", "Swedish historical calendar (1700–1753, incl. 30 Feb 1712)" },
-    { "international-fixed", "International Fixed (13 × 28-day months + Year Day)" },
-    { "world", "World Calendar (quarter-based; intercalary World/Leap days)" },
-    { "positivist", "Positivist calendar (Comte; 13 × 28-day months + festival days; Year 1 = 1789)" }
-};
-
 static bool profile_valid(InfiltratrClockProfile profile)
 {
     return profile >= INFILTRATR_CLOCK_PROFILE_SYSTEM &&
@@ -349,33 +316,12 @@ infiltratr_temporal_clock_mode_find(const char *id)
     return NULL;
 }
 
-size_t infiltratr_temporal_calendar_count(void)
-{
-    return sizeof(temporal_calendars) / sizeof(temporal_calendars[0]);
-}
-
-const InfiltratrTemporalCalendarInfo *
-infiltratr_temporal_calendar_at(size_t index)
-{
-    return index < infiltratr_temporal_calendar_count()
-        ? &temporal_calendars[index] : NULL;
-}
-
-const InfiltratrTemporalCalendarInfo *
-infiltratr_temporal_calendar_find(const char *id)
-{
-    size_t index;
-
-    if (id == NULL) {
-        return NULL;
-    }
-    for (index = 0U; index < infiltratr_temporal_calendar_count(); ++index) {
-        if (strcmp(id, temporal_calendars[index].id) == 0) {
-            return &temporal_calendars[index];
-        }
-    }
-    return NULL;
-}
+/* Legacy portable catalogue ABI. Installed resources own all calendars. */
+size_t infiltratr_temporal_calendar_count(void) { return 0U; }
+const InfiltratrTemporalCalendarInfo *infiltratr_temporal_calendar_at(size_t index)
+{ (void)index; return NULL; }
+const InfiltratrTemporalCalendarInfo *infiltratr_temporal_calendar_find(const char *id)
+{ (void)id; return NULL; }
 
 static bool temporal_document_version(const char *text, unsigned int *version)
 {

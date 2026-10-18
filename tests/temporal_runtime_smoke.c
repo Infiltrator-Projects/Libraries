@@ -72,8 +72,7 @@ int main(void)
 
     assert(infiltratr_temporal_installed_calendar_count() >=
            infiltratr_temporal_calendar_count());
-    assert(infiltratr_temporal_installed_clock_mode_count() >=
-           infiltratr_temporal_clock_mode_count());
+    assert(infiltratr_temporal_installed_clock_mode_count() >= 1U);
 
     /*
      * Resource-only calendars are deliberately absent from Common's compiled
@@ -84,7 +83,7 @@ int main(void)
     assert(infiltratr_temporal_calendar_find("gregorian") == NULL);
     assert(infiltratr_temporal_calendar_find("persian") == NULL);
     assert(infiltratr_temporal_calendar_find("coptic") == NULL);
-    assert(infiltratr_temporal_installed_clock_mode_find("standard-24") != NULL);
+    assert(infiltratr_temporal_installed_clock_mode_find("standard") != NULL);
 
     puts("Libraries temporal runtime smoke test passed.");
     return 0;

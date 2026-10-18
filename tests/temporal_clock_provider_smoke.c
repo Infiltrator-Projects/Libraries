@@ -21,7 +21,9 @@ static int test_system_presentation(void)
         "julian", "modified-julian", "chinese-ke", "mean-solar",
         "sidereal", "chinese-time", "solar", "italian-hours",
         "babylonian-hours", "babylonian-ancient",
-        "indian-ghati", "standard-12", "standard-24"
+        "indian-ghati", "standard-12", "standard-24", "roman-temporal",
+        "japanese-temporal", "japanese-temporal-early", "nuremberg-hours",
+        "nuremberg-solar"
     };
     InfiltratrTemporalClockPresentation *presentation;
     char buffer[64] = "unchanged";
@@ -33,14 +35,6 @@ static int test_system_presentation(void)
     CHECK(infiltratr_temporal_clock_presentation_new("Bad ID") == NULL);
     CHECK(infiltratr_temporal_clock_presentation_new("standard") == NULL);
     CHECK(infiltratr_temporal_clock_presentation_new("absent-clock") == NULL);
-
-    /* An unmigrated clock may still be formatted without a module. */
-    presentation = infiltratr_temporal_clock_presentation_new("roman-temporal");
-    CHECK(presentation != NULL);
-    CHECK(infiltratr_temporal_clock_presentation_format(
-        presentation, "en", INT64_C(43200000000), 0, false, false,
-        true, 0.0, 0.0, buffer, sizeof(buffer), &length));
-    infiltratr_temporal_clock_presentation_free(presentation);
 
     for (i = 0U; i < sizeof(migrated) / sizeof(migrated[0]); ++i) {
         InfiltratrTemporalClockModule *installed =

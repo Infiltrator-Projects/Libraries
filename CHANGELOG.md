@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.19.64 — 2026-10-18
+
+- Require native providers for all twenty-three explicit clocks; remove the final
+  Roman, Edo Japanese and Nürnberg clock-face fallback implementations.
+- Remove the compiled calendar catalogue now that all thirty chronologies live
+  in Calendar Resources. Preserve policy IDs and legacy ABI entry points.
+- Validate executable provider ABIs before advertising installed capabilities.
+- Keep canonical timestamp/duration handling independent of selected resources.
+
+
 ## 1.19.63 — 2026-10-18
 
 - Require independently installed ancient Babylonian bēru/UŠ and Indian ghaṭī/pala clock modules. Their sunrise/sunset-origin chronology, notation and next-visible-tick boundaries belong solely to the resources.

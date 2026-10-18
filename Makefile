@@ -7,7 +7,7 @@ CPPFLAGS += -Iinclude
 override CPPFLAGS += -DINFILTRATR_COMMON_LIBRARY_ARCHITECTURE=\"$(shell $(CC) -dumpmachine)\"
 CFLAGS ?= -O2 -g
 override CFLAGS += -std=c11 -fPIC -Wall -Wextra -Wpedantic -Werror \
-	-Wshadow -Wformat=2 -Wstrict-prototypes -Wmissing-prototypes
+	-Wshadow -Wformat=2 -Wstrict-prototypes -Wmissing-prototypes -MMD -MP
 PORTABLE_OBJECTS := $(BUILD_DIR)/core.o $(BUILD_DIR)/arithmetic.o \
 	$(BUILD_DIR)/config.o $(BUILD_DIR)/i18n.o $(BUILD_DIR)/token.o \
 	$(BUILD_DIR)/timing.o $(BUILD_DIR)/temporal.o $(BUILD_DIR)/temporal_clock.o $(BUILD_DIR)/format.o $(BUILD_DIR)/quantity.o $(BUILD_DIR)/graphics.o \
@@ -21,6 +21,9 @@ PORTABLE_ARCHIVE := $(BUILD_DIR)/libinfiltratr-portable.a
 ARCHIVE := $(BUILD_DIR)/libinfiltratr-common.a
 SHARED := $(BUILD_DIR)/libinfiltratr-common.so.$(COMMON_VERSION)
 DYNLIB_LIBS := -ldl
+
+-include $(OBJECTS:.o=.d)
+.DEFAULT_GOAL := all
 
 .PHONY: all check clean portable portable-check shared version-check
 version-check:

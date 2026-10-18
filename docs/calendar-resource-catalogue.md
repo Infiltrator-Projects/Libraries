@@ -1,9 +1,10 @@
 # Calendar resource catalogue
 
-Common distinguishes portable compiled calendar metadata from installed executable calendar resources.
+All calendars are executable resources discovered under `/System/Resources/Calendars`.
+Common owns no compiled calendar implementation or calendar catalogue. Its old
+portable catalogue functions return an empty view for ABI compatibility.
 
-Calendars migrated to the system resource layout are deliberately absent from the compiled base catalogue. Their stable IDs enter the effective catalogue only when a validated provider module is installed under `/System/Resources/Calendars` and discovered through Common's temporal runtime APIs.
-
-The currently externalised IDs are `hebrew`, `gregorian`, `persian`, and `coptic`. This prevents an absent module from being advertised as an available chronology and prevents compiled metadata from shadowing an installed executable provider with the same stable ID.
-
-Common owns the provider ABI, resource discovery, validation, and merged catalogue. Individual chronology implementations remain owned by their resource modules.
+Use `infiltratr_temporal_installed_calendar_*` for installed executable calendars.
+Metadata and provider ABI must both validate before the resource is selectable.
+Calendar Resources supplies thirty independent calendar IDs; neither Calendar nor
+System Settings owns their implementations or controls their lifetime.
