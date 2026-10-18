@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.19.63 — 2026-10-18
+
+- Require independently installed ancient Babylonian bēru/UŠ and Indian ghaṭī/pala clock modules. Their sunrise/sunset-origin chronology, notation and next-visible-tick boundaries belong solely to the resources.
+- Remove the two migrated absolute-clock renderers from Common while preserving elapsed-duration formatters and astronomical primitives still used by unmigrated historical clocks.
+- Enforce fail-closed behaviour for all eighteen migrated clocks without changing the versioned resource ABI.
+
+
 ## 1.19.62 — 2026-10-18
 
 - Make historical Italian sunset hours and European Renaissance Babylonian sunrise hours independent, mandatory executable clock resources.
