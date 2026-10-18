@@ -84,7 +84,7 @@ bool infiltratr_temporal_clock_next_tick(
 /**
  * Long-lived system presentation handle. Validated installed executable
  * resources take precedence for all IDs, even IDs with compiled metadata.
- * The twelve migrated clocks require their resource and never fall back.
+ * The thirteen migrated clocks require their resource and never fall back.
  * Other compiled clock modes retain a portable compatibility fallback only
  * while they have not completed migration. Unknown IDs require a resource.
  * Callers may retain this handle across repeated UI refreshes.
