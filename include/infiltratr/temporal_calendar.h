@@ -116,6 +116,12 @@ infiltratr_temporal_calendar_module_open(const char *module_path);
 InfiltratrTemporalCalendarModule *
 infiltratr_temporal_calendar_module_open_id(const char *calendar_id);
 
+/** Normal host Gregorian calendar, independent of optional resource folders.
+ * Uses the operating system C date/locale services; owns no custom chronology.
+ */
+InfiltratrTemporalCalendarModule *
+infiltratr_temporal_calendar_module_open_system(void);
+
 /** Release a loaded module. NULL is a safe no-op. */
 void infiltratr_temporal_calendar_module_free(
     InfiltratrTemporalCalendarModule *module);

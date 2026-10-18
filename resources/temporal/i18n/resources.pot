@@ -1,0 +1,339 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the Infiltrator Common Temporal Resources package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Infiltrator Common Temporal Resources\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-18 17:35+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#, c-format
+msgid "%d %s %lld"
+msgstr ""
+
+#, c-format
+msgid "%d %s %lld %s"
+msgstr ""
+
+#, c-format
+msgid "%d %s %lld B.E."
+msgstr ""
+
+#, c-format
+msgid "%d %s, An %s"
+msgstr ""
+
+msgid "Ahekan"
+msgstr ""
+
+msgid "April"
+msgstr ""
+
+msgid "Aprilis"
+msgstr ""
+
+msgid "Aracʿ"
+msgstr ""
+
+msgid "Archimedes"
+msgstr ""
+
+msgid "Areg"
+msgstr ""
+
+msgid "Aristotle"
+msgstr ""
+
+msgid "Asmá’"
+msgstr ""
+
+msgid "August"
+msgstr ""
+
+msgid "Augustus"
+msgstr ""
+
+msgid "Aweleacʿ"
+msgstr ""
+
+msgid "Ayyám-i-Há"
+msgstr ""
+
+msgid "Bahá"
+msgstr ""
+
+msgid "Bichat"
+msgstr ""
+
+msgid "Brumaire"
+msgstr ""
+
+msgid "Caesar"
+msgstr ""
+
+msgid "Charlemagne"
+msgstr ""
+
+msgid "Choiak"
+msgstr ""
+
+msgid "Dante"
+msgstr ""
+
+msgid "December"
+msgstr ""
+
+msgid "Descartes"
+msgstr ""
+
+msgid "Epagomenal days"
+msgstr ""
+
+msgid "Epiphi"
+msgstr ""
+
+msgid "Februarius"
+msgstr ""
+
+msgid "February"
+msgstr ""
+
+msgid "Festival of All the Dead"
+msgstr ""
+
+msgid "Festival of Holy Women"
+msgstr ""
+
+msgid "Floréal"
+msgstr ""
+
+msgid "Frederick"
+msgstr ""
+
+msgid "Frimaire"
+msgstr ""
+
+msgid "Fructidor"
+msgstr ""
+
+msgid "Germinal"
+msgstr ""
+
+msgid "Gutenberg"
+msgstr ""
+
+msgid "Hathyr"
+msgstr ""
+
+msgid "Homer"
+msgstr ""
+
+msgid "Hoṙi"
+msgstr ""
+
+msgid "Hroticʿ"
+msgstr ""
+
+msgid "Ianuarius"
+msgstr ""
+
+msgid "Iulius"
+msgstr ""
+
+msgid "Iunius"
+msgstr ""
+
+msgid "Jalál"
+msgstr ""
+
+msgid "Jamál"
+msgstr ""
+
+msgid "January"
+msgstr ""
+
+msgid "July"
+msgstr ""
+
+msgid "June"
+msgstr ""
+
+msgid "Kalimát"
+msgstr ""
+
+msgid "Kamál"
+msgstr ""
+
+msgid "Kʿałocʿ"
+msgstr ""
+
+msgid "Leap Day"
+msgstr ""
+
+msgid "Leapyear Day"
+msgstr ""
+
+msgid "Maius"
+msgstr ""
+
+msgid "March"
+msgstr ""
+
+msgid "Mareri"
+msgstr ""
+
+msgid "Margacʿ"
+msgstr ""
+
+msgid "Martius"
+msgstr ""
+
+msgid "Mashíyyat"
+msgstr ""
+
+msgid "Masá’il"
+msgstr ""
+
+msgid "May"
+msgstr ""
+
+msgid "Mecheir"
+msgstr ""
+
+msgid "Mehekan"
+msgstr ""
+
+msgid "Mesore"
+msgstr ""
+
+msgid "Messidor"
+msgstr ""
+
+msgid "Moses"
+msgstr ""
+
+msgid "Mulk"
+msgstr ""
+
+msgid "Nawasard"
+msgstr ""
+
+msgid "Nivôse"
+msgstr ""
+
+msgid "November"
+msgstr ""
+
+msgid "Núr"
+msgstr ""
+
+msgid "October"
+msgstr ""
+
+msgid "Pachons"
+msgstr ""
+
+msgid "Payni"
+msgstr ""
+
+msgid "Phamenoth"
+msgstr ""
+
+msgid "Phaophi"
+msgstr ""
+
+msgid "Pharmouthi"
+msgstr ""
+
+msgid "Pluviôse"
+msgstr ""
+
+msgid "Prairial"
+msgstr ""
+
+msgid "Qawl"
+msgstr ""
+
+msgid "Qudrat"
+msgstr ""
+
+msgid "Raḥmat"
+msgstr ""
+
+msgid "Sahmi"
+msgstr ""
+
+msgid "Saint Paul"
+msgstr ""
+
+msgid "Sans-culottides"
+msgstr ""
+
+msgid "September"
+msgstr ""
+
+msgid "Shakespeare"
+msgstr ""
+
+msgid "Sharaf"
+msgstr ""
+
+msgid "Sol"
+msgstr ""
+
+msgid "Sulṭán"
+msgstr ""
+
+msgid "Thermidor"
+msgstr ""
+
+msgid "Thoth"
+msgstr ""
+
+msgid "Trē"
+msgstr ""
+
+msgid "Tybi"
+msgstr ""
+
+#, c-format
+msgid "Uinal %d"
+msgstr ""
+
+msgid "Vendémiaire"
+msgstr ""
+
+msgid "Ventôse"
+msgstr ""
+
+#, c-format
+msgid "Week %02d"
+msgstr ""
+
+msgid "Worldsday"
+msgstr ""
+
+msgid "Year Day"
+msgstr ""
+
+msgid "‘Alá’"
+msgstr ""
+
+msgid "‘Aẓamat"
+msgstr ""
+
+msgid "‘Ilm"
+msgstr ""
+
+msgid "‘Izzat"
+msgstr ""

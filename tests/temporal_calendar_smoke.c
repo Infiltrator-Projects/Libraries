@@ -70,5 +70,19 @@ int main(void)
 
     infiltratr_temporal_calendar_module_free(module);
     infiltratr_temporal_calendar_module_free(NULL);
+    /* The normal OS calendar is usable without any resource directory. */
+    module = infiltratr_temporal_calendar_module_open_system();
+    CHECK(module != NULL);
+    CHECK(infiltratr_temporal_calendar_fields_from_jdn(module, 2440588, &fields));
+    CHECK(fields.year == 1970 && fields.month == 1 && fields.day == 1);
+    CHECK(infiltratr_temporal_calendar_format(module, 2440588,
+        INFILTRATR_TEMPORAL_CALENDAR_DATE_PART_SHORT,
+        text, sizeof(text), &length));
+    CHECK(strcmp(text, "1970-01-01") == 0);
+    CHECK(infiltratr_temporal_calendar_add_periods(module, 2440618, 1, &result));
+    CHECK(result == 2440646); /* Host month-end clamp: Jan 31 -> Feb 28. */
+    CHECK(infiltratr_temporal_calendar_add_years(module, 2458909, 1, &result));
+    CHECK(result == 2459274); /* Host leap-day clamp: 2020 -> 2021. */
+    infiltratr_temporal_calendar_module_free(module);
     return 0;
 }

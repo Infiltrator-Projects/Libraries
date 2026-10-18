@@ -56,3 +56,17 @@ The publisher archives the qualified Git tree and publishes the source ZIP with 
 ## Licence
 
 Copyright © 1993-2026 Shannon Smith. Common is licensed under GNU GPL-3.0-or-later; see [LICENSE](LICENSE).
+
+## System clock and calendar resources
+
+Common owns the implementation source, independent module build, tests, Debian
+package and releases for the shared system resources in
+[`resources/temporal`](resources/temporal/README.md). `make temporal-resource-package`
+produces `infiltrator-calendar-resources_<Common-version>_amd64.deb`. Common's
+qualified GitHub release publishes that package for the central APT repository.
+No Calendar application source, build, version or release is required.
+
+Calendar, Files and System Settings use normal platform date/time services when
+no additional modules are installed. Validated modules in `/System/Resources/Calendars`
+and `/System/Resources/Clocks` add capabilities. Custom implementations are built
+only as those modules; applications never contain substitute custom algorithms.

@@ -80,7 +80,7 @@ int main(void)
      * IDs when the host genuinely has the corresponding module installed.
      */
     assert(infiltratr_temporal_calendar_find("hebrew") == NULL);
-    assert(infiltratr_temporal_calendar_find("gregorian") == NULL);
+    assert(infiltratr_temporal_calendar_find("gregorian") != NULL);
     assert(infiltratr_temporal_calendar_find("persian") == NULL);
     assert(infiltratr_temporal_calendar_find("coptic") == NULL);
     assert(infiltratr_temporal_installed_clock_mode_find("standard") != NULL);

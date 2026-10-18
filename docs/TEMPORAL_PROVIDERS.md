@@ -2,9 +2,10 @@
 
 ## Status
 
-All calendar and explicit clock implementations are independently installed native
-resources. Common owns the ABI, validation, discovery, loading and policy bridge.
-Its portable calendar catalogue functions remain empty ABI compatibility symbols.
+Common owns the source, build, tests, packaging and releases of the independently
+installed calendar and explicit clock resources in `resources/temporal`. It also
+owns their ABI, validation, discovery, loading and policy bridge. Normal host
+Gregorian date/locale services remain available without optional modules.
 The compiled clock table describes persisted modes and duration projections; it
 is never evidence that an executable clock is installed.
 
@@ -40,7 +41,7 @@ module is ignored without removing unrelated valid modules.
 The catalogue is snapshotted on first use in each process. Installing or removing
 resources affects newly started consumers without invalidating live pointers.
 Every one of the twenty-three explicit clocks uses its native implementation for
-both formatting and next-visible-tick scheduling. All thirty supplied calendars
+both formatting and next-visible-tick scheduling. All thirty supplied resource calendars
 use native providers for fields, formatting and navigation. Missing, mismatched
 or malformed resources cannot invoke a compiled fallback.
 

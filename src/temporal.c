@@ -316,12 +316,14 @@ infiltratr_temporal_clock_mode_find(const char *id)
     return NULL;
 }
 
-/* Legacy portable catalogue ABI. Installed resources own all calendars. */
-size_t infiltratr_temporal_calendar_count(void) { return 0U; }
+/* The normal OS Gregorian calendar is always available. Custom chronology is
+ * added only by validated installed resources. This is metadata, not an engine. */
+static const InfiltratrTemporalCalendarInfo system_calendar = { "gregorian", "Gregorian" };
+size_t infiltratr_temporal_calendar_count(void) { return 1U; }
 const InfiltratrTemporalCalendarInfo *infiltratr_temporal_calendar_at(size_t index)
-{ (void)index; return NULL; }
+{ return index == 0U ? &system_calendar : NULL; }
 const InfiltratrTemporalCalendarInfo *infiltratr_temporal_calendar_find(const char *id)
-{ (void)id; return NULL; }
+{ return id != NULL && strcmp(id, "gregorian") == 0 ? &system_calendar : NULL; }
 
 static bool temporal_document_version(const char *text, unsigned int *version)
 {

@@ -13,6 +13,46 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  temporal-resources:
+    name: System temporal resources / ${{ matrix.compiler }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Install resource build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential clang pkg-config libglib2.0-dev libicu-dev gettext
+      - name: Build and test the independent system modules
+        run: make CC=${{ matrix.compiler }} temporal-resource-check
+      - name: Package, reproduce and install the exact qualified resources
+        if: matrix.compiler == 'gcc'
+        shell: bash
+        run: |
+          set -euo pipefail
+          export SOURCE_DATE_EPOCH=$(git show -s --format=%ct HEAD)
+          make temporal-resource-package
+          version=$(cat VERSION)
+          deb="resources/temporal/build/dist/infiltrator-calendar-resources_${version}_amd64.deb"
+          python3 resources/temporal/tools/check-package.py "$deb"
+          cp "$deb" "$RUNNER_TEMP/resources-first.deb"
+          make -C resources/temporal clean
+          make temporal-resource-package
+          cmp "$RUNNER_TEMP/resources-first.deb" "$deb"
+          sudo apt-get install -y "$PWD/$deb"
+          python3 resources/temporal/tools/check-package.py "$deb" --installed
+          git rev-parse HEAD > resources/temporal/build/dist/SOURCE_COMMIT
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: matrix.compiler == 'gcc'
+        with:
+          name: common-temporal-resources
+          path: resources/temporal/build/dist/*
+          if-no-files-found: error
+
   release-policy:
     runs-on: ubuntu-latest
     steps:

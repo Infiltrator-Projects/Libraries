@@ -225,9 +225,9 @@ static void test_policy_v3(void)
     CHECK(!infiltratr_temporal_policy_v3_serialize(
         &policy, text, sizeof(text), &length));
 
-    CHECK(infiltratr_temporal_calendar_count() == 0U);
+    CHECK(infiltratr_temporal_calendar_count() == 1U);
     CHECK(infiltratr_temporal_calendar_find("hebrew") == NULL);
-    CHECK(infiltratr_temporal_calendar_find("gregorian") == NULL);
+    CHECK(infiltratr_temporal_calendar_find("gregorian") != NULL);
     CHECK(infiltratr_temporal_calendar_find("persian") == NULL);
     CHECK(infiltratr_temporal_calendar_find("coptic") == NULL);
     CHECK(infiltratr_temporal_calendar_find("none") == NULL);

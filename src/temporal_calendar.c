@@ -8,6 +8,7 @@
 #include "infiltratr/dynlib.h"
 #include "infiltratr/temporal_id.h"
 #include "infiltratr/utf8.h"
+#include "temporal_system_calendar.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -17,6 +18,23 @@ struct InfiltratrTemporalCalendarModule {
     const InfiltratrTemporalResourceMetadata *metadata;
     const InfiltratrTemporalCalendarProvider *provider;
 };
+
+InfiltratrTemporalCalendarModule *
+infiltratr_temporal_calendar_module_open_system(void)
+{
+    static const InfiltratrTemporalResourceMetadata metadata = {
+        sizeof(metadata), INFILTRATR_TEMPORAL_RESOURCE_METADATA_ABI,
+        INFILTRATR_TEMPORAL_RESOURCE_CALENDAR, "gregorian", "Gregorian",
+        false, false, false
+    };
+    InfiltratrTemporalCalendarModule *module = calloc(1U, sizeof(*module));
+    if (module != NULL) {
+        module->library = (InfiltratrDynlib)INFILTRATR_DYNLIB_INIT;
+        module->metadata = &metadata;
+        module->provider = infiltratr_temporal_system_calendar_provider();
+    }
+    return module;
+}
 
 static bool provider_valid(
     const InfiltratrTemporalResourceMetadata *metadata,
@@ -143,7 +161,8 @@ infiltratr_temporal_calendar_module_open_id(const char *calendar_id)
             &lookup,
             &visited)) {
         free(lookup.module_path);
-        return NULL;
+        return strcmp(calendar_id, "gregorian") == 0
+            ? infiltratr_temporal_calendar_module_open_system() : NULL;
     }
     (void)visited;
 
@@ -156,6 +175,9 @@ infiltratr_temporal_calendar_module_open_id(const char *calendar_id)
         }
     }
     free(lookup.module_path);
+    if (module == NULL && strcmp(calendar_id, "gregorian") == 0) {
+        module = infiltratr_temporal_calendar_module_open_system();
+    }
     return module;
 }
 

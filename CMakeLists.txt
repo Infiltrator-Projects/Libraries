@@ -51,6 +51,7 @@ set(INFILTRATR_COMMON_FULL_SOURCES
     src/temporal_resource.c
     src/temporal_runtime.c
     src/temporal_calendar.c
+    src/temporal_system_calendar.c
     src/temporal_clock_resource.c)
 if(UNIX)
     list(APPEND INFILTRATR_COMMON_FULL_SOURCES

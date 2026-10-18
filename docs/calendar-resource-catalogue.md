@@ -1,10 +1,16 @@
-# Calendar resource catalogue
+# System calendar catalogue
 
-All calendars are executable resources discovered under `/System/Resources/Calendars`.
-Common owns no compiled calendar implementation or calendar catalogue. Its old
-portable catalogue functions return an empty view for ABI compatibility.
+Common exposes the normal host Gregorian calendar through platform date and
+locale services. Installed, validated `.so` implementations add capabilities
+under `/System/Resources/Calendars`; no custom chronology is used when its
+module is missing. The default clock likewise follows normal system time.
 
-Use `infiltratr_temporal_installed_calendar_*` for installed executable calendars.
-Metadata and provider ABI must both validate before the resource is selectable.
-Calendar Resources supplies thirty independent calendar IDs; neither Calendar nor
-System Settings owns their implementations or controls their lifetime.
+Common owns all thirty optional calendar implementations and twenty-three clock
+implementations in `resources/temporal`. Their `.deb` and `.so` releases are
+published by Common and distributed through APT. Calendar, Files and System
+Settings own neither the source nor their build/release pipeline.
+
+Use `infiltratr_temporal_installed_calendar_*` to enumerate normal and installed
+capabilities. Both metadata and provider ABI validate before a native module is
+selectable. `infiltratr_temporal_calendar_module_open_system()` explicitly opens
+the host Gregorian adapter without consulting resource folders.

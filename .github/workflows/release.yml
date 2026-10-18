@@ -17,6 +17,7 @@ jobs:
       github.event.workflow_run.head_branch == 'main'
     permissions:
       contents: write
+      actions: read
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -30,6 +31,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           EXPECTED_SHA: ${{ github.event.workflow_run.head_sha }}
+          QUALIFIED_RUN: ${{ github.event.workflow_run.id }}
         shell: bash
         run: |
           set -euo pipefail
@@ -51,9 +53,12 @@ jobs:
           fi
           source="Libraries-$version-source.zip"
           mkdir -p release
+          gh run download "$QUALIFIED_RUN" --name common-temporal-resources --dir release
+          test "$(cat release/SOURCE_COMMIT)" = "$head_commit"
+          test -s "release/infiltrator-calendar-resources_${version}_amd64.deb"
           git archive --format=zip --prefix="Libraries-$version/" \
             --output="release/$source" "$head_commit"
-          (cd release && sha256sum "$source" > SHA256SUMS.txt)
+          (cd release && sha256sum "$source" *.deb SOURCE_COMMIT > SHA256SUMS.txt)
           notes="$RUNNER_TEMP/release-notes.md"
           git log -1 --format=%B "$head_commit" > "$notes"
           state=$(gh release view "$tag" --json isDraft,targetCommitish --jq '[.isDraft,.targetCommitish] | @tsv' 2>/dev/null || true)
