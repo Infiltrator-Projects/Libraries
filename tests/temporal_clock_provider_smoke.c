@@ -54,7 +54,7 @@ static int test_system_presentation(void)
                 &expected_length));
             CHECK(infiltratr_temporal_clock_presentation_format(
                 presentation, "en", INT64_C(43200000000), 0,
-                true, false, false, 0.0, 0.0, buffer, sizeof(buffer),
+                true, false, true, 0.0, 0.0, buffer, sizeof(buffer),
                 &length));
             CHECK(length == expected_length && strcmp(buffer, expected) == 0);
             CHECK(infiltratr_temporal_clock_presentation_next_tick(
