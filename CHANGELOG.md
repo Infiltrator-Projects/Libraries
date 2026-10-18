@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.19.62 — 2026-10-18
+
+- Make historical Italian sunset hours and European Renaissance Babylonian sunrise hours independent, mandatory executable clock resources.
+- Delete Common's duplicate solar-origin absolute-clock renderer while retaining shared astronomical helpers required by unmigrated historical clocks and independent elapsed-duration output.
+- Expand the missing/invalid native-resource fail-closed contract from fourteen to sixteen clocks; provider ABI remains version 1.
+
+
 ## 1.19.61 — 2026-10-18
 
 - Require the independent apparent-solar clock module. Delete Common's duplicate absolute-time SOL renderer; missing or invalid solar resources now fail closed.
