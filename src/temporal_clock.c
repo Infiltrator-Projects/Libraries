@@ -102,36 +102,6 @@ static int64_t positive_modulo(int64_t value, int64_t modulus)
     return remainder;
 }
 
-static void split_clock_seconds(int64_t whole_seconds,
-                                int *hour, int *minute, int *second)
-{
-    const int64_t normalised =
-        positive_modulo(whole_seconds, SECONDS_PER_DAY);
-
-    *hour = (int)(normalised / SECONDS_PER_HOUR);
-    *minute = (int)((normalised / SECONDS_PER_MINUTE) % MINUTES_PER_HOUR);
-    *second = (int)(normalised % SECONDS_PER_MINUTE);
-}
-
-static bool write_clock_fields(char *buffer, size_t capacity, size_t *length,
-                               int hour, int minute, int second,
-                               bool show_seconds, bool vertical,
-                               const char *suffix)
-{
-    const char *separator = vertical ? "\n" : ":";
-    const char *suffix_separator = vertical ? "\n" : " ";
-
-    if (show_seconds) {
-        return write_printf(buffer, capacity, length,
-                            "%02d%s%02d%s%02d%s%s",
-                            hour, separator, minute, separator, second,
-                            suffix_separator, suffix);
-    }
-    return write_printf(buffer, capacity, length,
-                        "%02d%s%02d%s%s",
-                        hour, separator, minute, suffix_separator, suffix);
-}
-
 /*
  * Convert a Unix day number to Gregorian day-of-year with exact 400-year
  * cycle arithmetic. Keeping this independent of time_t makes astronomical
@@ -1855,6 +1825,10 @@ static bool format_clock_mode(const InfiltratrI18n *language,
 {
     const InfiltratrTemporalClockModeInfo *info;
 
+    // The extension modes use absolute instants and, when applicable, the
+    // selected solar location. Civil UTC offsets remain part of the stable
+    // caller contract, but do not affect this custom-mode renderer.
+    (void)utc_offset_seconds;
     if (buffer == NULL || capacity == 0U || mode == NULL) {
         return false;
     }
