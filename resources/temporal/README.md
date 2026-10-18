@@ -2,8 +2,9 @@
 
 Common owns the source, build, tests, Debian package and releases of these
 30 calendar and 23 clock implementations. The modules are separate build
-products; none of their custom algorithms are compiled into Common's consumer
-libraries or into Calendar, Files or System Settings.
+products. The selectable provider implementations are loaded from their system
+files; Calendar, Files and System Settings do not compile or replace them.
+Neutral coordinate and formatting helpers remain shared Common APIs.
 
 From the Common repository, run `make temporal-resource-check` or
 `make temporal-resource-package`. The Debian package retains its existing

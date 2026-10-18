@@ -12,7 +12,7 @@ Common is the shared first-party foundation for portable arithmetic, parsing, en
 
 ## Ownership
 
-Common owns product-neutral contracts that are genuinely shared and at least as strong as the implementations they replace. Calendar owns chronology; filesystem projects own filesystem meaning and mutation policy; Link owns shared automotive diagnostics; manufacturer products own vehicle knowledge. Application composition and product identity remain local.
+Common owns product-neutral contracts that are genuinely shared and at least as strong as the implementations they replace. Common owns the shared system clock and calendar implementations; Calendar owns its application UI and event behaviour; filesystem projects own filesystem meaning and mutation policy; Link owns shared automotive diagnostics; manufacturer products own vehicle knowledge. Application composition and product identity remain local.
 
 The portable core has no operating-system or toolkit dependency. POSIX and Windows adapters isolate native mechanisms. Consumers select an exact reviewed Git revision; a normal build never advances a dependency to a mutable branch. [Usage and consumer boundaries](USAGE.md) identify the public mechanisms and their owners.
 
