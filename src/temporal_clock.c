@@ -1780,21 +1780,9 @@ bool infiltratr_temporal_format_duration_mode(
 
 /* Names are transliterated proper names, not animal/help labels. Wording
  * belongs to the selected language; the shared phase calculation stays below. */
-#define CLOCK_WORDS(coarse, fine, hour, first, second, watch, ke, twelfth, twelfths) \
-    { "chinese-coarse", coarse }, { "chinese-fine", fine }, \
-    { "hour", hour }, { "first", first }, { "second", second }, \
-    { "watch", watch }, { "ke", ke }, \
+#define CLOCK_REMAINING_WORDS(hour, watch, twelfth, twelfths) \
+    { "hour", hour }, { "watch", watch }, \
     { "twelfth", twelfth }, { "twelfths", twelfths }
-#define PINYIN_BRANCHES \
-    { "zi", "Zǐ" }, { "chou", "Chǒu" }, { "yin", "Yín" }, \
-    { "mao", "Mǎo" }, { "chen", "Chén" }, { "si", "Sì" }, \
-    { "wu", "Wǔ" }, { "wei", "Wèi" }, { "shen", "Shēn" }, \
-    { "you", "Yǒu" }, { "xu", "Xū" }, { "hai", "Hài" }
-#define NATIVE_BRANCHES \
-    { "zi", "子" }, { "chou", "丑" }, { "yin", "寅" }, \
-    { "mao", "卯" }, { "chen", "辰" }, { "si", "巳" }, \
-    { "wu", "午" }, { "wei", "未" }, { "shen", "申" }, \
-    { "you", "酉" }, { "xu", "戌" }, { "hai", "亥" }
 #define JAPANESE_BRANCHES \
     { "jp-ne", "Ne" }, { "jp-ushi", "Ushi" }, { "jp-tora", "Tora" }, \
     { "jp-u", "U" }, { "jp-tatsu", "Tatsu" }, { "jp-mi", "Mi" }, \
@@ -1808,66 +1796,54 @@ bool infiltratr_temporal_format_duration_mode(
 #define EDO_WORDS(horizontal, vertical) \
     { "edo", horizontal }, { "edo-vertical", vertical }
 static const InfiltratrI18nEntry clock_en[] = {
-    CLOCK_WORDS("{branch} hour", "{branch}, {half}", "Hour",
-                "first half", "second half", "Watch", "kè", "twelfth", "twelfths"),
-    PINYIN_BRANCHES, JAPANESE_BRANCHES,
+    CLOCK_REMAINING_WORDS("Hour", "Watch", "twelfth", "twelfths"),
+    JAPANESE_BRANCHES,
     EDO_WORDS("{branch} · {bell} bells", "{branch}\n{bell} bells"),
 };
 static const InfiltratrI18nEntry clock_de[] = {
-    CLOCK_WORDS("{branch}-Stunde", "{branch}, {half}", "Stunde",
-                "erste Hälfte", "zweite Hälfte", "Wache", "kè", "Zwölftel", "Zwölftel"),
+    CLOCK_REMAINING_WORDS("Stunde", "Wache", "Zwölftel", "Zwölftel"),
     EDO_WORDS("{branch} · {bell} Schläge", "{branch}\n{bell} Schläge"),
 };
 static const InfiltratrI18nEntry clock_es[] = {
-    CLOCK_WORDS("Hora {branch}", "{branch}, {half}", "Hora",
-                "primera mitad", "segunda mitad", "Vigilia", "kè", "doceavo", "doceavos"),
+    CLOCK_REMAINING_WORDS("Hora", "Vigilia", "doceavo", "doceavos"),
     EDO_WORDS("{branch} · {bell} campanadas", "{branch}\n{bell} campanadas"),
 };
 static const InfiltratrI18nEntry clock_fr[] = {
-    CLOCK_WORDS("Heure {branch}", "{branch}, {half}", "Heure",
-                "première moitié", "seconde moitié", "Veille", "kè", "douzième", "douzièmes"),
+    CLOCK_REMAINING_WORDS("Heure", "Veille", "douzième", "douzièmes"),
     EDO_WORDS("{branch} · {bell} coups", "{branch}\n{bell} coups"),
 };
 static const InfiltratrI18nEntry clock_it[] = {
-    CLOCK_WORDS("Ora {branch}", "{branch}, {half}", "Ora",
-                "prima metà", "seconda metà", "Vigilia", "kè", "dodicesimo", "dodicesimi"),
+    CLOCK_REMAINING_WORDS("Ora", "Vigilia", "dodicesimo", "dodicesimi"),
     EDO_WORDS("{branch} · {bell} rintocchi", "{branch}\n{bell} rintocchi"),
 };
 static const InfiltratrI18nEntry clock_pt[] = {
-    CLOCK_WORDS("Hora {branch}", "{branch}, {half}", "Hora",
-                "primeira metade", "segunda metade", "Vigília", "kè", "duodécimo", "duodécimos"),
+    CLOCK_REMAINING_WORDS("Hora", "Vigília", "duodécimo", "duodécimos"),
     EDO_WORDS("{branch} · {bell} badaladas", "{branch}\n{bell} badaladas"),
 };
 static const InfiltratrI18nEntry clock_ru[] = {
-    CLOCK_WORDS("Час {branch}", "{branch}, {half}", "Час",
-                "первая половина", "вторая половина", "Стража", "кэ", "двенадцатая", "двенадцатых"),
+    CLOCK_REMAINING_WORDS("Час", "Стража", "двенадцатая", "двенадцатых"),
     EDO_WORDS("{branch} · {bell} ударов", "{branch}\n{bell} ударов"),
 };
 static const InfiltratrI18nEntry clock_ja[] = {
-    CLOCK_WORDS("{branch}時", "{branch}{half}", "時",
-                "初", "正", "夜番", "刻", "十二分の一", "十二分の一"),
-    NATIVE_BRANCHES, JAPANESE_NATIVE_BRANCHES,
+    CLOCK_REMAINING_WORDS("時", "夜番", "十二分の一", "十二分の一"),
+    JAPANESE_NATIVE_BRANCHES,
     EDO_WORDS("{branch}の刻 · {bell}つ", "{branch}の刻\n{bell}つ"),
 };
 static const InfiltratrI18nEntry clock_zh[] = {
-    CLOCK_WORDS("{branch}时", "{branch}{half}", "时",
-                "初", "正", "更", "刻", "十二分之一时", "十二分之一时"),
-    NATIVE_BRANCHES, JAPANESE_NATIVE_BRANCHES,
+    CLOCK_REMAINING_WORDS("时", "更", "十二分之一时", "十二分之一时"),
+    JAPANESE_NATIVE_BRANCHES,
     EDO_WORDS("{branch}刻 · {bell}声", "{branch}刻\n{bell}声"),
 };
 static const InfiltratrI18nEntry clock_zh_hant[] = {
-    CLOCK_WORDS("{branch}時", "{branch}{half}", "時",
-                "初", "正", "更", "刻", "十二分之一時", "十二分之一時"),
-    NATIVE_BRANCHES, JAPANESE_NATIVE_BRANCHES,
+    CLOCK_REMAINING_WORDS("時", "更", "十二分之一時", "十二分之一時"),
+    JAPANESE_NATIVE_BRANCHES,
     EDO_WORDS("{branch}刻 · {bell}聲", "{branch}刻\n{bell}聲"),
 };
 static const InfiltratrI18nEntry clock_ko[] = {
     /* Other specialized-clock wording keeps the documented English fallback. */
     EDO_WORDS("{branch} · {bell}타", "{branch}\n{bell}타"),
 };
-#undef CLOCK_WORDS
-#undef PINYIN_BRANCHES
-#undef NATIVE_BRANCHES
+#undef CLOCK_REMAINING_WORDS
 #undef JAPANESE_BRANCHES
 #undef JAPANESE_NATIVE_BRANCHES
 #undef EDO_WORDS
