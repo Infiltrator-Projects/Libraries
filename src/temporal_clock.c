@@ -864,53 +864,6 @@ static bool format_duration_babylonian_ancient(
                         (unsigned long long)ush);
 }
 
-typedef enum SolarOrigin {
-    SOLAR_ORIGIN_SUNRISE,
-    SOLAR_ORIGIN_SUNSET
-} SolarOrigin;
-
-static bool solar_origin_window(int64_t unix_microseconds,
-                                double latitude,
-                                double longitude,
-                                SolarOrigin origin,
-                                int64_t *previous)
-{
-    int64_t best_previous = INT64_MIN;
-    int offset;
-
-    if (previous == NULL) {
-        return false;
-    }
-
-    for (offset = -2; offset <= 2; ++offset) {
-        int64_t delta;
-        int64_t sample;
-        int64_t dawn;
-        int64_t dusk;
-        int64_t candidate;
-
-        if (!infiltratr_i64_multiply_checked(
-                (int64_t)offset, MICROSECONDS_PER_DAY, &delta) ||
-            !infiltratr_i64_add_checked(
-                unix_microseconds, delta, &sample) ||
-            !solar_boundary_instants(
-                sample, latitude, longitude, 0.833, &dawn, &dusk)) {
-            continue;
-        }
-
-        candidate = origin == SOLAR_ORIGIN_SUNRISE ? dawn : dusk;
-        if (candidate <= unix_microseconds && candidate > best_previous) {
-            best_previous = candidate;
-        }
-    }
-
-    if (best_previous == INT64_MIN) {
-        return false;
-    }
-    *previous = best_previous;
-    return true;
-}
-
 /*
  * Reconstruct the Nürnberger Uhr's Wendetag rule for the configured place.
  * Equal 60-minute hours are assigned as a whole-number block to daylight and
