@@ -184,7 +184,9 @@ struct InfiltratrTemporalClockPresentation {
 static bool clock_requires_native_resource(const char *mode)
 {
     static const char *const migrated[] = {
-        "decimal", "internet", "unix", "hexadecimal", "binary"
+        "decimal", "internet", "unix", "hexadecimal", "binary",
+        "julian", "modified-julian", "chinese-ke", "mean-solar",
+        "standard-12", "standard-24"
     };
     size_t i;
     if (mode == NULL) return false;
@@ -225,10 +227,10 @@ infiltratr_temporal_clock_presentation_new(const char *clock_id)
      * in the compiled capability catalogue. This avoids a new Common-side
      * routing exception whenever another clock is extracted.
      *
-     * The five migrated clocks are already resource-only: an absent or
-     * invalid module may not silently fall back to their older algorithms.
-     * Unmigrated built-in modes retain compatibility until explicitly
-     * removed from the portable ABI.
+     * All eleven extracted clocks are resource-only: an absent or
+     * invalid module must fail closed rather than silently invoke a
+     * duplicate compiled formatter. Unmigrated modes retain the
+     * compatibility renderer until their resources have been extracted.
      */
     presentation->module = infiltratr_temporal_clock_module_open_id(clock_id);
     if (presentation->module == NULL &&
