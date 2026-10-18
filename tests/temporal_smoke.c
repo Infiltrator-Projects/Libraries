@@ -494,7 +494,7 @@ static void test_clock_mode_formats(void)
         static const char *const migrated[] = {
             "decimal", "internet", "unix", "hexadecimal", "binary",
             "julian", "modified-julian", "chinese-ke", "mean-solar",
-            "standard-12", "standard-24"
+            "sidereal", "standard-12", "standard-24"
         };
         bool retired = info != NULL && strcmp(info->id, "standard") == 0;
         for (size_t j = 0U; j < sizeof(migrated) / sizeof(migrated[0]); ++j) {
