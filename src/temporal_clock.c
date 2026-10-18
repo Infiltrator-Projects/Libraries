@@ -2,12 +2,13 @@
 /*
  * Copyright (C) 1993-2026 Shannon Smith
  *
- * Portable formatting for the complete system-wide clock catalogue.
+ * Interim absolute-clock formatting for modes not yet extracted, and
+ * independent elapsed-duration projections.
  *
- * Canonical instants remain Unix microseconds and internal elapsed-time
- * accounting remains SI/monotonic. This module is presentation only: it turns
- * one canonical instant plus explicit civil offset/location policy into the
- * clock representation selected by System Settings.
+ * The eleven extracted clocks are rendered solely by installed native .so
+ * modules through Common's validated resource ABI. Their old clock-face
+ * implementations and language tables do not belong here. Duration
+ * representation is distinct from formatting a canonical instant.
  */
 #include "infiltratr/temporal.h"
 

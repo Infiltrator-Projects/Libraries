@@ -143,9 +143,9 @@ int64_t infiltratr_temporal_local_microseconds_of_day(
 /**
  * Format a local civil clock from a canonical Unix-microsecond instant.
  *
- * Explicit 12-hour, 24-hour and decimal-10 profiles are supported. SYSTEM is
- * deliberately not formatted here because locale/platform policy belongs to
- * the platform adapter. UTC offset is supplied by the caller and includes DST.
+ * Historical ABI symbol for clock-profile formatting. All concrete profiles
+ * have been migrated to independent native clock resources, so this symbol
+ * now deliberately returns false; use the Common resource presentation ABI.
  *
  * The legacy compatibility symbol deliberately returns false for every
  * profile. Install the system clock resource and render through the Common
@@ -191,8 +191,9 @@ bool infiltratr_temporal_format_clock_mode(const char *mode,
 
 /**
  * Render a clock using the caller's UI language, without changing its units,
- * numerals or boundaries. Chinese double-hours/hundred-ke, Roman and Edo clock
- * wording and conventional 12-hour day-period markers are localized. Edo
+ * numerals or boundaries. The remaining Chinese double-hours, Roman and Edo
+ * clock wording is localized. Migrated hundred-kè and conventional day-period
+ * translations belong to their independent system clock resources. Edo
  * bell counts retain Japanese numerals; other profiles keep their notation.
  * Locale tags accept POSIX or BCP 47 forms. Missing, C/POSIX and unavailable
  * translations use English. No process locale or environment is mutated.

@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.19.56 — 2026-10-18
+
+- Require native system clock resources for all eleven extracted clock modes: decimal, Internet, Unix, hexadecimal, binary, Julian/MJD, conventional 12/24-hour, Chinese hundred-kè and local mean solar.
+- Remove the migrated clock-face algorithms and localized AM/PM duplicates from the legacy compiled formatter. Missing resources now fail closed, including when a compiled metadata entry exists.
+- Retain the old profile-formatting symbol for binary compatibility but deliberately disable its obsolete clock rendering: clients must use the resource-presentation ABI. This is an intentional semantic break for legacy callers and requires consumer qualification.
+- Keep elapsed-duration formatting separate: it operates on canonical intervals rather than clock faces, and unmigrated astronomical/historical modes continue their existing portable implementation.
+- Strengthen tests for absent resources, installed resource dispatch, longitude requirements, native next-tick behavior and retired APIs.
+
 ## 1.19.55 — 2026-10-18
 
 - Resolve installed native clock resources before compiled compatibility formatting for every clock ID, including IDs also present in the built-in metadata catalogue.
