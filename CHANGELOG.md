@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.19.57 — 2026-10-18
+
+- Add a verified shared 23-face native typography bootstrap, consuming the exact immutable InfiltratorOS MB/Daimler font snapshot and preserving cache independence from any application uninstall.
+- Prefer locally verified InfiltratorOS font seeds; download only missing fonts, verify SHA-256 and atomically publish them to the shared cache; retain the existing three-face Common ABI and bootstrap untouched for other consumers.
+- Document extended Text, Title, Condensed, Screen and Daimler roles without creating another copy of font binary payloads.
+
 ## 1.19.56 — 2026-10-18
 
 - Require native system clock resources for all eleven extracted clock modes: decimal, Internet, Unix, hexadecimal, binary, Julian/MJD, conventional 12/24-hour, Chinese hundred-kè and local mean solar.
