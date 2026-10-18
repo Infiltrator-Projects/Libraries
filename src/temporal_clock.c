@@ -1917,9 +1917,6 @@ static bool format_clock_mode(const InfiltratrI18n *language,
                                            size_t *length)
 {
     const InfiltratrTemporalClockModeInfo *info;
-    const int64_t local =
-        infiltratr_temporal_local_microseconds_of_day(
-            unix_microseconds, utc_offset_seconds);
 
     if (buffer == NULL || capacity == 0U || mode == NULL) {
         return false;
@@ -1946,49 +1943,6 @@ static bool format_clock_mode(const InfiltratrI18n *language,
         return write_clock_fields(
             buffer, capacity, length, hour, minute, second,
             show_seconds, vertical, "SOL");
-    }
-
-    if (strcmp(mode, "chinese-time") == 0) {
-        static const char *const branches[] = {
-            "子", "丑", "寅", "卯", "辰", "巳",
-            "午", "未", "申", "酉", "戌", "亥"
-        };
-        const int64_t double_hour =
-            INT64_C(2) * SECONDS_PER_HOUR * MICROSECONDS_PER_SECOND;
-        const int64_t shifted = positive_modulo(
-            local + SECONDS_PER_HOUR * MICROSECONDS_PER_SECOND,
-            MICROSECONDS_PER_DAY);
-        const unsigned branch = (unsigned)(shifted / double_hour);
-        const int64_t within = shifted % double_hour;
-        const char *suffix = show_seconds
-            ? (within < SECONDS_PER_HOUR * MICROSECONDS_PER_SECOND
-                   ? "初" : "正")
-            : "時";
-
-        if (language != NULL) {
-            static const char *const keys[] = {
-                "zi", "chou", "yin", "mao", "chen", "si",
-                "wu", "wei", "shen", "you", "xu", "hai"
-            };
-            const InfiltratrI18nArgument arguments[] = {
-                { "branch", infiltratr_i18n_get(language, keys[branch]) },
-                { "half", infiltratr_i18n_get(language,
-                    within < SECONDS_PER_HOUR * MICROSECONDS_PER_SECOND
-                        ? "first" : "second") },
-                { "unit", infiltratr_i18n_get(language, "hour") }
-            };
-            const char *pattern = vertical
-                ? (show_seconds ? "{branch}\n{half}" : "{branch}\n{unit}")
-                : infiltratr_i18n_get(language,
-                    show_seconds ? "chinese-fine" : "chinese-coarse");
-            return write_localized(buffer, capacity, length, pattern,
-                arguments, sizeof(arguments) / sizeof(arguments[0]));
-        }
-
-        return write_printf(
-            buffer, capacity, length,
-            vertical ? "%s\n%s" : "%s%s",
-            branches[branch], suffix);
     }
 
     if (strcmp(mode, "roman-temporal") == 0) {
