@@ -190,16 +190,11 @@ bool infiltratr_temporal_format_clock_mode(const char *mode,
                                            size_t *length);
 
 /**
- * Render a clock using the caller's UI language, without changing its units,
- * numerals or boundaries. The remaining Chinese double-hours, Roman and Edo
- * clock wording is localized. Migrated hundred-kè and conventional day-period
- * translations belong to their independent system clock resources. Edo
- * bell counts retain Japanese numerals; other profiles keep their notation.
- * Locale tags accept POSIX or BCP 47 forms. Missing, C/POSIX and unavailable
- * translations use English. No process locale or environment is mutated.
- * This legacy entry point only formats modes not yet extracted to native
- * resources. It must not provide an alternative implementation of a migrated
- * clock; use the Common resource presentation API for those modes.
+ * Legacy localized absolute-clock formatter, retained for ABI compatibility.
+ *
+ * All explicit clocks are independently installed resources. This entry point
+ * returns false and preserves caller output for every mode. Use the executable
+ * resource presentation API in temporal_runtime.h for rendering and scheduling.
  */
 bool infiltratr_temporal_format_clock_mode_localized(
     const char *locale, const char *mode,
@@ -261,11 +256,11 @@ const InfiltratrTemporalClockModeInfo *
 infiltratr_temporal_clock_mode_find(const char *id);
 
 /**
- * Compiled base calendar catalogue.
+ * Empty legacy calendar catalogue, retained for ABI compatibility.
  *
- * This is intentionally not the complete set installed on an InfiltratorOS
- * machine. Full/Common consumers must use temporal_runtime.h's installed
- * catalogue, which merges validated filesystem resources with this base.
+ * Calendar implementations are independently installed resources. These
+ * symbols return zero/NULL; use temporal_runtime.h's installed executable
+ * catalogue, which validates each resource before advertising it.
  */
 size_t infiltratr_temporal_calendar_count(void);
 const InfiltratrTemporalCalendarInfo *
