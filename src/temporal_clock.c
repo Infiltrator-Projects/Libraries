@@ -5,7 +5,7 @@
  * Interim absolute-clock formatting for modes not yet extracted, and
  * independent elapsed-duration projections.
  *
- * The twelve extracted clocks are rendered solely by installed native .so
+ * The thirteen extracted clocks are rendered solely by installed native .so
  * modules through Common's validated resource ABI. Their old clock-face
  * implementations and language tables do not belong here. Duration
  * representation is distinct from formatting a canonical instant.
