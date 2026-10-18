@@ -12,14 +12,15 @@
     return 1; } } while (0)
 
 
-/* All fourteen extracted clock IDs must fail closed without a system module.
+/* All sixteen extracted clock IDs must fail closed without a system module.
  * Unmigrated IDs retain their legacy rendering during the migration. */
 static int test_system_presentation(void)
 {
     static const char *const migrated[] = {
         "decimal", "internet", "unix", "hexadecimal", "binary",
         "julian", "modified-julian", "chinese-ke", "mean-solar",
-        "sidereal", "chinese-time", "solar", "standard-12", "standard-24"
+        "sidereal", "chinese-time", "solar", "italian-hours",
+        "babylonian-hours", "standard-12", "standard-24"
     };
     InfiltratrTemporalClockPresentation *presentation;
     char buffer[64] = "unchanged";

@@ -5,7 +5,7 @@
  * Interim absolute-clock formatting for modes not yet extracted, and
  * independent elapsed-duration projections.
  *
- * The fourteen extracted clocks are rendered solely by installed native .so
+ * The sixteen extracted clocks are rendered solely by installed native .so
  * modules through Common's validated resource ABI. Their old clock-face
  * implementations and language tables do not belong here. Duration
  * representation is distinct from formatting a canonical instant.
@@ -939,45 +939,6 @@ static bool solar_origin_window(int64_t unix_microseconds,
     }
     *previous = best_previous;
     return true;
-}
-
-static bool format_equal_hours(char *buffer, size_t capacity, size_t *length,
-                               int64_t unix_microseconds, bool show_seconds,
-                               bool vertical, double latitude, double longitude,
-                               SolarOrigin origin, const char *suffix)
-{
-    int64_t start;
-    int64_t elapsed_microseconds;
-    int64_t whole_seconds;
-    int hour;
-    int minute;
-    int second;
-    const char *separator = vertical ? "\n" : ":";
-
-    if (!solar_origin_window(
-            unix_microseconds, latitude, longitude, origin, &start)) {
-        return write_printf(buffer, capacity, length,
-                            vertical ? "N/A\n%s" : "N/A %s", suffix);
-    }
-
-    elapsed_microseconds = unix_microseconds - start;
-    whole_seconds =
-        floor_divide(elapsed_microseconds, MICROSECONDS_PER_SECOND);
-    hour = (int)(whole_seconds / SECONDS_PER_HOUR);
-    minute =
-        (int)((whole_seconds / SECONDS_PER_MINUTE) % MINUTES_PER_HOUR);
-    second = (int)(whole_seconds % SECONDS_PER_MINUTE);
-
-    if (show_seconds) {
-        return write_printf(buffer, capacity, length,
-                            "%02d%s%02d%s%02d%s%s",
-                            hour, separator, minute, separator, second,
-                            vertical ? "\n" : " ", suffix);
-    }
-    return write_printf(buffer, capacity, length,
-                        "%02d%s%02d%s%s",
-                        hour, separator, minute,
-                        vertical ? "\n" : " ", suffix);
 }
 
 /*
@@ -2009,20 +1970,6 @@ static bool format_clock_mode(const InfiltratrI18n *language,
             buffer, capacity, length,
             vertical ? "%sの刻\n%sつ" : "%sの刻 · %sつ",
             toki->character, toki->bell);
-    }
-
-    if (strcmp(mode, "italian-hours") == 0) {
-        return format_equal_hours(
-            buffer, capacity, length, unix_microseconds,
-            show_seconds, vertical, latitude, longitude,
-            SOLAR_ORIGIN_SUNSET, "IT");
-    }
-
-    if (strcmp(mode, "babylonian-hours") == 0) {
-        return format_equal_hours(
-            buffer, capacity, length, unix_microseconds,
-            show_seconds, vertical, latitude, longitude,
-            SOLAR_ORIGIN_SUNRISE, "BAB-R");
     }
 
     if (strcmp(mode, "babylonian-ancient") == 0) {
