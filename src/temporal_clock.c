@@ -35,9 +35,7 @@
 #define CHINESE_DOUBLE_HOURS_PER_DAY UINT64_C(12)
 #define CHINESE_KE_PER_DAY UINT64_C(100)
 #define VIGHATI_PER_DAY UINT64_C(3600)
-#define JULIAN_DATE_UNIX_EPOCH 2440587.5L
 #define SIDEREAL_RATE_PER_SI_SECOND (24.06570982441908L / 24.0L)
-#define JULIAN_DATE_J2000 2451545.0L
 #define INFILTRATR_PI 3.141592653589793238462643383279502884L
 
 static bool write_text(char *buffer, size_t capacity, size_t *length,
@@ -239,12 +237,6 @@ static bool solar_terms(int64_t unix_microseconds,
     return true;
 }
 
-static long double julian_date(int64_t unix_microseconds)
-{
-    return JULIAN_DATE_UNIX_EPOCH +
-           (long double)unix_microseconds / (long double)MICROSECONDS_PER_DAY;
-}
-
 static double clamp_longitude(double longitude)
 {
     return isfinite(longitude)
@@ -255,23 +247,6 @@ static double clamp_latitude(double latitude)
 {
     return isfinite(latitude)
         ? infiltratr_clamp_double(latitude, -90.0, 90.0) : 0.0;
-}
-
-static long double local_sidereal_seconds(int64_t unix_microseconds,
-                                          double longitude)
-{
-    const long double days_since_j2000 =
-        julian_date(unix_microseconds) - JULIAN_DATE_J2000;
-    const long double gmst_hours =
-        18.697374558L + 24.06570982441908L * days_since_j2000;
-    long double local_hours =
-        fmodl(gmst_hours + (long double)clamp_longitude(longitude) / 15.0L,
-              24.0L);
-
-    if (local_hours < 0.0L) {
-        local_hours += 24.0L;
-    }
-    return local_hours * (long double)SECONDS_PER_HOUR;
 }
 
 static long double mean_solar_seconds(int64_t unix_microseconds,
@@ -1962,29 +1937,15 @@ static bool format_clock_mode(const InfiltratrI18n *language,
         return false;
     }
 
-    if (strcmp(mode, "sidereal") == 0 ||
-        strcmp(mode, "solar") == 0) {
-        long double clock_seconds;
-        const char *suffix;
-        int hour;
-        int minute;
-        int second;
-
-        if (strcmp(mode, "sidereal") == 0) {
-            clock_seconds =
-                local_sidereal_seconds(unix_microseconds, longitude);
-            suffix = "LST";
-        } else {
-            clock_seconds =
-                apparent_solar_seconds(unix_microseconds, longitude);
-            suffix = "SOL";
-        }
-
+    if (strcmp(mode, "solar") == 0) {
+        const long double clock_seconds =
+            apparent_solar_seconds(unix_microseconds, longitude);
+        int hour, minute, second;
         split_clock_seconds(
             (int64_t)floorl(clock_seconds), &hour, &minute, &second);
         return write_clock_fields(
             buffer, capacity, length, hour, minute, second,
-            show_seconds, vertical, suffix);
+            show_seconds, vertical, "SOL");
     }
 
     if (strcmp(mode, "chinese-time") == 0) {
