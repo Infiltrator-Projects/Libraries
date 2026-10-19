@@ -71,9 +71,82 @@ static void test_catalogue(void)
     g_free(catalogue);
 }
 
+/*
+ * Independently attested chronology anchors.
+ *
+ * These are not round-trip tests: comparing a provider against its own
+ * inverse would preserve the same systematic error on both sides.  The
+ * Gregorian dates below are converted to integer JDNs independently of the
+ * provider under test.  Distinct regional/historical conventions must have
+ * separate stable IDs rather than silently changing these contracts.
+ *
+ * Evidence: the French Republican year-start concordance (Archives de Lyon);
+ * Hebcal's 1 Tishrei 5784; FAMSI's GMT Maya correlation; Swedish 1712 civil
+ * reform; ISO 8601 week-year rules; and the Indian National Calendar epoch.
+ */
+static void test_historical_chronology_anchors(void)
+{
+    static const struct {
+        const char *id;
+        gint64 jdn;
+        gint64 year;
+        gint32 month;
+        gint32 day;
+        gboolean check_special;
+        gboolean special;
+        gboolean check_auxiliary;
+        gint32 auxiliary;
+    } vectors[] = {
+        { "gregorian",          2451545, 2000,  1,  1, FALSE, FALSE, FALSE, 0 },
+        { "julian",             2451545, 1999, 12, 19, FALSE, FALSE, FALSE, 0 },
+        { "revised-julian",     2451545, 2000,  1,  1, FALSE, FALSE, FALSE, 0 },
+        { "iso-week",           2451545, 1999, 52,  6, FALSE, FALSE, FALSE, 0 },
+        { "islamic-civil",      1948440,    1,  1,  1, FALSE, FALSE, FALSE, 0 },
+        { "islamic-tbla",       1948439,    1,  1,  1, FALSE, FALSE, FALSE, 0 },
+        { "hebrew",             2460204, 5784,  1,  1, FALSE, FALSE, FALSE, 0 },
+        { "persian",            2460390, 1403,  1,  1, FALSE, FALSE, FALSE, 0 },
+        { "buddhist",           2451545, 2543,  1,  1, FALSE, FALSE, FALSE, 0 },
+        { "minguo",             2419403,    1,  1,  1, FALSE, FALSE, FALSE, 0 },
+        { "japanese",           2458605,    1,  5,  1, FALSE, FALSE, TRUE, 236 },
+        { "indian",             2460391, 1946,  1,  1, FALSE, FALSE, FALSE, 0 },
+        { "french-republican",  2375840,    1,  1,  1, FALSE, FALSE, FALSE, 0 },
+        { "french-republican",  2379858,   12,  1,  1, FALSE, FALSE, FALSE, 0 },
+        { "swedish-historical", 2346425, 1712,  2, 30, FALSE, FALSE, FALSE, 0 },
+        { "mayan",              2456283, 5200,  0,  0, FALSE, FALSE, FALSE, 0 },
+        { "international-fixed",2460479, 2024,  6, 29, TRUE, TRUE, FALSE, 0 },
+        { "world",              2460676, 2024, 12, 31, TRUE, TRUE, FALSE, 0 },
+        { "positivist",         2374480,    1,  1,  1, FALSE, FALSE, FALSE, 0 }
+    };
+
+    for (gsize i = 0; i < G_N_ELEMENTS(vectors); ++i)
+    {
+        g_autofree gchar *path = test_calendar_filename(vectors[i].id);
+        g_autofree gchar *full_path =
+            g_build_filename(TEST_CALENDAR_RESOURCE_DIRECTORY, path, NULL);
+        InfiltratrTemporalCalendarModule *module =
+            infiltratr_temporal_calendar_module_open(full_path);
+        InfiltratrTemporalCalendarFields fields = {0};
+
+        g_test_message("chronology anchor: %s at JDN %" G_GINT64_FORMAT,
+                       vectors[i].id, vectors[i].jdn);
+        g_assert_nonnull(module);
+        g_assert_true(infiltratr_temporal_calendar_fields_from_jdn(
+            module, vectors[i].jdn, &fields));
+        g_assert_cmpint(fields.year, ==, vectors[i].year);
+        g_assert_cmpint(fields.month, ==, vectors[i].month);
+        g_assert_cmpint(fields.day, ==, vectors[i].day);
+        if (vectors[i].check_special)
+            g_assert_cmpint(fields.special, ==, vectors[i].special);
+        if (vectors[i].check_auxiliary)
+            g_assert_cmpint(fields.auxiliary, ==, vectors[i].auxiliary);
+        infiltratr_temporal_calendar_module_free(module);
+    }
+}
+
 int main(int argc, char **argv)
 {
     g_test_init(&argc, &argv, NULL);
     g_test_add_func("/resources/all-calendar-providers", test_catalogue);
+    g_test_add_func("/resources/historical-chronology-anchors", test_historical_chronology_anchors);
     return g_test_run();
 }
