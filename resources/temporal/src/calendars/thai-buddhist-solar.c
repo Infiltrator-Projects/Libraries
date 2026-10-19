@@ -254,6 +254,13 @@ static const InfiltratrTemporalCalendarProvider provider = {
     provider_add_periods, provider_add_years
 };
 
+/* The public ABI entry points are externally visible and must have
+ * declarations before their definitions under strict -Wmissing-prototypes. */
+const InfiltratrTemporalResourceMetadata *
+infiltratr_temporal_resource_metadata_v1(void);
+const InfiltratrTemporalCalendarProvider *
+infiltratr_temporal_calendar_provider_v1(void);
+
 #if defined(_WIN32)
 #define EXPORT __declspec(dllexport)
 #else
