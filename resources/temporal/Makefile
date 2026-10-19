@@ -47,7 +47,7 @@ RESOURCE_ENGINE_HEADERS := $(wildcard src/calendars/engine/*.h)
 CALENDAR_RESOURCE_BUILD_DIR := $(BUILD_DIR)/calendar-resources
 CALENDAR_RESOURCE_MAP := src/calendars/calendar-resource.map
 EXTRACTED_CALENDAR_RESOURCE_NAMES := iso-week julian revised-julian islamic-umalqura islamic-civil islamic-tbla islamic bahai buddhist ethiopian ethiopic-amete-alem chinese dangi indian japanese minguo roman byzantine egyptian-nabonassar armenian-traditional mayan french-republican swedish-historical international-fixed world positivist
-CALENDAR_RESOURCE_NAMES := hebrew gregorian persian coptic $(EXTRACTED_CALENDAR_RESOURCE_NAMES)
+CALENDAR_RESOURCE_NAMES := hebrew gregorian persian coptic thai-buddhist-solar $(EXTRACTED_CALENDAR_RESOURCE_NAMES)
 HEBREW_RESOURCE_SOURCE := src/calendars/hebrew.c
 GREGORIAN_RESOURCE_SOURCE := src/calendars/gregorian.c
 PERSIAN_RESOURCE_SOURCE := src/calendars/persian.c
@@ -78,6 +78,7 @@ calendar_name_coptic := Coptic Calendar
 calendar_name_ethiopian := Ethiopian Amete Mihret Calendar
 calendar_name_ethiopic-amete-alem := Ethiopian Amete Alem Calendar
 calendar_name_buddhist := Buddhist Era Calendar
+calendar_name_thai-buddhist-solar := Historical Thai Buddhist Solar Calendar
 calendar_name_japanese := Japanese Imperial Era Calendar
 calendar_name_minguo := Republic of China Minguo Calendar
 calendar_name_french-republican := French Republican Calendar
@@ -176,6 +177,7 @@ calendar_native_sources_hebrew := src/calendars/hebrew.c src/calendars/engine/ic
 calendar_native_sources_gregorian := src/calendars/gregorian.c src/support/julian-day.c src/calendars/engine/icu-calendar.c src/calendars/engine/icu-compat-bridge.c
 calendar_native_sources_persian := src/calendars/persian.c src/calendars/arithmetic-persian.c src/support/julian-day.c src/calendars/engine/icu-calendar.c src/calendars/engine/icu-compat-bridge.c
 calendar_native_sources_coptic := src/calendars/coptic.c src/calendars/engine/calendar-arithmetic-coptic.c src/support/julian-day.c src/calendars/engine/icu-calendar.c src/calendars/engine/icu-compat-bridge.c
+calendar_native_sources_thai-buddhist-solar := src/calendars/thai-buddhist-solar.c
 
 define build_native_calendar
 $(call calendar_target,$(1)): $(calendar_native_sources_$(1)) $(CALENDAR_RESOURCE_MAP) $(INFILTRATR_COMMON_HEADERS) $(INFILTRATR_COMMON_ARCHIVE)
@@ -187,7 +189,7 @@ $(call calendar_target,$(1)): $(calendar_native_sources_$(1)) $(CALENDAR_RESOURC
 		-Wl,--version-script=$(CALENDAR_RESOURCE_MAP) -o "$$@" \
 		$(LDFLAGS) $(CORE_LIBS) $(ICU_BRIDGE_LIBS) $(MATH_LIBS)
 endef
-$(foreach id,hebrew gregorian persian coptic,$(eval $(call build_native_calendar,$(id))))
+$(foreach id,hebrew gregorian persian coptic thai-buddhist-solar,$(eval $(call build_native_calendar,$(id))))
 
 define build_extracted_calendar
 $(call calendar_target,$(1)): src/calendars/native-calendar.c src/calendars/catalogue.h $(RESOURCE_ENGINE_ARCHIVE) src/support/julian-day.c $(INFILTRATR_COMMON_ARCHIVE) $(CALENDAR_RESOURCE_MAP)
