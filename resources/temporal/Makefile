@@ -58,13 +58,68 @@ CALENDAR_RESOURCE_SOURCES := $(HEBREW_RESOURCE_SOURCE) \
 	$(PERSIAN_RESOURCE_SOURCE) \
 	$(PERSIAN_RESOURCE_ARITHMETIC) \
 	$(COPTIC_RESOURCE_SOURCE)
-HEBREW_RESOURCE := $(CALENDAR_RESOURCE_BUILD_DIR)/hebrew.so
-GREGORIAN_RESOURCE := $(CALENDAR_RESOURCE_BUILD_DIR)/gregorian.so
-PERSIAN_RESOURCE := $(CALENDAR_RESOURCE_BUILD_DIR)/persian.so
-COPTIC_RESOURCE := $(CALENDAR_RESOURCE_BUILD_DIR)/coptic.so
-CALENDAR_RESOURCES := $(HEBREW_RESOURCE) $(GREGORIAN_RESOURCE) \
-	$(PERSIAN_RESOURCE) $(COPTIC_RESOURCE) \
-	$(addprefix $(CALENDAR_RESOURCE_BUILD_DIR)/,$(addsuffix .so,$(EXTRACTED_CALENDAR_RESOURCE_NAMES)))
+empty :=
+space := $(empty) $(empty)
+escape_resource_path = $(subst $(space),\$(space),$(1))
+calendar_name_gregorian := Gregorian Calendar
+calendar_name_julian := Julian Calendar
+calendar_name_revised-julian := Revised Julian Calendar
+calendar_name_iso-week := ISO 8601 Week Calendar
+calendar_name_hebrew := Hebrew Calendar
+calendar_name_islamic := Islamic Computational Calendar
+calendar_name_islamic-civil := Islamic Civil Calendar
+calendar_name_islamic-tbla := Islamic Tabular Calendar Astronomical Epoch
+calendar_name_islamic-umalqura := Islamic Umm al-Qura Calendar
+calendar_name_persian := Persian Solar Hijri Calendar
+calendar_name_chinese := Traditional Chinese Lunisolar Calendar
+calendar_name_dangi := Korean Dangi Calendar
+calendar_name_indian := Indian National Saka Calendar
+calendar_name_coptic := Coptic Calendar
+calendar_name_ethiopian := Ethiopian Amete Mihret Calendar
+calendar_name_ethiopic-amete-alem := Ethiopian Amete Alem Calendar
+calendar_name_buddhist := Buddhist Era Calendar
+calendar_name_japanese := Japanese Imperial Era Calendar
+calendar_name_minguo := Republic of China Minguo Calendar
+calendar_name_french-republican := French Republican Calendar
+calendar_name_roman := Ancient Roman Calendar Notation
+calendar_name_mayan := Maya Long Count Calendar
+calendar_name_bahai := Bahai Badi Calendar
+calendar_name_international-fixed := International Fixed Calendar
+calendar_name_world := World Calendar
+calendar_name_positivist := Positivist Calendar
+calendar_name_byzantine := Byzantine Anno Mundi Calendar
+calendar_name_egyptian-nabonassar := Egyptian Nabonassar Era Calendar
+calendar_name_armenian-traditional := Traditional Armenian Calendar
+calendar_name_swedish-historical := Swedish Historical Calendar
+calendar_variant_iso-week := ISO_WEEK
+calendar_variant_julian := JULIAN
+calendar_variant_revised-julian := REVISED_JULIAN
+calendar_variant_islamic-umalqura := ISLAMIC_UMM_AL_QURA
+calendar_variant_islamic-civil := ISLAMIC_CIVIL
+calendar_variant_islamic-tbla := ISLAMIC_TBLA
+calendar_variant_islamic := ISLAMIC
+calendar_variant_bahai := BAHAI
+calendar_variant_buddhist := BUDDHIST
+calendar_variant_ethiopian := ETHIOPIAN
+calendar_variant_ethiopic-amete-alem := ETHIOPIC_AMETE_ALEM
+calendar_variant_chinese := CHINESE
+calendar_variant_dangi := DANGI
+calendar_variant_indian := INDIAN
+calendar_variant_japanese := JAPANESE
+calendar_variant_minguo := MINGUO
+calendar_variant_roman := ROMAN
+calendar_variant_byzantine := BYZANTINE
+calendar_variant_egyptian-nabonassar := EGYPTIAN_NABONASSAR
+calendar_variant_armenian-traditional := ARMENIAN_TRADITIONAL
+calendar_variant_mayan := MAYAN
+calendar_variant_french-republican := FRENCH_REPUBLICAN
+calendar_variant_swedish-historical := SWEDISH_HISTORICAL
+calendar_variant_international-fixed := INTERNATIONAL_FIXED
+calendar_variant_world := WORLD
+calendar_variant_positivist := POSITIVIST
+calendar_path = $(CALENDAR_RESOURCE_BUILD_DIR)/$(calendar_name_$(1)).so
+calendar_target = $(call escape_resource_path,$(call calendar_path,$(1)))
+CALENDAR_RESOURCES := $(foreach id,$(CALENDAR_RESOURCE_NAMES),$(call calendar_target,$(id)))
 CLOCK_RESOURCE_BUILD_DIR := $(BUILD_DIR)/clock-resources
 CLOCK_RESOURCE_SOURCE := src/clocks/fixed-clock.c
 JULIAN_CLOCK_RESOURCE_SOURCE := src/clocks/julian-clock.c
@@ -84,184 +139,165 @@ CONVENTIONAL_CLOCK_RESOURCE_NAMES := standard-12 standard-24
 NEXT_CLOCK_RESOURCE_NAMES := chinese-ke mean-solar
 ORIGIN_CLOCK_RESOURCE_NAMES := italian-hours babylonian-hours babylonian-ancient indian-ghati
 CLOCK_RESOURCE_NAMES := $(FIXED_CLOCK_RESOURCE_NAMES) $(JULIAN_CLOCK_RESOURCE_NAMES) $(CONVENTIONAL_CLOCK_RESOURCE_NAMES) $(NEXT_CLOCK_RESOURCE_NAMES) $(ORIGIN_CLOCK_RESOURCE_NAMES) sidereal chinese-time solar $(SEASONAL_CLOCK_RESOURCE_NAMES)
-CLOCK_RESOURCES := $(addprefix $(CLOCK_RESOURCE_BUILD_DIR)/,$(addsuffix .so,$(CLOCK_RESOURCE_NAMES)))
+clock_name_standard-12 := Standard 12-Hour Clock
+clock_name_standard-24 := Standard 24-Hour Clock
+clock_name_decimal := French Revolutionary Decimal Clock
+clock_name_internet := Swatch Internet Time Clock
+clock_name_unix := Unix Epoch Clock
+clock_name_hexadecimal := Hexadecimal Day Clock
+clock_name_binary := Binary Digital Clock
+clock_name_sidereal := Local Sidereal Clock
+clock_name_solar := Apparent Solar Clock
+clock_name_julian := Astronomical Julian Date Clock
+clock_name_mean-solar := Local Mean Solar Clock
+clock_name_modified-julian := Modified Julian Date Clock
+clock_name_chinese-time := Traditional Chinese Double-Hour Clock
+clock_name_chinese-ke := Traditional Chinese Hundred-Ke Clock
+clock_name_roman-temporal := Ancient Roman Temporal Clock
+clock_name_japanese-temporal := Late Edo Japanese Temporal Clock
+clock_name_japanese-temporal-early := Early Edo Japanese Temporal Clock
+clock_name_italian-hours := Historical Italian Hours Clock
+clock_name_babylonian-hours := Renaissance Babylonian Hours Clock
+clock_name_babylonian-ancient := Ancient Babylonian Beru US Clock
+clock_name_indian-ghati := Traditional Indian Ghati Clock
+clock_name_nuremberg-hours := Historical Nuremberg Great Clock
+clock_name_nuremberg-solar := Nuremberg Style Solar Clock
+clock_path = $(CLOCK_RESOURCE_BUILD_DIR)/$(clock_name_$(1)).so
+clock_target = $(call escape_resource_path,$(call clock_path,$(1)))
+CLOCK_RESOURCES := $(foreach id,$(CLOCK_RESOURCE_NAMES),$(call clock_target,$(id)))
 $(RESOURCE_ENGINE_ARCHIVE): $(RESOURCE_ENGINE_OBJECTS)
 	@rm -f "$@"
 	$(AR) rcsD "$@" $(RESOURCE_ENGINE_OBJECTS)
 
-$(addprefix $(CALENDAR_RESOURCE_BUILD_DIR)/,$(addsuffix .so,$(EXTRACTED_CALENDAR_RESOURCE_NAMES))): $(CALENDAR_RESOURCE_BUILD_DIR)/%.so: src/calendars/native-calendar.c src/calendars/catalogue.h $(RESOURCE_ENGINE_ARCHIVE) src/support/julian-day.c $(INFILTRATR_COMMON_ARCHIVE) $(CALENDAR_RESOURCE_MAP)
-	@mkdir -p "$(CALENDAR_RESOURCE_BUILD_DIR)"
-	@case "$*" in \
-	  iso-week) variant=ISO_WEEK ;; \
-	  julian) variant=JULIAN ;; \
-	  revised-julian) variant=REVISED_JULIAN ;; \
-	  islamic-umalqura) variant=ISLAMIC_UMM_AL_QURA ;; \
-	  islamic-civil) variant=ISLAMIC_CIVIL ;; \
-	  islamic-tbla) variant=ISLAMIC_TBLA ;; \
-	  islamic) variant=ISLAMIC ;; \
-	  bahai) variant=BAHAI ;; \
-	  buddhist) variant=BUDDHIST ;; \
-	  ethiopian) variant=ETHIOPIAN ;; \
-	  ethiopic-amete-alem) variant=ETHIOPIC_AMETE_ALEM ;; \
-	  chinese) variant=CHINESE ;; \
-	  dangi) variant=DANGI ;; \
-	  indian) variant=INDIAN ;; \
-	  japanese) variant=JAPANESE ;; \
-	  minguo) variant=MINGUO ;; \
-	  roman) variant=ROMAN ;; \
-	  byzantine) variant=BYZANTINE ;; \
-	  egyptian-nabonassar) variant=EGYPTIAN_NABONASSAR ;; \
-	  armenian-traditional) variant=ARMENIAN_TRADITIONAL ;; \
-	  mayan) variant=MAYAN ;; \
-	  french-republican) variant=FRENCH_REPUBLICAN ;; \
-	  swedish-historical) variant=SWEDISH_HISTORICAL ;; \
-	  international-fixed) variant=INTERNATIONAL_FIXED ;; \
-	  world) variant=WORLD ;; \
-	  positivist) variant=POSITIVIST ;; \
-	  *) exit 1 ;; esac; \
-	$(CC) $(CPPFLAGS) $(CFLAGS) -fvisibility=hidden -DRESOURCE_$$variant $(CORE_CFLAGS) \
+
+# Each compiler invocation produces its canonical named .so directly; no
+# post-build rename, alias or application-specific display substitution.
+calendar_native_sources_hebrew := src/calendars/hebrew.c src/calendars/engine/icu-compat-bridge.c
+calendar_native_sources_gregorian := src/calendars/gregorian.c src/support/julian-day.c src/calendars/engine/icu-calendar.c src/calendars/engine/icu-compat-bridge.c
+calendar_native_sources_persian := src/calendars/persian.c src/calendars/arithmetic-persian.c src/support/julian-day.c src/calendars/engine/icu-calendar.c src/calendars/engine/icu-compat-bridge.c
+calendar_native_sources_coptic := src/calendars/coptic.c src/calendars/engine/calendar-arithmetic-coptic.c src/support/julian-day.c src/calendars/engine/icu-calendar.c src/calendars/engine/icu-compat-bridge.c
+
+define build_native_calendar
+$(call calendar_target,$(1)): $(calendar_native_sources_$(1)) $(CALENDAR_RESOURCE_MAP) $(INFILTRATR_COMMON_HEADERS) $(INFILTRATR_COMMON_ARCHIVE)
+	@mkdir -p "$$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) -fvisibility=hidden $(CORE_CFLAGS) \
+		-frandom-seed=$(REPRO_SEED_PREFIX)-$(1)-resource \
+		-DINFILTRATR_TEMPORAL_DISPLAY_NAME='"$(calendar_name_$(1))"' \
+		-shared $(calendar_native_sources_$(1)) $(INFILTRATR_COMMON_ARCHIVE) \
+		-Wl,--version-script=$(CALENDAR_RESOURCE_MAP) -o "$$@" \
+		$(LDFLAGS) $(CORE_LIBS) $(ICU_BRIDGE_LIBS) $(MATH_LIBS)
+endef
+$(foreach id,hebrew gregorian persian coptic,$(eval $(call build_native_calendar,$(id))))
+
+define build_extracted_calendar
+$(call calendar_target,$(1)): src/calendars/native-calendar.c src/calendars/catalogue.h $(RESOURCE_ENGINE_ARCHIVE) src/support/julian-day.c $(INFILTRATR_COMMON_ARCHIVE) $(CALENDAR_RESOURCE_MAP)
+	@mkdir -p "$$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) -fvisibility=hidden -DRESOURCE_$(calendar_variant_$(1)) $(CORE_CFLAGS) \
+		-DINFILTRATR_TEMPORAL_DISPLAY_NAME='"$(calendar_name_$(1))"' \
 		-shared src/calendars/native-calendar.c src/support/julian-day.c \
 		$(RESOURCE_ENGINE_ARCHIVE) $(INFILTRATR_COMMON_ARCHIVE) \
 		-Wl,--version-script=$(CALENDAR_RESOURCE_MAP) -Wl,-z,defs \
-		-o $@ $(LDFLAGS) $(CORE_LIBS) $(ICU_BRIDGE_LIBS) $(MATH_LIBS)
+		-o "$$@" $(LDFLAGS) $(CORE_LIBS) $(ICU_BRIDGE_LIBS) $(MATH_LIBS)
+endef
+$(foreach id,$(EXTRACTED_CALENDAR_RESOURCE_NAMES),$(eval $(call build_extracted_calendar,$(id))))
 
-$(HEBREW_RESOURCE): $(HEBREW_RESOURCE_SOURCE) $(CALENDAR_RESOURCE_MAP) \
-		src/calendars/engine/icu-compat-bridge.c $(INFILTRATR_COMMON_HEADERS) \
-		$(INFILTRATR_COMMON_ARCHIVE)
-	@mkdir -p "$(CALENDAR_RESOURCE_BUILD_DIR)"
-	$(CC) $(CPPFLAGS) $(CFLAGS) -fvisibility=hidden \
-		-frandom-seed=$(REPRO_SEED_PREFIX)-hebrew-resource $(CORE_CFLAGS) \
-		-shared $(HEBREW_RESOURCE_SOURCE) src/calendars/engine/icu-compat-bridge.c \
-		$(INFILTRATR_COMMON_ARCHIVE) \
-		-Wl,--version-script=$(CALENDAR_RESOURCE_MAP) \
-		-o $@ $(LDFLAGS) $(CORE_LIBS) $(ICU_BRIDGE_LIBS) $(MATH_LIBS)
+clock_kind_decimal := 1
+clock_kind_internet := 2
+clock_kind_unix := 3
+clock_kind_hexadecimal := 4
+clock_kind_binary := 5
+clock_seconds_decimal := true
+clock_seconds_internet := true
+clock_seconds_unix := false
+clock_seconds_hexadecimal := false
+clock_seconds_binary := true
 
-$(GREGORIAN_RESOURCE): $(GREGORIAN_RESOURCE_SOURCE) $(CALENDAR_RESOURCE_MAP) \
-		src/support/julian-day.c src/calendars/engine/icu-calendar.c \
-		src/calendars/engine/icu-compat-bridge.c $(INFILTRATR_COMMON_HEADERS) \
-		$(INFILTRATR_COMMON_ARCHIVE)
-	@mkdir -p "$(CALENDAR_RESOURCE_BUILD_DIR)"
+define build_fixed_clock
+$(call clock_target,$(1)): $(CLOCK_RESOURCE_SOURCE) $(CLOCK_RESOURCE_MAP) $(INFILTRATR_COMMON_HEADERS)
+	@mkdir -p "$$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) -fvisibility=hidden \
-		-frandom-seed=$(REPRO_SEED_PREFIX)-gregorian-resource $(CORE_CFLAGS) \
-		-shared $(GREGORIAN_RESOURCE_SOURCE) src/support/julian-day.c \
-		src/calendars/engine/icu-calendar.c src/calendars/engine/icu-compat-bridge.c \
-		$(INFILTRATR_COMMON_ARCHIVE) \
-		-Wl,--version-script=$(CALENDAR_RESOURCE_MAP) \
-		-o $@ $(LDFLAGS) $(CORE_LIBS) $(ICU_BRIDGE_LIBS) $(MATH_LIBS)
-
-$(PERSIAN_RESOURCE): $(PERSIAN_RESOURCE_SOURCE) $(CALENDAR_RESOURCE_MAP) \
-		$(PERSIAN_RESOURCE_ARITHMETIC) src/calendars/engine/icu-calendar.c \
-		src/calendars/engine/icu-compat-bridge.c $(INFILTRATR_COMMON_HEADERS) \
-		$(INFILTRATR_COMMON_ARCHIVE)
-	@mkdir -p "$(CALENDAR_RESOURCE_BUILD_DIR)"
-	$(CC) $(CPPFLAGS) $(CFLAGS) -fvisibility=hidden \
-		-frandom-seed=$(REPRO_SEED_PREFIX)-persian-resource $(CORE_CFLAGS) \
-		-shared $(PERSIAN_RESOURCE_SOURCE) $(PERSIAN_RESOURCE_ARITHMETIC) src/support/julian-day.c \
-		src/calendars/engine/icu-calendar.c src/calendars/engine/icu-compat-bridge.c \
-		$(INFILTRATR_COMMON_ARCHIVE) \
-		-Wl,--version-script=$(CALENDAR_RESOURCE_MAP) \
-		-o $@ $(LDFLAGS) $(CORE_LIBS) $(ICU_BRIDGE_LIBS) $(MATH_LIBS)
-
-$(COPTIC_RESOURCE): $(COPTIC_RESOURCE_SOURCE) $(CALENDAR_RESOURCE_MAP) \
-		src/calendars/engine/calendar-arithmetic-coptic.c src/calendars/engine/icu-calendar.c \
-		src/calendars/engine/icu-compat-bridge.c $(INFILTRATR_COMMON_HEADERS) \
-		$(INFILTRATR_COMMON_ARCHIVE)
-	@mkdir -p "$(CALENDAR_RESOURCE_BUILD_DIR)"
-	$(CC) $(CPPFLAGS) $(CFLAGS) -fvisibility=hidden \
-		-frandom-seed=$(REPRO_SEED_PREFIX)-coptic-resource $(CORE_CFLAGS) \
-		-shared $(COPTIC_RESOURCE_SOURCE) src/calendars/engine/calendar-arithmetic-coptic.c src/support/julian-day.c \
-		src/calendars/engine/icu-calendar.c src/calendars/engine/icu-compat-bridge.c \
-		$(INFILTRATR_COMMON_ARCHIVE) \
-		-Wl,--version-script=$(CALENDAR_RESOURCE_MAP) \
-		-o $@ $(LDFLAGS) $(CORE_LIBS) $(ICU_BRIDGE_LIBS) $(MATH_LIBS)
-
-$(addprefix $(CLOCK_RESOURCE_BUILD_DIR)/,$(addsuffix .so,$(FIXED_CLOCK_RESOURCE_NAMES))): $(CLOCK_RESOURCE_BUILD_DIR)/%.so: $(CLOCK_RESOURCE_SOURCE) $(CLOCK_RESOURCE_MAP) $(INFILTRATR_COMMON_HEADERS)
-	@mkdir -p "$(CLOCK_RESOURCE_BUILD_DIR)"
-	@case "$*" in decimal) kind=1; seconds=true ;; internet) kind=2; seconds=true ;; \
-		unix) kind=3; seconds=false ;; hexadecimal) kind=4; seconds=false ;; \
-		binary) kind=5; seconds=true ;; *) exit 1 ;; esac; \
-	$(CC) $(CPPFLAGS) $(CFLAGS) -fvisibility=hidden \
-		-frandom-seed=$(REPRO_SEED_PREFIX)-$*-clock-resource \
-		-DCLOCK_RESOURCE_KIND=$$kind -DCLOCK_RESOURCE_ID=\"$*\" \
-		-DCLOCK_RESOURCE_NAME=\"$*\" -DCLOCK_RESOURCE_SECONDS=$$seconds \
+		-frandom-seed=$(REPRO_SEED_PREFIX)-$(1)-clock-resource \
+		-DCLOCK_RESOURCE_KIND=$(clock_kind_$(1)) -DCLOCK_RESOURCE_ID='"$(1)"' \
+		-DINFILTRATR_TEMPORAL_DISPLAY_NAME='"$(clock_name_$(1))"' \
+		-DCLOCK_RESOURCE_SECONDS=$(clock_seconds_$(1)) \
 		-shared $(CLOCK_RESOURCE_SOURCE) \
-		-Wl,--version-script=$(CLOCK_RESOURCE_MAP) -o $@ $(LDFLAGS)
+		-Wl,--version-script=$(CLOCK_RESOURCE_MAP) -o "$$@" $(LDFLAGS)
+endef
+$(foreach id,$(FIXED_CLOCK_RESOURCE_NAMES),$(eval $(call build_fixed_clock,$(id))))
 
-$(addprefix $(CLOCK_RESOURCE_BUILD_DIR)/,$(addsuffix .so,$(JULIAN_CLOCK_RESOURCE_NAMES))): $(CLOCK_RESOURCE_BUILD_DIR)/%.so: $(JULIAN_CLOCK_RESOURCE_SOURCE) $(CLOCK_RESOURCE_MAP) $(INFILTRATR_COMMON_HEADERS)
-	@mkdir -p "$(CLOCK_RESOURCE_BUILD_DIR)"
-	@case "$*" in julian) kind=1 ;; modified-julian) kind=2 ;; *) exit 1 ;; esac; \
+define build_julian_clock
+$(call clock_target,$(1)): $(JULIAN_CLOCK_RESOURCE_SOURCE) $(CLOCK_RESOURCE_MAP) $(INFILTRATR_COMMON_HEADERS)
+	@mkdir -p "$$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) -fvisibility=hidden \
-		-frandom-seed=$(REPRO_SEED_PREFIX)-$*-clock-resource \
-		-DJULIAN_CLOCK_KIND=$$kind \
+		-frandom-seed=$(REPRO_SEED_PREFIX)-$(1)-clock-resource \
+		-DJULIAN_CLOCK_KIND=$(if $(filter julian,$(1)),1,2) \
+		-DINFILTRATR_TEMPORAL_DISPLAY_NAME='"$(clock_name_$(1))"' \
 		-shared $(JULIAN_CLOCK_RESOURCE_SOURCE) \
-		-Wl,--version-script=$(CLOCK_RESOURCE_MAP) -o $@ $(LDFLAGS)
+		-Wl,--version-script=$(CLOCK_RESOURCE_MAP) -o "$$@" $(LDFLAGS)
+endef
+$(foreach id,$(JULIAN_CLOCK_RESOURCE_NAMES),$(eval $(call build_julian_clock,$(id))))
 
-$(addprefix $(CLOCK_RESOURCE_BUILD_DIR)/,$(addsuffix .so,$(CONVENTIONAL_CLOCK_RESOURCE_NAMES))): $(CLOCK_RESOURCE_BUILD_DIR)/%.so: $(CONVENTIONAL_CLOCK_RESOURCE_SOURCE) $(CLOCK_RESOURCE_MAP) $(INFILTRATR_COMMON_HEADERS)
-	@mkdir -p "$(CLOCK_RESOURCE_BUILD_DIR)"
+define build_conventional_clock
+$(call clock_target,$(1)): $(CONVENTIONAL_CLOCK_RESOURCE_SOURCE) $(CLOCK_RESOURCE_MAP) $(INFILTRATR_COMMON_HEADERS)
+	@mkdir -p "$$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) -fvisibility=hidden \
-		-frandom-seed=$(REPRO_SEED_PREFIX)-$*-clock-resource \
-		-DCONVENTIONAL_CLOCK_KIND=$(if $(filter standard-12,$*),12,24) \
+		-frandom-seed=$(REPRO_SEED_PREFIX)-$(1)-clock-resource \
+		-DCONVENTIONAL_CLOCK_KIND=$(if $(filter standard-12,$(1)),12,24) \
+		-DINFILTRATR_TEMPORAL_DISPLAY_NAME='"$(clock_name_$(1))"' \
 		-shared $(CONVENTIONAL_CLOCK_RESOURCE_SOURCE) \
-		-Wl,--version-script=$(CLOCK_RESOURCE_MAP) -o $@ $(LDFLAGS)
+		-Wl,--version-script=$(CLOCK_RESOURCE_MAP) -o "$$@" $(LDFLAGS)
+endef
+$(foreach id,$(CONVENTIONAL_CLOCK_RESOURCE_NAMES),$(eval $(call build_conventional_clock,$(id))))
 
-$(CLOCK_RESOURCE_BUILD_DIR)/chinese-ke.so: $(CHINESE_KE_CLOCK_SOURCE) $(CLOCK_RESOURCE_MAP) $(INFILTRATR_COMMON_HEADERS)
-	@mkdir -p "$(CLOCK_RESOURCE_BUILD_DIR)"
+define build_solar_origin_clock
+$(call clock_target,$(1)): $(SOLAR_ORIGIN_CLOCK_SOURCE) $(CLOCK_RESOURCE_MAP) $(INFILTRATR_COMMON_HEADERS)
+	@mkdir -p "$$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) -fvisibility=hidden \
-		-frandom-seed=$(REPRO_SEED_PREFIX)-chinese-ke-clock-resource \
-		-shared $(CHINESE_KE_CLOCK_SOURCE) \
-		-Wl,--version-script=$(CLOCK_RESOURCE_MAP) -o $@ $(LDFLAGS)
-
-$(addprefix $(CLOCK_RESOURCE_BUILD_DIR)/,$(addsuffix .so,$(ORIGIN_CLOCK_RESOURCE_NAMES))): $(CLOCK_RESOURCE_BUILD_DIR)/%.so: $(SOLAR_ORIGIN_CLOCK_SOURCE) $(CLOCK_RESOURCE_MAP) $(INFILTRATR_COMMON_HEADERS)
-	@mkdir -p "$(CLOCK_RESOURCE_BUILD_DIR)"
-	$(CC) $(CPPFLAGS) $(CFLAGS) -fvisibility=hidden \
-		-frandom-seed=$(REPRO_SEED_PREFIX)-$*-solar-origin-clock \
-		$(if $(filter babylonian-hours,$*),-DCLOCK_SUNRISE=1,) \
-		$(if $(filter babylonian-ancient,$*),-DCLOCK_ANCIENT_BABYLONIAN=1,) \
-		$(if $(filter indian-ghati,$*),-DCLOCK_GHATI=1,) \
+		-frandom-seed=$(REPRO_SEED_PREFIX)-$(1)-solar-origin-clock \
+		$(if $(filter babylonian-hours,$(1)),-DCLOCK_SUNRISE=1,) \
+		$(if $(filter babylonian-ancient,$(1)),-DCLOCK_ANCIENT_BABYLONIAN=1,) \
+		$(if $(filter indian-ghati,$(1)),-DCLOCK_GHATI=1,) \
+		-DINFILTRATR_TEMPORAL_DISPLAY_NAME='"$(clock_name_$(1))"' \
 		-shared $(SOLAR_ORIGIN_CLOCK_SOURCE) \
-		-Wl,--version-script=$(CLOCK_RESOURCE_MAP) -o $@ $(LDFLAGS) $(MATH_LIBS)
+		-Wl,--version-script=$(CLOCK_RESOURCE_MAP) -o "$$@" $(LDFLAGS) $(MATH_LIBS)
+endef
+$(foreach id,$(ORIGIN_CLOCK_RESOURCE_NAMES),$(eval $(call build_solar_origin_clock,$(id))))
 
-$(addprefix $(CLOCK_RESOURCE_BUILD_DIR)/,$(addsuffix .so,$(SEASONAL_CLOCK_RESOURCE_NAMES))): $(CLOCK_RESOURCE_BUILD_DIR)/%.so: $(SEASONAL_CLOCK_SOURCE) $(CLOCK_RESOURCE_MAP) $(INFILTRATR_COMMON_HEADERS) $(INFILTRATR_COMMON_ARCHIVE)
-	@mkdir -p "$(CLOCK_RESOURCE_BUILD_DIR)"
-	@case "$*" in \
-	  roman-temporal) kind=CLOCK_ROMAN ;; \
-	  japanese-temporal) kind=CLOCK_JAPANESE_LATE ;; \
-	  japanese-temporal-early) kind=CLOCK_JAPANESE_EARLY ;; \
-	  nuremberg-solar) kind=CLOCK_NUREMBERG_LOCAL ;; \
-	  nuremberg-hours) kind=CLOCK_NUREMBERG_HISTORICAL ;; \
-	  *) exit 1 ;; esac; \
-	$(CC) $(CPPFLAGS) $(CFLAGS) -fvisibility=hidden -D$$kind \
+clock_seasonal_variant_roman-temporal := CLOCK_ROMAN
+clock_seasonal_variant_japanese-temporal := CLOCK_JAPANESE_LATE
+clock_seasonal_variant_japanese-temporal-early := CLOCK_JAPANESE_EARLY
+clock_seasonal_variant_nuremberg-hours := CLOCK_NUREMBERG_HISTORICAL
+clock_seasonal_variant_nuremberg-solar := CLOCK_NUREMBERG_LOCAL
+
+define build_seasonal_clock
+$(call clock_target,$(1)): $(SEASONAL_CLOCK_SOURCE) $(CLOCK_RESOURCE_MAP) $(INFILTRATR_COMMON_HEADERS) $(INFILTRATR_COMMON_ARCHIVE)
+	@mkdir -p "$$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) -fvisibility=hidden -D$(clock_seasonal_variant_$(1)) \
+		-DINFILTRATR_TEMPORAL_DISPLAY_NAME='"$(clock_name_$(1))"' \
 		-shared $(SEASONAL_CLOCK_SOURCE) $(INFILTRATR_COMMON_ARCHIVE) \
 		-Wl,--version-script=$(CLOCK_RESOURCE_MAP) -Wl,-z,defs \
-		-o $@ $(LDFLAGS) $(MATH_LIBS) $(DYNLIB_LIBS)
+		-o "$$@" $(LDFLAGS) $(MATH_LIBS) $(DYNLIB_LIBS)
+endef
+$(foreach id,$(SEASONAL_CLOCK_RESOURCE_NAMES),$(eval $(call build_seasonal_clock,$(id))))
 
-$(CLOCK_RESOURCE_BUILD_DIR)/solar.so: $(SOLAR_CLOCK_SOURCE) $(CLOCK_RESOURCE_MAP) $(INFILTRATR_COMMON_HEADERS)
-	@mkdir -p "$(CLOCK_RESOURCE_BUILD_DIR)"
-	$(CC) $(CPPFLAGS) $(CFLAGS) -fvisibility=hidden \
-		-frandom-seed=$(REPRO_SEED_PREFIX)-solar-clock-resource \
-		-shared $(SOLAR_CLOCK_SOURCE) \
-		-Wl,--version-script=$(CLOCK_RESOURCE_MAP) -o $@ $(LDFLAGS) $(MATH_LIBS)
+clock_oneoff_source_chinese-ke := $(CHINESE_KE_CLOCK_SOURCE)
+clock_oneoff_source_mean-solar := $(MEAN_SOLAR_CLOCK_SOURCE)
+clock_oneoff_source_sidereal := $(SIDEREAL_CLOCK_SOURCE)
+clock_oneoff_source_chinese-time := $(CHINESE_TIME_CLOCK_SOURCE)
+clock_oneoff_source_solar := $(SOLAR_CLOCK_SOURCE)
+clock_oneoff_ids := chinese-ke mean-solar sidereal chinese-time solar
 
-$(CLOCK_RESOURCE_BUILD_DIR)/chinese-time.so: $(CHINESE_TIME_CLOCK_SOURCE) $(CLOCK_RESOURCE_MAP) $(INFILTRATR_COMMON_HEADERS)
-	@mkdir -p "$(CLOCK_RESOURCE_BUILD_DIR)"
+define build_oneoff_clock
+$(call clock_target,$(1)): $(clock_oneoff_source_$(1)) $(CLOCK_RESOURCE_MAP) $(INFILTRATR_COMMON_HEADERS)
+	@mkdir -p "$$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) -fvisibility=hidden \
-		-frandom-seed=$(REPRO_SEED_PREFIX)-chinese-time-clock-resource \
-		-shared $(CHINESE_TIME_CLOCK_SOURCE) \
-		-Wl,--version-script=$(CLOCK_RESOURCE_MAP) -o $@ $(LDFLAGS)
-
-$(CLOCK_RESOURCE_BUILD_DIR)/sidereal.so: $(SIDEREAL_CLOCK_SOURCE) $(CLOCK_RESOURCE_MAP) $(INFILTRATR_COMMON_HEADERS)
-	@mkdir -p "$(CLOCK_RESOURCE_BUILD_DIR)"
-	$(CC) $(CPPFLAGS) $(CFLAGS) -fvisibility=hidden \
-		-frandom-seed=$(REPRO_SEED_PREFIX)-sidereal-clock-resource \
-		-shared $(SIDEREAL_CLOCK_SOURCE) \
-		-Wl,--version-script=$(CLOCK_RESOURCE_MAP) -o $@ $(LDFLAGS) $(MATH_LIBS)
-
-$(CLOCK_RESOURCE_BUILD_DIR)/mean-solar.so: $(MEAN_SOLAR_CLOCK_SOURCE) $(CLOCK_RESOURCE_MAP) $(INFILTRATR_COMMON_HEADERS)
-	@mkdir -p "$(CLOCK_RESOURCE_BUILD_DIR)"
-	$(CC) $(CPPFLAGS) $(CFLAGS) -fvisibility=hidden \
-		-frandom-seed=$(REPRO_SEED_PREFIX)-mean-solar-clock-resource \
-		-shared $(MEAN_SOLAR_CLOCK_SOURCE) \
-		-Wl,--version-script=$(CLOCK_RESOURCE_MAP) -o $@ $(LDFLAGS) $(MATH_LIBS)
+		-frandom-seed=$(REPRO_SEED_PREFIX)-$(1)-clock-resource \
+		-DINFILTRATR_TEMPORAL_DISPLAY_NAME='"$(clock_name_$(1))"' \
+		-shared $(clock_oneoff_source_$(1)) \
+		-Wl,--version-script=$(CLOCK_RESOURCE_MAP) -o "$$@" $(LDFLAGS) \
+		$(if $(filter sidereal solar mean-solar,$(1)),$(MATH_LIBS),)
+endef
+$(foreach id,$(clock_oneoff_ids),$(eval $(call build_oneoff_clock,$(id))))
 
 
 .PHONY: all check package install clean common-build
@@ -276,11 +312,11 @@ $(CALENDAR_RESOURCES): $(RESOURCE_ENGINE_HEADERS) $(HEADERS)
 $(BUILD_DIR)/%.o: src/%.c $(RESOURCE_ENGINE_HEADERS) $(HEADERS)
 	@mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(CORE_CFLAGS) -MMD -MP -c "$<" -o "$@"
-$(BUILD_DIR)/test-clocks: tests/test-clocks.c $(CLOCK_RESOURCES) $(INFILTRATR_COMMON_ARCHIVE)
+$(BUILD_DIR)/test-clocks: tests/test-clocks.c tests/resource-test-path.h $(CLOCK_RESOURCES) $(INFILTRATR_COMMON_ARCHIVE)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(CORE_CFLAGS) \
 	    -DTEST_CLOCK_RESOURCE_DIRECTORY=\"$(abspath $(CLOCK_RESOURCE_BUILD_DIR))\" \
 	    "$<" $(INFILTRATR_COMMON_ARCHIVE) $(CORE_LIBS) -ldl -lm -o "$@"
-$(BUILD_DIR)/test-calendars: tests/test-calendars.c $(CALENDAR_RESOURCES) $(INFILTRATR_COMMON_ARCHIVE)
+$(BUILD_DIR)/test-calendars: tests/test-calendars.c tests/resource-test-path.h $(CALENDAR_RESOURCES) $(INFILTRATR_COMMON_ARCHIVE)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(CORE_CFLAGS) \
 	    -DTEST_CALENDAR_RESOURCE_DIRECTORY=\"$(abspath $(CALENDAR_RESOURCE_BUILD_DIR))\" \
 	    "$<" $(INFILTRATR_COMMON_ARCHIVE) $(CORE_LIBS) -ldl -lm -o "$@"

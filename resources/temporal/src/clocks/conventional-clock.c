@@ -25,10 +25,8 @@
 #define SECOND_US INT64_C(1000000)
 #if CONVENTIONAL_CLOCK_KIND == 12
 #define CLOCK_ID "standard-12"
-#define CLOCK_NAME "Standard time (12-hour)"
 #else
 #define CLOCK_ID "standard-24"
-#define CLOCK_NAME "Standard time (24-hour)"
 #endif
 
 static int64_t positive_mod(int64_t n, int64_t mod)
@@ -149,7 +147,7 @@ static const InfiltratrTemporalResourceMetadata metadata = {
     sizeof(InfiltratrTemporalResourceMetadata),
     INFILTRATR_TEMPORAL_RESOURCE_METADATA_ABI,
     INFILTRATR_TEMPORAL_RESOURCE_CLOCK,
-    CLOCK_ID, CLOCK_NAME, true, false, false
+    CLOCK_ID, INFILTRATR_TEMPORAL_DISPLAY_NAME, true, false, false
 };
 static const InfiltratrTemporalClockProvider provider = {
     sizeof(InfiltratrTemporalClockProvider),

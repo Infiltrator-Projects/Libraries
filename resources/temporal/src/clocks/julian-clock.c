@@ -23,12 +23,10 @@
 
 #if JULIAN_CLOCK_KIND == 1
 #define CLOCK_ID "julian"
-#define CLOCK_NAME "Julian Date"
 #define CLOCK_LABEL "JD"
 #define EPOCH_DAY INT64_C(2440587)
 #else
 #define CLOCK_ID "modified-julian"
-#define CLOCK_NAME "Modified Julian Date"
 #define CLOCK_LABEL "MJD"
 #define EPOCH_DAY INT64_C(40587)
 #endif
@@ -124,7 +122,7 @@ static const InfiltratrTemporalResourceMetadata metadata = {
     sizeof(InfiltratrTemporalResourceMetadata),
     INFILTRATR_TEMPORAL_RESOURCE_METADATA_ABI,
     INFILTRATR_TEMPORAL_RESOURCE_CLOCK,
-    CLOCK_ID, CLOCK_NAME, true, false, false
+    CLOCK_ID, INFILTRATR_TEMPORAL_DISPLAY_NAME, true, false, false
 };
 static const InfiltratrTemporalClockProvider provider = {
     sizeof(InfiltratrTemporalClockProvider),

@@ -3,27 +3,22 @@
 
 #if defined(CLOCK_ROMAN)
 #define CLOCK_ID "roman-temporal"
-#define CLOCK_NAME "Roman seasonal time (12 unequal daylight hours; night in 4 military watches)"
 #define CLOCK_SECONDS true
 #define CLOCK_LOCATION true
 #elif defined(CLOCK_JAPANESE_EARLY)
 #define CLOCK_ID "japanese-temporal-early"
-#define CLOCK_NAME "Early Edo Japanese unequal hours (sunrise/sunset; 6 day / 6 night)"
 #define CLOCK_SECONDS false
 #define CLOCK_LOCATION true
 #elif defined(CLOCK_JAPANESE_LATE)
 #define CLOCK_ID "japanese-temporal"
-#define CLOCK_NAME "Late Edo Japanese unequal hours (1797 twilight; 6 day / 6 night)"
 #define CLOCK_SECONDS false
 #define CLOCK_LOCATION true
 #elif defined(CLOCK_NUREMBERG_LOCAL)
 #define CLOCK_ID "nuremberg-solar"
-#define CLOCK_NAME "Nuremberg-style seasonal reconstruction (location-based, not the fixed civic schedule)"
 #define CLOCK_SECONDS true
 #define CLOCK_LOCATION true
 #else
 #define CLOCK_ID "nuremberg-hours"
-#define CLOCK_NAME "Historical Nuremberg Great Clock (equal hours; day/night counts change on fixed dates)"
 #define CLOCK_SECONDS true
 #define CLOCK_LOCATION false
 #endif
@@ -654,7 +649,7 @@ static bool format_clock_mode(const InfiltratrI18n *language,
     buffer[0] = '\0';
 
     const InfiltratrTemporalClockModeInfo selected = {
-        CLOCK_ID, CLOCK_NAME, CLOCK_SECONDS, CLOCK_LOCATION, CLOCK_LOCATION
+        CLOCK_ID, INFILTRATR_TEMPORAL_DISPLAY_NAME, CLOCK_SECONDS, CLOCK_LOCATION, CLOCK_LOCATION
     };
     info = strcmp(mode, CLOCK_ID) == 0 ? &selected : NULL;
     if (info == NULL ||
@@ -863,7 +858,7 @@ static bool next_tick(const InfiltratrTemporalClockProvider *self,
 static const InfiltratrTemporalResourceMetadata metadata = {
     sizeof(InfiltratrTemporalResourceMetadata),
     INFILTRATR_TEMPORAL_RESOURCE_METADATA_ABI,
-    INFILTRATR_TEMPORAL_RESOURCE_CLOCK, CLOCK_ID, CLOCK_NAME,
+    INFILTRATR_TEMPORAL_RESOURCE_CLOCK, CLOCK_ID, INFILTRATR_TEMPORAL_DISPLAY_NAME,
     CLOCK_SECONDS, CLOCK_LOCATION, CLOCK_LOCATION
 };
 static const InfiltratrTemporalClockProvider provider = {

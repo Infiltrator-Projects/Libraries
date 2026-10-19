@@ -13,6 +13,12 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "resource-test-path.h"
+static gchar *test_clock_path(const gchar *id)
+{ return resource_test_path(TEST_CLOCK_RESOURCE_DIRECTORY, INFILTRATR_TEMPORAL_RESOURCE_CLOCK, id); }
+static gchar *test_clock_filename(const gchar *id)
+{ return resource_test_filename(TEST_CLOCK_RESOURCE_DIRECTORY, INFILTRATR_TEMPORAL_RESOURCE_CLOCK, id); }
+
 #ifndef TEST_CLOCK_RESOURCE_DIRECTORY
 #error TEST_CLOCK_RESOURCE_DIRECTORY is required
 #endif
@@ -33,7 +39,7 @@ static void test_five_clock_resources(void)
 
     for (i = 0; i < G_N_ELEMENTS(ids); i++)
     {
-        g_autofree gchar *filename = g_strconcat(ids[i], ".so", NULL);
+        g_autofree gchar *filename = test_clock_filename(ids[i]);
         g_autofree gchar *path =
             g_build_filename(TEST_CLOCK_RESOURCE_DIRECTORY, filename, NULL);
         InfiltratrTemporalClockModule *module =
@@ -103,7 +109,7 @@ static void test_julian_clock_resources(void)
     };
     for (gsize i = 0; i < G_N_ELEMENTS(modes); ++i)
     {
-        g_autofree gchar *filename = g_strconcat(modes[i].id, ".so", NULL);
+        g_autofree gchar *filename = test_clock_filename(modes[i].id);
         g_autofree gchar *path =
             g_build_filename(TEST_CLOCK_RESOURCE_DIRECTORY, filename, NULL);
         InfiltratrTemporalClockModule *module =
@@ -146,7 +152,7 @@ static void test_conventional_clock_resources(void)
     static const gint32 offsets[] = { 0, 39600, -19800, 30 };
     for (gsize i = 0; i < G_N_ELEMENTS(ids); ++i)
     {
-        g_autofree gchar *filename = g_strconcat(ids[i], ".so", NULL);
+        g_autofree gchar *filename = test_clock_filename(ids[i]);
         g_autofree gchar *path =
             g_build_filename(TEST_CLOCK_RESOURCE_DIRECTORY, filename, NULL);
         InfiltratrTemporalClockModule *module =
@@ -188,7 +194,7 @@ static void test_conventional_clock_resources(void)
 
 static void test_conventional_ui_language(void)
 {
-    g_autofree gchar *path=g_build_filename(TEST_CLOCK_RESOURCE_DIRECTORY,"standard-12.so",NULL);
+    g_autofree gchar *path=test_clock_path("standard-12");
     InfiltratrTemporalClockModule *module=infiltratr_temporal_clock_module_open(path);
     g_assert_nonnull(module);
     const char *locales[] = {"ja_JP","zh_TW"};
@@ -220,7 +226,7 @@ static void test_hundred_ke_and_mean_solar(void)
     static const double longitudes[] = { -145.1234, 0.0, 15.0, 145.3499 };
     for (gsize i = 0; i < G_N_ELEMENTS(ids); ++i)
     {
-        g_autofree gchar *name = g_strconcat(ids[i], ".so", NULL);
+        g_autofree gchar *name = test_clock_filename(ids[i]);
         g_autofree gchar *path =
             g_build_filename(TEST_CLOCK_RESOURCE_DIRECTORY, name, NULL);
         InfiltratrTemporalClockModule *module =
@@ -290,7 +296,7 @@ static void test_resource_known_epoch_vectors(void)
         { "mean-solar", "00:00:00 LMT" }
     };
     for (gsize i = 0; i < G_N_ELEMENTS(vectors); ++i) {
-        g_autofree gchar *filename = g_strconcat(vectors[i].id, ".so", NULL);
+        g_autofree gchar *filename = test_clock_filename(vectors[i].id);
         g_autofree gchar *path = g_build_filename(
             TEST_CLOCK_RESOURCE_DIRECTORY, filename, NULL);
         InfiltratrTemporalClockModule *module =
@@ -307,8 +313,7 @@ static void test_resource_known_epoch_vectors(void)
 
 static void test_sidereal_resource(void)
 {
-    g_autofree gchar *path = g_build_filename(
-        TEST_CLOCK_RESOURCE_DIRECTORY, "sidereal.so", NULL);
+    g_autofree gchar *path = test_clock_path("sidereal");
     InfiltratrTemporalClockModule *module =
         infiltratr_temporal_clock_module_open(path);
     const InfiltratrTemporalResourceMetadata *info;
@@ -352,8 +357,7 @@ static void test_sidereal_resource(void)
 
 static void test_chinese_double_hour_resource(void)
 {
-    g_autofree gchar *path = g_build_filename(
-        TEST_CLOCK_RESOURCE_DIRECTORY, "chinese-time.so", NULL);
+    g_autofree gchar *path = test_clock_path("chinese-time");
     InfiltratrTemporalClockModule *module =
         infiltratr_temporal_clock_module_open(path);
     static const struct {
@@ -403,8 +407,7 @@ static void test_chinese_double_hour_resource(void)
 
 static void test_apparent_solar_resource(void)
 {
-    g_autofree gchar *path = g_build_filename(
-        TEST_CLOCK_RESOURCE_DIRECTORY, "solar.so", NULL);
+    g_autofree gchar *path = test_clock_path("solar");
     InfiltratrTemporalClockModule *module =
         infiltratr_temporal_clock_module_open(path);
     const int64_t j2000 = INT64_C(946728000000000);
@@ -452,7 +455,7 @@ static void test_solar_origin_hour_resources(void)
     };
     for (gsize m = 0; m < G_N_ELEMENTS(ids); ++m)
     {
-        g_autofree gchar *name = g_strconcat(ids[m], ".so", NULL);
+        g_autofree gchar *name = test_clock_filename(ids[m]);
         g_autofree gchar *path = g_build_filename(
             TEST_CLOCK_RESOURCE_DIRECTORY, name, NULL);
         InfiltratrTemporalClockModule *module =
@@ -499,7 +502,7 @@ static bool resource_test_format_localized(const char *locale,const char *id,
     int64_t instant,int32_t offset,bool seconds,bool vertical,bool configured,
     double latitude,double longitude,char *buffer,size_t capacity,size_t *length)
 {
-    gchar *path=g_strdup_printf("%s/%s.so",TEST_CLOCK_RESOURCE_DIRECTORY,id);
+    gchar *path=test_clock_path(id);
     InfiltratrTemporalClockModule *module=infiltratr_temporal_clock_module_open(path);
     g_free(path);
     const InfiltratrTemporalResourceMetadata *metadata=infiltratr_temporal_clock_module_metadata(module);
@@ -523,7 +526,7 @@ static void test_seasonal_resources(void)
     const int64_t instants[] = {INT64_C(-1),INT64_C(946728000000000),
         INT64_C(1792256400123456),INT64_C(1789990000000000)};
     for (gsize i=0;i<G_N_ELEMENTS(ids);i++) {
-        gchar *path=g_strdup_printf("%s/%s.so",TEST_CLOCK_RESOURCE_DIRECTORY,ids[i]);
+        gchar *path=test_clock_path(ids[i]);
         InfiltratrTemporalClockModule *module=infiltratr_temporal_clock_module_open(path);
         g_free(path);g_assert_nonnull(module);
         for (gsize j=0;j<G_N_ELEMENTS(instants);j++) {

@@ -303,7 +303,7 @@ static bool years(const InfiltratrTemporalCalendarProvider *self,
 static const InfiltratrTemporalResourceMetadata metadata = {
     sizeof(InfiltratrTemporalResourceMetadata),
     INFILTRATR_TEMPORAL_RESOURCE_METADATA_ABI,
-    INFILTRATR_TEMPORAL_RESOURCE_CALENDAR,RESOURCE_ID,RESOURCE_NAME,false,false,false
+    INFILTRATR_TEMPORAL_RESOURCE_CALENDAR,RESOURCE_ID,INFILTRATR_TEMPORAL_DISPLAY_NAME,false,false,false
 };
 static const InfiltratrTemporalCalendarProvider provider = {
     sizeof(InfiltratrTemporalCalendarProvider),

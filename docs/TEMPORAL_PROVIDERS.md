@@ -72,3 +72,13 @@ The first intended historical pair remains:
 - `egyptian-stellar-solar` — Early Egyptian Stellar–Solar Time.
 
 The runtime contract now provides the installation/discovery boundary for those resources. Their actual historical algorithms, evidence, tests and any richer bundle needs remain separate work and must not be fabricated merely to exercise the loader.
+
+## Compiled resource filenames
+
+The single canonical-name mapping in `resources/temporal/Makefile` determines
+both the compiler output pathname and the string embedded in provider metadata.
+For example, the stable clock ID `decimal` is compiled directly as
+`French Revolutionary Decimal Clock.so`. Discoveries validate executable
+ABIs and resolve by stable metadata ID, not by filename. Tests reject any
+filename that differs from the provider's embedded canonical name. APT package
+upgrades remove the package-owned old short-name files; no aliases are shipped.

@@ -173,7 +173,7 @@ static const InfiltratrTemporalResourceMetadata metadata = {
     sizeof(InfiltratrTemporalResourceMetadata),
     INFILTRATR_TEMPORAL_RESOURCE_METADATA_ABI,
     INFILTRATR_TEMPORAL_RESOURCE_CLOCK,
-    "solar", "Apparent solar time (compact Sun-position approximation)",
+    "solar", INFILTRATR_TEMPORAL_DISPLAY_NAME,
     true, false, true
 };
 static const InfiltratrTemporalClockProvider provider = {

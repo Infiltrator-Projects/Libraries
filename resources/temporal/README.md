@@ -1,8 +1,10 @@
 # Shared system temporal resources
 
 Common owns the source, build, tests, Debian package and releases of these
-30 calendar and 23 clock implementations. The modules are separate build
-products. The selectable provider implementations are loaded from their system
+30 calendar and 23 clock implementations. The modules are separately compiled build products. The compiler emits the
+complete human-readable canonical filenames directly, and the same name is
+embedded in their metadata. Stable provider IDs are independent of filenames;
+there are no aliases, post-build renames or display-only disguises. The selectable provider implementations are loaded from their system
 files; Calendar, Files and System Settings do not compile or replace them.
 Neutral coordinate and formatting helpers remain shared Common APIs.
 

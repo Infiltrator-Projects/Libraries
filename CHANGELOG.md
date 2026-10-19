@@ -1,5 +1,7 @@
 # Changelog
 
+- Compile all 53 native calendar and clock providers directly under canonical human-readable .so filenames, with matching embedded metadata and stable IDs. Qualify filename/ABI consistency and reject stale short-name build artifacts.
+
 ## 1.19.64 — 2026-10-18
 
 - Require native providers for all twenty-three explicit clocks; remove the final

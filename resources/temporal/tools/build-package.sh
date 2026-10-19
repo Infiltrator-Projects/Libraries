@@ -11,6 +11,16 @@ output="$PWD/$build/dist"
 rm -rf "$stage"
 mkdir -p "$stage/DEBIAN" "$stage/System/Resources/Calendars" \
     "$stage/System/Resources/Clocks" "$stage/usr/share/doc/infiltrator-calendar-resources" "$output"
+# Reject stale short-name objects from a dirty build rather than package aliases.
+for record in "calendar-resources:30" "clock-resources:23"; do
+    directory=${record%%:*}
+    expected=${record#*:}
+    actual=$(find "$build/$directory" -maxdepth 1 -type f -name '*.so' | wc -l)
+    test "$actual" -eq "$expected" || {
+        echo "Unexpected .so count in $directory: $actual (expected $expected); run make clean." >&2
+        exit 1
+    }
+done
 install -m 0644 "$build/calendar-resources/"*.so "$stage/System/Resources/Calendars/"
 install -m 0644 "$build/clock-resources/"*.so "$stage/System/Resources/Clocks/"
 while IFS= read -r language; do

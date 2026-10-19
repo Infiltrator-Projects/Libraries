@@ -159,7 +159,7 @@ static const InfiltratrTemporalResourceMetadata metadata = {
     sizeof(InfiltratrTemporalResourceMetadata),
     INFILTRATR_TEMPORAL_RESOURCE_METADATA_ABI,
     INFILTRATR_TEMPORAL_RESOURCE_CLOCK,
-    "chinese-time", "Traditional Chinese double-hour time",
+    "chinese-time", INFILTRATR_TEMPORAL_DISPLAY_NAME,
     true, false, false
 };
 static const InfiltratrTemporalClockProvider provider = {

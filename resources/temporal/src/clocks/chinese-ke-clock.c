@@ -70,7 +70,7 @@ static const InfiltratrTemporalResourceMetadata metadata = {
     sizeof(InfiltratrTemporalResourceMetadata),
     INFILTRATR_TEMPORAL_RESOURCE_METADATA_ABI,
     INFILTRATR_TEMPORAL_RESOURCE_CLOCK,
-    "chinese-ke", "Chinese hundred-kè time", false, false, false
+    "chinese-ke", INFILTRATR_TEMPORAL_DISPLAY_NAME, false, false, false
 };
 static const InfiltratrTemporalClockProvider provider = {
     sizeof(InfiltratrTemporalClockProvider),

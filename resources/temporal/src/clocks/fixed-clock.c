@@ -16,9 +16,6 @@
 #ifndef CLOCK_RESOURCE_ID
 #error CLOCK_RESOURCE_ID is required
 #endif
-#ifndef CLOCK_RESOURCE_NAME
-#error CLOCK_RESOURCE_NAME is required
-#endif
 #ifndef CLOCK_RESOURCE_SECONDS
 #error CLOCK_RESOURCE_SECONDS is required
 #endif
@@ -175,7 +172,7 @@ static const InfiltratrTemporalResourceMetadata metadata = {
     sizeof(InfiltratrTemporalResourceMetadata),
     INFILTRATR_TEMPORAL_RESOURCE_METADATA_ABI,
     INFILTRATR_TEMPORAL_RESOURCE_CLOCK,
-    CLOCK_RESOURCE_ID, CLOCK_RESOURCE_NAME,
+    CLOCK_RESOURCE_ID, INFILTRATR_TEMPORAL_DISPLAY_NAME,
     CLOCK_RESOURCE_SECONDS, false, false
 };
 static const InfiltratrTemporalClockProvider provider = {

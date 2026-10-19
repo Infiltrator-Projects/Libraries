@@ -4,6 +4,12 @@
 #include <glib.h>
 #include <string.h>
 
+#include "resource-test-path.h"
+static gchar *test_calendar_path(const gchar *id)
+{ return resource_test_path(TEST_CALENDAR_RESOURCE_DIRECTORY, INFILTRATR_TEMPORAL_RESOURCE_CALENDAR, id); }
+static gchar *test_calendar_filename(const gchar *id)
+{ return resource_test_filename(TEST_CALENDAR_RESOURCE_DIRECTORY, INFILTRATR_TEMPORAL_RESOURCE_CALENDAR, id); }
+
 #ifndef TEST_CALENDAR_RESOURCE_DIRECTORY
 #error TEST_CALENDAR_RESOURCE_DIRECTORY is required
 #endif
@@ -24,7 +30,7 @@ static void test_catalogue(void)
         gchar *filename;
         gchar *path;
         if (ids[i][0] == '\0') continue;
-        filename = g_strconcat(ids[i], ".so", NULL);
+        filename = test_calendar_filename(ids[i]);
         path = g_build_filename(TEST_CALENDAR_RESOURCE_DIRECTORY, filename, NULL);
         g_test_message("calendar provider: %s", ids[i]);
         module = infiltratr_temporal_calendar_module_open(path);

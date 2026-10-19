@@ -20,6 +20,7 @@ with tarfile.open(fileobj=io.BytesIO(payload)) as archive:
     for kind, expected in [("Calendars", 30), ("Clocks", 23)]:
         modules = [p for p in files if p.startswith("System/Resources/" + kind + "/") and p.endswith(".so")]
         assert len(modules) == expected, (kind, len(modules))
+        assert all(" " in Path(p).name for p in modules), (kind, "old short-name .so")
         if "--installed" in sys.argv:
             for name in modules:
                 assert Path("/" + name).read_bytes() == archive.extractfile(files[name]).read(), name

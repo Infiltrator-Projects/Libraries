@@ -18,19 +18,15 @@
 #define PI 3.141592653589793238462643383279502884L
 #if defined(CLOCK_ANCIENT_BABYLONIAN)
 #define CLOCK_ID "babylonian-ancient"
-#define CLOCK_NAME "Ancient Babylonian time (sunset-start day; 12 fixed bēru/day; 30 UŠ per bēru)"
 #define CLOCK_SUFFIX "BAB-A"
 #elif defined(CLOCK_GHATI)
 #define CLOCK_ID "indian-ghati"
-#define CLOCK_NAME "Indian ghaṭī time (60 per sunrise day; 1 ghaṭī = 24 min)"
 #define CLOCK_SUFFIX "GH"
 #elif defined(CLOCK_SUNRISE)
 #define CLOCK_ID "babylonian-hours"
-#define CLOCK_NAME "Renaissance European ‘Babylonian’ hours (24 equal hours counted from sunrise)"
 #define CLOCK_SUFFIX "BAB-R"
 #else
 #define CLOCK_ID "italian-hours"
-#define CLOCK_NAME "Historical Italian hours (24 equal hours counted from sunset)"
 #define CLOCK_SUFFIX "IT"
 #endif
 
@@ -217,7 +213,7 @@ static const InfiltratrTemporalResourceMetadata metadata={
     sizeof(InfiltratrTemporalResourceMetadata),
     INFILTRATR_TEMPORAL_RESOURCE_METADATA_ABI,
     INFILTRATR_TEMPORAL_RESOURCE_CLOCK,
-    CLOCK_ID,CLOCK_NAME,
+    CLOCK_ID,INFILTRATR_TEMPORAL_DISPLAY_NAME,
 #if defined(CLOCK_ANCIENT_BABYLONIAN) || defined(CLOCK_GHATI)
     false,
 #else
