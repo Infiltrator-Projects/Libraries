@@ -41,7 +41,7 @@ module is ignored without removing unrelated valid modules.
 The catalogue is snapshotted on first use in each process. Installing or removing
 resources affects newly started consumers without invalidating live pointers.
 Every one of the twenty-three explicit clocks uses its native implementation for
-both formatting and next-visible-tick scheduling. All thirty supplied resource calendars
+both formatting and next-visible-tick scheduling. All thirty-one supplied resource calendars
 use native providers for fields, formatting and navigation. Missing, mismatched
 or malformed resources cannot invoke a compiled fallback.
 
