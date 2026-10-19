@@ -9,7 +9,7 @@ import sys
 root = Path(__file__).resolve().parents[1]
 build = Path(sys.argv[1])
 for directory, count, entry in [
-    ("calendar-resources", 30, "infiltratr_temporal_calendar_provider_v1"),
+    ("calendar-resources", 31, "infiltratr_temporal_calendar_provider_v1"),
     ("clock-resources", 23, "infiltratr_temporal_clock_provider_v1"),
 ]:
     modules = sorted((build / directory).glob("*.so"))
@@ -26,4 +26,4 @@ for directory, count, entry in [
 for path in (root / "src").rglob("*.[ch]"):
     text = path.read_text()
     assert not re.search(r'#\s*include\s*[<"](?:.*src/core/|calendar-internal\.h|calendar-core\.h)', text), path
-print("53 independently loadable modules; no Calendar application build or ABI dependency")
+print("54 independently loadable modules; no Calendar application build or ABI dependency")
