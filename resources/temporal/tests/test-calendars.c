@@ -5,8 +5,6 @@
 #include <string.h>
 
 #include "resource-test-path.h"
-static gchar *test_calendar_path(const gchar *id)
-{ return resource_test_path(TEST_CALENDAR_RESOURCE_DIRECTORY, INFILTRATR_TEMPORAL_RESOURCE_CALENDAR, id); }
 static gchar *test_calendar_filename(const gchar *id)
 { return resource_test_filename(TEST_CALENDAR_RESOURCE_DIRECTORY, INFILTRATR_TEMPORAL_RESOURCE_CALENDAR, id); }
 
