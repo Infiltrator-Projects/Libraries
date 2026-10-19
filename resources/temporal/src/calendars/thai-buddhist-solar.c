@@ -16,11 +16,10 @@
  * in a different year. Earlier Thai eras require their own sources and
  * resource identities, so this module deliberately rejects pre-April 1912.
  *
- * Authorities: Thailand Parliamentary Museum's history of the 2483 Calendar
- * Act (https://parliamentmuseum.go.th/ar63-Calendar.html) and the Japanese
- * National Diet Library's independent treatment of regional calendar reforms
- * for comparison. Numeric solar dates use the Gregorian day/month introduced
- * for Thai civil administration; era-year policy is owned here.
+ * Authority: Thailand Parliamentary Museum's history of the 2483 Calendar
+ * Act (https://parliamentmuseum.go.th/ar63-Calendar.html). Numeric solar
+ * dates use the Gregorian day/month introduced for Thai civil administration;
+ * era-year policy is owned here.
  */
 #include <infiltratr/temporal_calendar.h>
 
@@ -38,11 +37,11 @@
 
 static bool date_at(int64_t jdn, GDate *date)
 {
-    const int64_t ordinal = jdn - GREGORIAN_JDN_ORDINAL_OFFSET;
-
+    /* Validate before subtraction: arbitrary JDNs must not overflow. */
     if (date == NULL || jdn < THAI_START_JDN ||
-        ordinal < 1 || ordinal > G_MAXUINT32)
+        jdn > GREGORIAN_JDN_ORDINAL_OFFSET + G_MAXUINT32)
         return false;
+    const int64_t ordinal = jdn - GREGORIAN_JDN_ORDINAL_OFFSET;
     g_date_clear(date, 1U);
     g_date_set_julian(date, (guint32)ordinal);
     return g_date_valid(date);
