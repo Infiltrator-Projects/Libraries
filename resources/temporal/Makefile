@@ -179,7 +179,7 @@ calendar_native_sources_coptic := src/calendars/coptic.c src/calendars/engine/ca
 
 define build_native_calendar
 $(call calendar_target,$(1)): $(calendar_native_sources_$(1)) $(CALENDAR_RESOURCE_MAP) $(INFILTRATR_COMMON_HEADERS) $(INFILTRATR_COMMON_ARCHIVE)
-	@mkdir -p "$$(@D)"
+	@mkdir -p "$(CALENDAR_RESOURCE_BUILD_DIR)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) -fvisibility=hidden $(CORE_CFLAGS) \
 		-frandom-seed=$(REPRO_SEED_PREFIX)-$(1)-resource \
 		-DINFILTRATR_TEMPORAL_DISPLAY_NAME='"$(calendar_name_$(1))"' \
@@ -191,7 +191,7 @@ $(foreach id,hebrew gregorian persian coptic,$(eval $(call build_native_calendar
 
 define build_extracted_calendar
 $(call calendar_target,$(1)): src/calendars/native-calendar.c src/calendars/catalogue.h $(RESOURCE_ENGINE_ARCHIVE) src/support/julian-day.c $(INFILTRATR_COMMON_ARCHIVE) $(CALENDAR_RESOURCE_MAP)
-	@mkdir -p "$$(@D)"
+	@mkdir -p "$(CALENDAR_RESOURCE_BUILD_DIR)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) -fvisibility=hidden -DRESOURCE_$(calendar_variant_$(1)) $(CORE_CFLAGS) \
 		-DINFILTRATR_TEMPORAL_DISPLAY_NAME='"$(calendar_name_$(1))"' \
 		-shared src/calendars/native-calendar.c src/support/julian-day.c \
@@ -214,7 +214,7 @@ clock_seconds_binary := true
 
 define build_fixed_clock
 $(call clock_target,$(1)): $(CLOCK_RESOURCE_SOURCE) $(CLOCK_RESOURCE_MAP) $(INFILTRATR_COMMON_HEADERS)
-	@mkdir -p "$$(@D)"
+	@mkdir -p "$(CLOCK_RESOURCE_BUILD_DIR)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) -fvisibility=hidden \
 		-frandom-seed=$(REPRO_SEED_PREFIX)-$(1)-clock-resource \
 		-DCLOCK_RESOURCE_KIND=$(clock_kind_$(1)) -DCLOCK_RESOURCE_ID='"$(1)"' \
@@ -227,7 +227,7 @@ $(foreach id,$(FIXED_CLOCK_RESOURCE_NAMES),$(eval $(call build_fixed_clock,$(id)
 
 define build_julian_clock
 $(call clock_target,$(1)): $(JULIAN_CLOCK_RESOURCE_SOURCE) $(CLOCK_RESOURCE_MAP) $(INFILTRATR_COMMON_HEADERS)
-	@mkdir -p "$$(@D)"
+	@mkdir -p "$(CLOCK_RESOURCE_BUILD_DIR)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) -fvisibility=hidden \
 		-frandom-seed=$(REPRO_SEED_PREFIX)-$(1)-clock-resource \
 		-DJULIAN_CLOCK_KIND=$(if $(filter julian,$(1)),1,2) \
@@ -239,7 +239,7 @@ $(foreach id,$(JULIAN_CLOCK_RESOURCE_NAMES),$(eval $(call build_julian_clock,$(i
 
 define build_conventional_clock
 $(call clock_target,$(1)): $(CONVENTIONAL_CLOCK_RESOURCE_SOURCE) $(CLOCK_RESOURCE_MAP) $(INFILTRATR_COMMON_HEADERS)
-	@mkdir -p "$$(@D)"
+	@mkdir -p "$(CLOCK_RESOURCE_BUILD_DIR)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) -fvisibility=hidden \
 		-frandom-seed=$(REPRO_SEED_PREFIX)-$(1)-clock-resource \
 		-DCONVENTIONAL_CLOCK_KIND=$(if $(filter standard-12,$(1)),12,24) \
@@ -251,7 +251,7 @@ $(foreach id,$(CONVENTIONAL_CLOCK_RESOURCE_NAMES),$(eval $(call build_convention
 
 define build_solar_origin_clock
 $(call clock_target,$(1)): $(SOLAR_ORIGIN_CLOCK_SOURCE) $(CLOCK_RESOURCE_MAP) $(INFILTRATR_COMMON_HEADERS)
-	@mkdir -p "$$(@D)"
+	@mkdir -p "$(CLOCK_RESOURCE_BUILD_DIR)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) -fvisibility=hidden \
 		-frandom-seed=$(REPRO_SEED_PREFIX)-$(1)-solar-origin-clock \
 		$(if $(filter babylonian-hours,$(1)),-DCLOCK_SUNRISE=1,) \
@@ -271,7 +271,7 @@ clock_seasonal_variant_nuremberg-solar := CLOCK_NUREMBERG_LOCAL
 
 define build_seasonal_clock
 $(call clock_target,$(1)): $(SEASONAL_CLOCK_SOURCE) $(CLOCK_RESOURCE_MAP) $(INFILTRATR_COMMON_HEADERS) $(INFILTRATR_COMMON_ARCHIVE)
-	@mkdir -p "$$(@D)"
+	@mkdir -p "$(CLOCK_RESOURCE_BUILD_DIR)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) -fvisibility=hidden -D$(clock_seasonal_variant_$(1)) \
 		-DINFILTRATR_TEMPORAL_DISPLAY_NAME='"$(clock_name_$(1))"' \
 		-shared $(SEASONAL_CLOCK_SOURCE) $(INFILTRATR_COMMON_ARCHIVE) \
@@ -289,7 +289,7 @@ clock_oneoff_ids := chinese-ke mean-solar sidereal chinese-time solar
 
 define build_oneoff_clock
 $(call clock_target,$(1)): $(clock_oneoff_source_$(1)) $(CLOCK_RESOURCE_MAP) $(INFILTRATR_COMMON_HEADERS)
-	@mkdir -p "$$(@D)"
+	@mkdir -p "$(CLOCK_RESOURCE_BUILD_DIR)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) -fvisibility=hidden \
 		-frandom-seed=$(REPRO_SEED_PREFIX)-$(1)-clock-resource \
 		-DINFILTRATR_TEMPORAL_DISPLAY_NAME='"$(clock_name_$(1))"' \
