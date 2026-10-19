@@ -65,7 +65,7 @@ static void test_catalogue(void)
         g_free(filename);
         ++count;
     }
-    g_assert_cmpuint(count, ==, 30U);
+    g_assert_cmpuint(count, ==, 31U);
     g_assert_null(infiltratr_temporal_calendar_module_open("/missing/calendar.so"));
     g_strfreev(ids);
     g_free(catalogue);
@@ -106,6 +106,11 @@ static void test_historical_chronology_anchors(void)
         { "hebrew",             2460204, 5784,  1,  1, FALSE, FALSE, FALSE, 0 },
         { "persian",            2460390, 1403,  1,  1, FALSE, FALSE, FALSE, 0 },
         { "buddhist",           2451545, 2543,  1,  1, FALSE, FALSE, FALSE, 0 },
+        { "thai-buddhist-solar", 2419494, 2455,  4,  1, FALSE, FALSE, FALSE, 0 },
+        { "thai-buddhist-solar", 2429720, 2482,  3, 31, FALSE, FALSE, FALSE, 0 },
+        { "thai-buddhist-solar", 2429721, 2483,  4,  1, FALSE, FALSE, FALSE, 0 },
+        { "thai-buddhist-solar", 2429995, 2483, 12, 31, FALSE, FALSE, FALSE, 0 },
+        { "thai-buddhist-solar", 2429996, 2484,  1,  1, FALSE, FALSE, FALSE, 0 }
         { "minguo",             2419403,    1,  1,  1, FALSE, FALSE, FALSE, 0 },
         { "japanese",           2458605,    1,  5,  1, FALSE, FALSE, TRUE, 236 },
         { "indian",             2460391, 1946,  1,  1, FALSE, FALSE, FALSE, 0 },
@@ -143,10 +148,37 @@ static void test_historical_chronology_anchors(void)
     }
 }
 
+/* 2483 B.E. was a nine-month year: January-March never existed. */
+static void test_thai_historical_missing_months(void)
+{
+    g_autofree gchar *path = test_calendar_filename("thai-buddhist-solar");
+    g_autofree gchar *full_path =
+        g_build_filename(TEST_CALENDAR_RESOURCE_DIRECTORY, path, NULL);
+    InfiltratrTemporalCalendarModule *module =
+        infiltratr_temporal_calendar_module_open(full_path);
+    InfiltratrTemporalCalendarFields fields = {0};
+    gint64 result = 0;
+
+    g_assert_nonnull(module);
+    g_assert_false(infiltratr_temporal_calendar_fields_from_jdn(
+        module, INT64_C(2419493), &fields));
+    g_assert_false(infiltratr_temporal_calendar_add_years(
+        module, INT64_C(2429720), 1, &result));
+    g_assert_true(infiltratr_temporal_calendar_add_periods(
+        module, INT64_C(2429995), 1, &result));
+    g_assert_true(infiltratr_temporal_calendar_fields_from_jdn(
+        module, result, &fields));
+    g_assert_cmpint(fields.year, ==, 2484);
+    g_assert_cmpint(fields.month, ==, 1);
+    g_assert_cmpint(fields.day, ==, 31);
+    infiltratr_temporal_calendar_module_free(module);
+}
+
 int main(int argc, char **argv)
 {
     g_test_init(&argc, &argv, NULL);
     g_test_add_func("/resources/all-calendar-providers", test_catalogue);
     g_test_add_func("/resources/historical-chronology-anchors", test_historical_chronology_anchors);
+    g_test_add_func("/resources/thai-historical-transition", test_thai_historical_missing_months);
     return g_test_run();
 }
