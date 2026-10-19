@@ -11,6 +11,7 @@ islamic-tbla
 islamic
 bahai
 buddhist
+thai-buddhist-solar
 ethiopian
 ethiopic-amete-alem
 chinese
