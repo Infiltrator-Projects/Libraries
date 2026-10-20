@@ -92,16 +92,6 @@ static int64_t floor_divide(int64_t value, int64_t divisor)
     return quotient;
 }
 
-static int64_t positive_modulo(int64_t value, int64_t modulus)
-{
-    int64_t remainder = 0;
-
-    if (!infiltratr_i64_floor_divmod(value, modulus, NULL, &remainder)) {
-        return 0;
-    }
-    return remainder;
-}
-
 /* All clock duration representations and independent solar resources now
  * share this equation; a resource still owns its historical notation. */
 static bool solar_terms(int64_t instant, double *equation_minutes,
