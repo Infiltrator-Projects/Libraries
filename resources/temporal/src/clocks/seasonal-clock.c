@@ -70,16 +70,6 @@ static bool finish_output(char *buffer,size_t capacity,size_t *length,int writte
     return true;
 }
 
-static int64_t floor_divide(int64_t value, int64_t divisor)
-{
-    int64_t quotient = 0;
-
-    if (!infiltratr_i64_floor_divmod(value, divisor, &quotient, NULL)) {
-        return 0;
-    }
-    return quotient;
-}
-
 static int64_t positive_modulo(int64_t value, int64_t modulus)
 {
     int64_t remainder = 0;
@@ -312,7 +302,7 @@ static bool nuremberg_historical_hour_allocation(
 
     if (day_hours == NULL || night_hours == NULL ||
         day_start == NULL || day_end == NULL ||
-        !gregorian_day_of_year(unix_microseconds, &day_of_year, &leap)) {
+        !temporal_solar_day_of_year_with_leap(unix_microseconds, &day_of_year, &leap)) {
         return false;
     }
 

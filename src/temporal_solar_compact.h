@@ -27,7 +27,9 @@ static inline int64_t temporal_solar_mod(int64_t n, int64_t d)
 
 /* Gregorian 400-year arithmetic without time_t, valid for all int64_t
  * microsecond instants. A negative date retains a positive UTC-day phase. */
-static inline bool temporal_solar_day_of_year(int64_t instant, int *ordinal)
+static inline bool temporal_solar_day_of_year_with_leap(int64_t instant,
+                                                         int *ordinal,
+                                                         bool *leap_year)
 {
     static const int cumulative_days[12] = {
         0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334
@@ -50,7 +52,13 @@ static inline bool temporal_solar_day_of_year(int64_t instant, int *ordinal)
         day < 1 || day > 31) return false;
     *ordinal = cumulative_days[month - 1] + day +
                (leap && month > 2 ? 1 : 0);
+    if (leap_year != NULL) *leap_year = leap;
     return true;
+}
+
+static inline bool temporal_solar_day_of_year(int64_t instant, int *ordinal)
+{
+    return temporal_solar_day_of_year_with_leap(instant, ordinal, NULL);
 }
 
 static inline bool temporal_solar_compact_terms(int64_t instant,
