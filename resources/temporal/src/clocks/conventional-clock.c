@@ -31,7 +31,6 @@
 #endif
 
 #if CONVENTIONAL_CLOCK_KIND == 12
-static bool day_period(#if CONVENTIONAL_CLOCK_KIND == 12
 static bool day_period(const char *language, bool am, char *out, size_t cap)
 {
     const char *fallback = am ? "AM" : "PM";

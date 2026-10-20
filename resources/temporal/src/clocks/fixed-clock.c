@@ -39,7 +39,6 @@ static uint64_t ticks_at(uint64_t phase, uint64_t per_day)
 }
 
 #if CLOCK_RESOURCE_KIND == 5
-static void to_binary(#if CLOCK_RESOURCE_KIND == 5
 static void to_binary(unsigned value, unsigned digits, char *dest)
 {
     unsigned bit;
