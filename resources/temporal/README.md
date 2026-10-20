@@ -26,6 +26,11 @@ implementations remain unavailable rather than using an embedded custom copy.
 the Calendar repository, its private headers, its application library or its
 release pipeline.
 
+The Gregorian, Coptic, and Persian native adapters share one private ICU
+text-and-buffer helper compiled into each separate module. Their chronology,
+era/year semantics and navigation remain distinct, with no shared runtime
+resource dependency.
+
 Neutral civil/JDN coordinate arithmetic also lives in Common. Provider and
 application ABI adapters delegate to it rather than retaining arithmetic copies.
 

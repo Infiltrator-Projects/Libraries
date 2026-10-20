@@ -47,6 +47,7 @@ RESOURCE_ENGINE_ARCHIVE := $(BUILD_DIR)/libcalendar-resource-engine.a
 RESOURCE_ENGINE_HEADERS := $(wildcard src/calendars/engine/*.h)
 CALENDAR_RESOURCE_BUILD_DIR := $(BUILD_DIR)/calendar-resources
 CALENDAR_RESOURCE_MAP := src/calendars/calendar-resource.map
+CALENDAR_NATIVE_FORMAT_HEADER := src/calendars/resource-format.h
 EXTRACTED_CALENDAR_RESOURCE_NAMES := iso-week julian revised-julian islamic-umalqura islamic-civil islamic-tbla islamic bahai buddhist ethiopian ethiopic-amete-alem chinese dangi indian japanese minguo roman byzantine egyptian-nabonassar armenian-traditional mayan french-republican swedish-historical international-fixed world positivist
 CALENDAR_RESOURCE_NAMES := hebrew gregorian persian coptic thai-buddhist-solar $(EXTRACTED_CALENDAR_RESOURCE_NAMES)
 # One descriptor per compiled custom resource; archive retains full test engine.
@@ -186,7 +187,7 @@ calendar_native_sources_coptic := src/calendars/coptic.c src/calendars/engine/ca
 calendar_native_sources_thai-buddhist-solar := src/calendars/thai-buddhist-solar.c
 
 define build_native_calendar
-$(call calendar_target,$(1)): $(calendar_native_sources_$(1)) $(CALENDAR_RESOURCE_MAP) $(INFILTRATR_COMMON_HEADERS) $(INFILTRATR_COMMON_ARCHIVE)
+$(call calendar_target,$(1)): $(calendar_native_sources_$(1)) $(CALENDAR_NATIVE_FORMAT_HEADER) $(CALENDAR_RESOURCE_MAP) $(INFILTRATR_COMMON_HEADERS) $(INFILTRATR_COMMON_ARCHIVE)
 	@mkdir -p "$(CALENDAR_RESOURCE_BUILD_DIR)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) -fvisibility=hidden $(CORE_CFLAGS) \
 		-frandom-seed=$(REPRO_SEED_PREFIX)-$(1)-resource \

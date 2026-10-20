@@ -13,6 +13,7 @@
 
 #include "calendar-types.h"
 #include "icu-calendar.h"
+#include "resource-format.h"
 #include "integer-math.h"
 #include "julian-day.h"
 
@@ -55,27 +56,6 @@ fields_to_jdn(const InfiltratrTemporalCalendarFields *fields)
         signed_year(fields), fields->month, fields->day);
 }
 
-static CalendarDatePart
-internal_part(InfiltratrTemporalCalendarDatePart part)
-{
-    switch (part)
-    {
-        case INFILTRATR_TEMPORAL_CALENDAR_DATE_PART_DAY:
-            return CALENDAR_DATE_PART_DAY;
-        case INFILTRATR_TEMPORAL_CALENDAR_DATE_PART_MONTH:
-            return CALENDAR_DATE_PART_MONTH;
-        case INFILTRATR_TEMPORAL_CALENDAR_DATE_PART_YEAR:
-            return CALENDAR_DATE_PART_YEAR;
-        case INFILTRATR_TEMPORAL_CALENDAR_DATE_PART_SHORT:
-            return CALENDAR_DATE_PART_SHORT;
-        case INFILTRATR_TEMPORAL_CALENDAR_DATE_PART_FULL:
-            return CALENDAR_DATE_PART_FULL;
-        case INFILTRATR_TEMPORAL_CALENDAR_DATE_PART_INVALID:
-        default:
-            return CALENDAR_DATE_PART_INVALID;
-    }
-}
-
 static bool
 provider_fields(const InfiltratrTemporalCalendarProvider *provider,
                 int64_t jdn,
@@ -107,36 +87,11 @@ provider_format(const InfiltratrTemporalCalendarProvider *provider,
                 size_t capacity,
                 size_t *length)
 {
-    const CalendarDatePart calendar_part = internal_part(part);
-    gchar *text;
-    size_t text_length;
-
-    (void)provider;
-    if (buffer == NULL || capacity == 0U || length == NULL ||
-        calendar_part == CALENDAR_DATE_PART_INVALID)
-    {
+    InfiltratrTemporalCalendarFields checked;
+    if (!provider_fields(provider, jdn, &checked))
         return false;
-    }
-
-    text = calendar_icu_format(
-        CALENDAR_CALENDAR_MODE_GREGORIAN, "gregorian", jdn, calendar_part);
-    if (text == NULL || text[0] == '\0')
-    {
-        g_free(text);
-        return false;
-    }
-
-    text_length = strlen(text);
-    if (text_length >= capacity)
-    {
-        g_free(text);
-        return false;
-    }
-
-    infiltratr_copy_string(buffer, capacity, text);
-    *length = text_length;
-    g_free(text);
-    return true;
+    return resource_format_icu(
+        CALENDAR_CALENDAR_MODE_GREGORIAN, "gregorian", jdn, part, buffer, capacity, length);
 }
 
 static bool

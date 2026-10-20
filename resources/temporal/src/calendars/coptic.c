@@ -14,6 +14,7 @@
 #include "calendar-arithmetic-internal.h"
 #include "calendar-types.h"
 #include "icu-calendar.h"
+#include "resource-format.h"
 #include "integer-math.h"
 
 #if defined(_WIN32)
@@ -23,27 +24,6 @@
 #else
 #define CALENDAR_RESOURCE_EXPORT
 #endif
-
-static CalendarDatePart
-internal_part(InfiltratrTemporalCalendarDatePart part)
-{
-    switch (part)
-    {
-        case INFILTRATR_TEMPORAL_CALENDAR_DATE_PART_DAY:
-            return CALENDAR_DATE_PART_DAY;
-        case INFILTRATR_TEMPORAL_CALENDAR_DATE_PART_MONTH:
-            return CALENDAR_DATE_PART_MONTH;
-        case INFILTRATR_TEMPORAL_CALENDAR_DATE_PART_YEAR:
-            return CALENDAR_DATE_PART_YEAR;
-        case INFILTRATR_TEMPORAL_CALENDAR_DATE_PART_SHORT:
-            return CALENDAR_DATE_PART_SHORT;
-        case INFILTRATR_TEMPORAL_CALENDAR_DATE_PART_FULL:
-            return CALENDAR_DATE_PART_FULL;
-        case INFILTRATR_TEMPORAL_CALENDAR_DATE_PART_INVALID:
-        default:
-            return CALENDAR_DATE_PART_INVALID;
-    }
-}
 
 static bool
 provider_fields(const InfiltratrTemporalCalendarProvider *provider,
@@ -119,36 +99,11 @@ provider_format(const InfiltratrTemporalCalendarProvider *provider,
                 size_t capacity,
                 size_t *length)
 {
-    const CalendarDatePart calendar_part = internal_part(part);
-    gchar *text;
-    size_t text_length;
-
-    (void)provider;
-    if (buffer == NULL || capacity == 0U || length == NULL ||
-        calendar_part == CALENDAR_DATE_PART_INVALID)
-    {
+    InfiltratrTemporalCalendarFields checked;
+    if (!provider_fields(provider, jdn, &checked))
         return false;
-    }
-
-    text = calendar_icu_format(
-        CALENDAR_CALENDAR_MODE_COPTIC, "coptic", jdn, calendar_part);
-    if (text == NULL || text[0] == '\0')
-    {
-        g_free(text);
-        return false;
-    }
-
-    text_length = strlen(text);
-    if (text_length >= capacity)
-    {
-        g_free(text);
-        return false;
-    }
-
-    infiltratr_copy_string(buffer, capacity, text);
-    *length = text_length;
-    g_free(text);
-    return true;
+    return resource_format_icu(
+        CALENDAR_CALENDAR_MODE_COPTIC, "coptic", jdn, part, buffer, capacity, length);
 }
 
 static bool
