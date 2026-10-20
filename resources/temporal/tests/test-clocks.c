@@ -14,6 +14,7 @@
 #include <string.h>
 
 #include "resource-test-path.h"
+#include "../src/clocks/clock-civil.h"
 static gchar *test_clock_path(const gchar *id)
 { return resource_test_path(TEST_CLOCK_RESOURCE_DIRECTORY, INFILTRATR_TEMPORAL_RESOURCE_CLOCK, id); }
 static gchar *test_clock_filename(const gchar *id)
@@ -443,6 +444,23 @@ static void test_apparent_solar_resource(void)
 
 
 /* Both equal-hour solar-origin resources must own their rendered boundaries. */
+static void test_civil_phase_extremes(void)
+{
+    static const int64_t instants[] = { INT64_MIN, -INT64_C(1), 0, INT64_MAX };
+    static const int32_t offsets[] = { INT32_MIN, -39600, 0, 39600, INT32_MAX };
+    for (gsize i = 0; i < G_N_ELEMENTS(instants); ++i) {
+        for (gsize j = 0; j < G_N_ELEMENTS(offsets); ++j) {
+            const uint64_t phase = clock_civil_local_phase(instants[i], offsets[j]);
+            g_assert_cmpuint(phase, <, (uint64_t)CLOCK_CIVIL_DAY_US);
+            g_assert_cmpuint(phase, ==,
+                (uint64_t)clock_civil_modulo(
+                    clock_civil_modulo(instants[i], CLOCK_CIVIL_DAY_US) +
+                    (int64_t)(offsets[j] % INT32_C(86400)) * CLOCK_CIVIL_SECOND_US,
+                    CLOCK_CIVIL_DAY_US));
+        }
+    }
+}
+
 static void test_solar_origin_hour_resources(void)
 {
     static const char *const ids[] = {
@@ -649,6 +667,7 @@ int main(int argc, char **argv)
 {
     g_test_init(&argc, &argv, NULL);
     g_test_add_func("/clock-resource/solar-origin-extremes", test_solar_origin_extremes);
+    g_test_add_func("/clock-resource/civil-phase-extremes", test_civil_phase_extremes);
     g_test_add_func("/clock-resource/five-executable-modes",
                     test_five_clock_resources);
     g_test_add_func("/clock-resource/julian-executable-modes",

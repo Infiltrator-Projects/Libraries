@@ -127,6 +127,7 @@ calendar_path = $(CALENDAR_RESOURCE_BUILD_DIR)/$(calendar_name_$(1)).so
 calendar_target = $(call escape_resource_path,$(call calendar_path,$(1)))
 CALENDAR_RESOURCES := $(foreach id,$(CALENDAR_RESOURCE_NAMES),$(call calendar_target,$(id)))
 CLOCK_RESOURCE_BUILD_DIR := $(BUILD_DIR)/clock-resources
+CLOCK_CIVIL_HEADER := src/clocks/clock-civil.h
 CLOCK_RESOURCE_SOURCE := src/clocks/fixed-clock.c
 JULIAN_CLOCK_RESOURCE_SOURCE := src/clocks/julian-clock.c
 CONVENTIONAL_CLOCK_RESOURCE_SOURCE := src/clocks/conventional-clock.c
@@ -221,7 +222,7 @@ clock_seconds_hexadecimal := false
 clock_seconds_binary := true
 
 define build_fixed_clock
-$(call clock_target,$(1)): $(CLOCK_RESOURCE_SOURCE) $(CLOCK_RESOURCE_MAP) $(INFILTRATR_COMMON_HEADERS)
+$(call clock_target,$(1)): $(CLOCK_RESOURCE_SOURCE) $(CLOCK_CIVIL_HEADER) $(CLOCK_RESOURCE_MAP) $(INFILTRATR_COMMON_HEADERS)
 	@mkdir -p "$(CLOCK_RESOURCE_BUILD_DIR)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) -fvisibility=hidden \
 		-frandom-seed=$(REPRO_SEED_PREFIX)-$(1)-clock-resource \
@@ -246,7 +247,7 @@ endef
 $(foreach id,$(JULIAN_CLOCK_RESOURCE_NAMES),$(eval $(call build_julian_clock,$(id))))
 
 define build_conventional_clock
-$(call clock_target,$(1)): $(CONVENTIONAL_CLOCK_RESOURCE_SOURCE) $(CLOCK_RESOURCE_MAP) $(INFILTRATR_COMMON_HEADERS)
+$(call clock_target,$(1)): $(CONVENTIONAL_CLOCK_RESOURCE_SOURCE) $(CLOCK_CIVIL_HEADER) $(CLOCK_RESOURCE_MAP) $(INFILTRATR_COMMON_HEADERS)
 	@mkdir -p "$(CLOCK_RESOURCE_BUILD_DIR)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) -fvisibility=hidden \
 		-frandom-seed=$(REPRO_SEED_PREFIX)-$(1)-clock-resource \
@@ -296,7 +297,7 @@ clock_oneoff_source_solar := $(SOLAR_CLOCK_SOURCE)
 clock_oneoff_ids := chinese-ke mean-solar sidereal chinese-time solar
 
 define build_oneoff_clock
-$(call clock_target,$(1)): $(clock_oneoff_source_$(1)) $(CLOCK_RESOURCE_MAP) $(INFILTRATR_COMMON_HEADERS)
+$(call clock_target,$(1)): $(clock_oneoff_source_$(1)) $(CLOCK_CIVIL_HEADER) $(CLOCK_RESOURCE_MAP) $(INFILTRATR_COMMON_HEADERS)
 	@mkdir -p "$(CLOCK_RESOURCE_BUILD_DIR)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) -fvisibility=hidden \
 		-frandom-seed=$(REPRO_SEED_PREFIX)-$(1)-clock-resource \

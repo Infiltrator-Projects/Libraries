@@ -7,6 +7,7 @@
  * is linked into this module.
  */
 #include <infiltratr/temporal_clock_resource.h>
+#include "clock-civil.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -34,19 +35,11 @@ static const char *const native_branches[] = {
     "午", "未", "申", "酉", "戌", "亥"
 };
 
-static int64_t positive_mod(int64_t value, int64_t period)
-{
-    const int64_t rem = value % period;
-    return rem < 0 ? rem + period : rem;
-}
-
 static int64_t shifted_phase(int64_t instant, int32_t offset)
 {
-    const int64_t utc = positive_mod(instant, DAY_US);
-    const int64_t shifted =
-        utc + (int64_t)(offset % INT32_C(86400)) * INT64_C(1000000) +
-        HOUR_US;
-    return positive_mod(shifted, DAY_US);
+    /* Zi begins at 23:00, one hour before conventional midnight. */
+    const int64_t civil = (int64_t)clock_civil_local_phase(instant, offset);
+    return clock_civil_modulo(civil + HOUR_US, DAY_US);
 }
 
 static bool language_prefix(const char *locale, const char *prefix)

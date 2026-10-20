@@ -4,6 +4,7 @@
  * timezone or DST. Owns notation and the next visible display boundary.
  */
 #include <infiltratr/temporal_clock_resource.h>
+#include "clock-civil.h"
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -11,12 +12,6 @@
 
 #define DAY_US INT64_C(86400000000)
 #define SECOND_US INT64_C(1000000)
-
-static int64_t positive_mod(int64_t n, int64_t divisor)
-{
-    const int64_t r = n % divisor;
-    return r < 0 ? r + divisor : r;
-}
 
 static bool valid_longitude(double longitude)
 {
@@ -26,7 +21,7 @@ static bool valid_longitude(double longitude)
 
 static long double solar_seconds(int64_t instant, double longitude)
 {
-    const int64_t utc_us = positive_mod(instant, DAY_US);
+    const int64_t utc_us = clock_civil_modulo(instant, DAY_US);
     long double value = (long double)utc_us / (long double)SECOND_US +
                         (long double)longitude * 240.0L;
     value = fmodl(value, 86400.0L);

@@ -7,6 +7,7 @@
  */
 #define _GNU_SOURCE 1
 #include <infiltratr/temporal_clock_resource.h>
+#include "clock-civil.h"
 #include <langinfo.h>
 #include <locale.h>
 #include <stdbool.h>
@@ -29,22 +30,8 @@
 #define CLOCK_ID "standard-24"
 #endif
 
-static int64_t positive_mod(int64_t n, int64_t mod)
-{
-    const int64_t r = n % mod;
-    return r < 0 ? r + mod : r;
-}
-
-static uint64_t local_phase(int64_t epoch, int32_t offset)
-{
-    /* Reduce offset before multiplication to avoid overflow at extremes. */
-    const int64_t phase = positive_mod(epoch, DAY_US);
-    const int64_t shifted =
-        phase + (int64_t)(offset % 86400) * SECOND_US;
-    return (uint64_t)positive_mod(shifted, DAY_US);
-}
-
 #if CONVENTIONAL_CLOCK_KIND == 12
+static bool day_period(#if CONVENTIONAL_CLOCK_KIND == 12
 static bool day_period(const char *language, bool am, char *out, size_t cap)
 {
     const char *fallback = am ? "AM" : "PM";
@@ -90,7 +77,7 @@ static bool render(const InfiltratrTemporalClockProvider *provider,
                    double longitude, char *buffer, size_t cap, size_t *length)
 {
     char text[128] = {0};
-    const uint64_t whole = local_phase(instant, offset) / SECOND_US;
+    const uint64_t whole = clock_civil_local_phase(instant, offset) / SECOND_US;
     const unsigned hour24 = (unsigned)(whole / 3600U);
     const unsigned minute = (unsigned)((whole / 60U) % 60U);
     const unsigned second = (unsigned)(whole % 60U);
@@ -135,7 +122,7 @@ static bool next_tick(const InfiltratrTemporalClockProvider *provider,
                       double latitude, double longitude, uint32_t *millis)
 {
     const uint64_t period = seconds ? UINT64_C(1000000) : UINT64_C(60000000);
-    const uint64_t phase = local_phase(instant, offset) % period;
+    const uint64_t phase = clock_civil_local_phase(instant, offset) % period;
     const uint64_t remain = period - phase;
     (void)provider; (void)latitude; (void)longitude;
     if (millis == NULL) return false;

@@ -5,6 +5,7 @@
  * formatting dependency. Common supplies the ABI and validates callbacks.
  */
 #include <infiltratr/temporal_clock_resource.h>
+#include "clock-civil.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -23,13 +24,7 @@
 #define CLOCK_MICROSECONDS_PER_SECOND INT64_C(1000000)
 #define CLOCK_MICROSECONDS_PER_DAY INT64_C(86400000000)
 
-static int64_t positive_modulo(int64_t n, int64_t mod)
-{
-    const int64_t rem = n % mod;
-    return rem < 0 ? rem + mod : rem;
-}
-
- #if CLOCK_RESOURCE_KIND == 3
+#if CLOCK_RESOURCE_KIND == 3
 static int64_t floor_divide(int64_t n, int64_t divisor)
 {
     const int64_t quotient = n / divisor;
@@ -43,17 +38,8 @@ static uint64_t ticks_at(uint64_t phase, uint64_t per_day)
     return phase * per_day / (uint64_t)CLOCK_MICROSECONDS_PER_DAY;
 }
 
-#if CLOCK_RESOURCE_KIND == 1 || CLOCK_RESOURCE_KIND == 4 || CLOCK_RESOURCE_KIND == 5
-static uint64_t phase_local(int64_t instant, int32_t offset)
-{
-    const int64_t phase = positive_modulo(instant, CLOCK_MICROSECONDS_PER_DAY);
-    const int64_t shifted = phase + (int64_t)offset * CLOCK_MICROSECONDS_PER_SECOND;
-    return (uint64_t)positive_modulo(shifted, CLOCK_MICROSECONDS_PER_DAY);
-}
-
-#endif
-
 #if CLOCK_RESOURCE_KIND == 5
+static void to_binary(#if CLOCK_RESOURCE_KIND == 5
 static void to_binary(unsigned value, unsigned digits, char *dest)
 {
     unsigned bit;
@@ -78,7 +64,7 @@ static bool clock_render(const InfiltratrTemporalClockProvider *provider,
     (void)instant; (void)offset; (void)seconds; (void)vertical;
     (void)tick; (void)sep;
 #if CLOCK_RESOURCE_KIND == 1
-    tick = ticks_at(phase_local(instant, offset),
+    tick = ticks_at(clock_civil_local_phase(instant, offset),
                     seconds ? UINT64_C(100000) : UINT64_C(1000));
     if (seconds)
         written = snprintf(text, sizeof(text), "%llu%s%02llu%s%02llu",
@@ -90,8 +76,8 @@ static bool clock_render(const InfiltratrTemporalClockProvider *provider,
             (unsigned long long)(tick / 100U), sep,
             (unsigned long long)(tick % 100U));
 #elif CLOCK_RESOURCE_KIND == 2
-    tick = ticks_at((uint64_t)positive_modulo(
-            positive_modulo(instant, CLOCK_MICROSECONDS_PER_DAY) +
+    tick = ticks_at((uint64_t)clock_civil_modulo(
+            clock_civil_modulo(instant, CLOCK_MICROSECONDS_PER_DAY) +
                 INT64_C(3600000000), CLOCK_MICROSECONDS_PER_DAY),
             seconds ? UINT64_C(100000) : UINT64_C(1000));
     written = seconds
@@ -104,11 +90,11 @@ static bool clock_render(const InfiltratrTemporalClockProvider *provider,
     written = snprintf(text, sizeof(text), "%lld",
         (long long)floor_divide(instant, CLOCK_MICROSECONDS_PER_SECOND));
 #elif CLOCK_RESOURCE_KIND == 4
-    tick = ticks_at(phase_local(instant, offset), UINT64_C(65536));
+    tick = ticks_at(clock_civil_local_phase(instant, offset), UINT64_C(65536));
     written = snprintf(text, sizeof(text), "%04llX", (unsigned long long)tick);
 #elif CLOCK_RESOURCE_KIND == 5
     {
-        const uint64_t whole = phase_local(instant, offset) /
+        const uint64_t whole = clock_civil_local_phase(instant, offset) /
             (uint64_t)CLOCK_MICROSECONDS_PER_SECOND;
         const unsigned hour = (unsigned)(whole / 3600U);
         const unsigned minute = (unsigned)((whole / 60U) % 60U);
@@ -140,21 +126,21 @@ static bool clock_next_tick(const InfiltratrTemporalClockProvider *provider,
     if (milliseconds == NULL) return false;
 #if CLOCK_RESOURCE_KIND == 1
     units = seconds ? UINT64_C(100000) : UINT64_C(1000);
-    phase = phase_local(instant, offset);
+    phase = clock_civil_local_phase(instant, offset);
 #elif CLOCK_RESOURCE_KIND == 2
     units = seconds ? UINT64_C(100000) : UINT64_C(1000);
-    phase = (uint64_t)positive_modulo(
-        positive_modulo(instant, CLOCK_MICROSECONDS_PER_DAY) +
+    phase = (uint64_t)clock_civil_modulo(
+        clock_civil_modulo(instant, CLOCK_MICROSECONDS_PER_DAY) +
             INT64_C(3600000000), CLOCK_MICROSECONDS_PER_DAY);
 #elif CLOCK_RESOURCE_KIND == 3
     units = UINT64_C(86400);
-    phase = (uint64_t)positive_modulo(instant, CLOCK_MICROSECONDS_PER_DAY);
+    phase = (uint64_t)clock_civil_modulo(instant, CLOCK_MICROSECONDS_PER_DAY);
 #elif CLOCK_RESOURCE_KIND == 4
     units = UINT64_C(65536);
-    phase = phase_local(instant, offset);
+    phase = clock_civil_local_phase(instant, offset);
 #elif CLOCK_RESOURCE_KIND == 5
     units = seconds ? UINT64_C(86400) : UINT64_C(1440);
-    phase = phase_local(instant, offset);
+    phase = clock_civil_local_phase(instant, offset);
 #else
 #error unsupported CLOCK_RESOURCE_KIND
 #endif
