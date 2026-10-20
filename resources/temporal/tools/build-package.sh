@@ -23,6 +23,10 @@ for record in "calendar-resources:31" "clock-resources:23"; do
 done
 install -m 0644 "$build/calendar-resources/"*.so "$stage/System/Resources/Calendars/"
 install -m 0644 "$build/clock-resources/"*.so "$stage/System/Resources/Clocks/"
+# Keep fully symbolized .so files in the qualified build directory for
+# engineering diagnostics. Only the deployed copies lose DWARF/debug sections;
+# loadable symbols and the executable provider ABI remain unchanged.
+find "$stage/System/Resources" -type f -name '*.so' -exec strip --strip-debug {} +
 while IFS= read -r language; do
     case "$language" in ''|'#'*) continue ;; esac
     destination="$stage/usr/share/locale/$language/LC_MESSAGES"

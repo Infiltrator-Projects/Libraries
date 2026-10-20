@@ -6,10 +6,10 @@
 typedef enum
 {
     /*
-     * Local compiled implementation slots only. Persisted identity and Common
-     * metadata are joined by stable calendar ID in calendar-registry.c; these
-     * numeric values must never be treated as Common catalogue positions.
-     * Native filesystem resources have no slot in this enum.
+     * Private compile-time algorithm selectors used by the independently
+     * linked calendar providers and the generic engine test archive. Public
+     * resource identity is always the stable metadata string ID; these
+     * implementation enum positions are never installed catalogue indices.
      */
     CALENDAR_CALENDAR_MODE_GREGORIAN,
     CALENDAR_CALENDAR_MODE_ISO_WEEK,

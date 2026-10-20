@@ -95,3 +95,11 @@ chronology simply because ICU or another renderer knows one. In particular,
 Umm al-Qura is bounded to AH 1300–1600 across all operations. Numerical
 extremes must be rejected with bounded work and without mutating caller-owned
 output on failure. This contract is exercised through all resource ABIs.
+
+## Numeric conversion boundaries
+
+ICU-backed date providers validate the JDN against ICU's finite signed-
+millisecond horizon before conversion, formatting, period navigation or
+reverse numeric conversion. Invalid dates are rejected explicitly.
+Independent French Republican and Revised Julian chronologies use a wider
+binary64/year-boundary-safe domain rather than ICU's unrelated limit.

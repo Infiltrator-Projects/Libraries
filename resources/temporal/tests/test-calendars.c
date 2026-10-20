@@ -243,9 +243,18 @@ static void test_calendar_navigation_cross_checks(void)
         InfiltratrTemporalCalendarModule *module =
             infiltratr_temporal_calendar_module_open(path);
         g_assert_nonnull(module);
-        for (gint64 jdn = INT64_C(2451545);
-             jdn <= INT64_C(2451546); ++jdn)
+        /* Leap-day, calendar New Year and era-transition samples. */
+        static const gint64 samples[] = {
+            INT64_C(2451545), INT64_C(2451546),
+            INT64_C(2451604), INT64_C(2451605),
+            INT64_C(2458604), INT64_C(2458605),
+            INT64_C(2460369), INT64_C(2460370),
+            INT64_C(2460390), INT64_C(2460391),
+            INT64_C(2460676), INT64_C(2460677)
+        };
+        for (gsize sample = 0U; sample < G_N_ELEMENTS(samples); ++sample)
         {
+            const gint64 jdn = samples[sample];
             InfiltratrTemporalCalendarFields fields;
             gint64 new_day;
             char formatted[1024];

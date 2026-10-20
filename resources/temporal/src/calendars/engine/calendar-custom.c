@@ -30,14 +30,10 @@
 
 #include <glib/gi18n-lib.h>
 
-/* Generic unit tests keep the complete engine. The separately compiled
- * custom .so requires only its selected row; linker section collection then
- * removes unrelated provider functions and their constant tables. */
-#if defined(RESOURCE_SINGLE_CUSTOM) && defined(__GNUC__)
-#pragma GCC diagnostic ignored "-Wunused-function"
-#pragma GCC diagnostic ignored "-Wunused-const-variable"
-#endif
-
+/* The generic engine tests compile all descriptor families. Each standalone
+ * resource compiles only its own family, with unrelated helpers excluded by
+ * the same preprocessor selection as its descriptor. No warning suppression
+ * is needed, and the compiler can still detect accidental unused functions. */
 
 typedef CalendarCalendarMode CalendarMode;
 typedef CalendarCalendarFields CalendarFields;
@@ -75,19 +71,24 @@ typedef struct
 #define gregorian_day_of_year calendar_gregorian_day_of_year
 #define iso_weekday calendar_iso_weekday
 
+#if !defined(RESOURCE_SINGLE_CUSTOM) || defined(RESOURCE_FRENCH_REPUBLICAN)
 static const gchar *const french_months[] = {
     "", N_("Vendémiaire"), N_("Brumaire"), N_("Frimaire"),
     N_("Nivôse"), N_("Pluviôse"), N_("Ventôse"), N_("Germinal"),
     N_("Floréal"), N_("Prairial"), N_("Messidor"), N_("Thermidor"),
     N_("Fructidor"), N_("Sans-culottides")
 };
+#endif
 
+#if !defined(RESOURCE_SINGLE_CUSTOM) || defined(RESOURCE_ROMAN)
 static const gchar *const roman_months[] = {
     "", N_("Ianuarius"), N_("Februarius"), N_("Martius"), N_("Aprilis"),
     N_("Maius"), N_("Iunius"), N_("Iulius"), N_("Augustus"),
     N_("September"), N_("October"), N_("November"), N_("December")
 };
+#endif
 
+#if !defined(RESOURCE_SINGLE_CUSTOM) || defined(RESOURCE_BAHAI)
 static const gchar *const bahai_months[] = {
     N_("Ayyám-i-Há"), N_("Bahá"), N_("Jalál"), N_("Jamál"),
     N_("‘Aẓamat"), N_("Núr"), N_("Raḥmat"), N_("Kalimát"), N_("Kamál"),
@@ -95,25 +96,32 @@ static const gchar *const bahai_months[] = {
     N_("Qawl"), N_("Masá’il"), N_("Sharaf"), N_("Sulṭán"), N_("Mulk"),
     N_("‘Alá’")
 };
+#endif
 
+#if !defined(RESOURCE_SINGLE_CUSTOM) || defined(RESOURCE_INTERNATIONAL_FIXED)
 static const gchar *const fixed_months[] = {
     "", N_("January"), N_("February"), N_("March"), N_("April"),
     N_("May"), N_("June"), N_("Sol"), N_("July"), N_("August"),
     N_("September"), N_("October"), N_("November"), N_("December")
 };
+#endif
 
+#if !defined(RESOURCE_SINGLE_CUSTOM) || defined(RESOURCE_JULIAN) || defined(RESOURCE_WORLD)
 static const gchar *const common_months[] = {
     "", N_("January"), N_("February"), N_("March"), N_("April"),
     N_("May"), N_("June"), N_("July"), N_("August"), N_("September"),
     N_("October"), N_("November"), N_("December")
 };
+#endif
 
+#if !defined(RESOURCE_SINGLE_CUSTOM) || defined(RESOURCE_POSITIVIST)
 static const gchar *const positivist_months[] = {
     "", N_("Moses"), N_("Homer"), N_("Aristotle"), N_("Archimedes"),
     N_("Caesar"), N_("Saint Paul"), N_("Charlemagne"), N_("Dante"),
     N_("Gutenberg"), N_("Shakespeare"), N_("Descartes"), N_("Frederick"),
     N_("Bichat")
 };
+#endif
 
 static gint
 iso_weeks_in_year(gint64 year)
@@ -160,6 +168,7 @@ iso_fields_from_jdn(gint64 jdn,
     };
 }
 
+#if !defined(RESOURCE_SINGLE_CUSTOM) || defined(RESOURCE_ISO_WEEK)
 static gint64
 iso_fields_to_jdn(const CalendarFields *fields)
 {
@@ -172,7 +181,9 @@ iso_fields_to_jdn(const CalendarFields *fields)
            (gint64)(fields->month - 1) * CALENDAR_DAYS_PER_WEEK +
            fields->day - 1;
 }
+#endif
 
+#if !defined(RESOURCE_SINGLE_CUSTOM) || defined(RESOURCE_JULIAN)
 static void
 julian_fields_from_jdn(gint64 jdn,
                        CalendarFields *fields)
@@ -190,64 +201,83 @@ julian_fields_from_jdn(gint64 jdn,
         .special = FALSE
     };
 }
+#endif
 
+#if !defined(RESOURCE_SINGLE_CUSTOM) || defined(RESOURCE_JULIAN)
 static gint64
 julian_fields_to_jdn(const CalendarFields *fields)
 {
     return julian_to_jdn(fields->year, fields->month, fields->day);
 }
+#endif
 
+#if !defined(RESOURCE_SINGLE_CUSTOM) || defined(RESOURCE_JULIAN)
 static gint
 julian_month_length(const CalendarFields *fields)
 {
     return calendar_julian_month_length(fields->year, fields->month);
 }
+#endif
 
+#if !defined(RESOURCE_SINGLE_CUSTOM) || defined(RESOURCE_ISO_WEEK)
 static gint
 iso_month_length(const CalendarFields *fields)
 {
     (void)fields;
     return 7;
 }
+#endif
 
+#if !defined(RESOURCE_SINGLE_CUSTOM) || defined(RESOURCE_FRENCH_REPUBLICAN)
 static gint
 french_month_length(const CalendarFields *fields)
 {
     return fields->month == 13 ?
            (calendar_french_is_leap(fields->year) ? 6 : 5) : 30;
 }
+#endif
 
+#if !defined(RESOURCE_SINGLE_CUSTOM) || defined(RESOURCE_MAYAN)
 static gint
 mayan_month_length(const CalendarFields *fields)
 {
     (void)fields;
     return 20;
 }
+#endif
 
+#if !defined(RESOURCE_SINGLE_CUSTOM) || defined(RESOURCE_BAHAI)
 static gint
 bahai_month_length(const CalendarFields *fields)
 {
     return fields->month == 0 ?
            calendar_bahai_intercalary_days(fields->year) : 19;
 }
+#endif
 
+#if !defined(RESOURCE_SINGLE_CUSTOM) || defined(RESOURCE_INTERNATIONAL_FIXED)
 static gint
 fixed_month_length(const CalendarFields *fields)
 {
     return calendar_fixed_month_length(fields->year, fields->month);
 }
+#endif
 
+#if !defined(RESOURCE_SINGLE_CUSTOM) || defined(RESOURCE_WORLD)
 static gint
 world_month_length(const CalendarFields *fields)
 {
     return calendar_world_month_length(fields->year, fields->month);
 }
+#endif
 
+#if !defined(RESOURCE_SINGLE_CUSTOM) || defined(RESOURCE_POSITIVIST)
 static gint
 positivist_month_length(const CalendarFields *fields)
 {
     return calendar_positivist_month_length(fields->year, fields->month);
 }
+#endif
 
 static gint
 default_period_index(gint month)
@@ -261,13 +291,16 @@ default_month_from_period(gint period)
     return period + 1;
 }
 
+#if !defined(RESOURCE_SINGLE_CUSTOM) || defined(RESOURCE_JULIAN)
 static gchar *
 format_julian(const CalendarFields *fields,
               CalendarDatePart part)
 {
     return calendar_format_named_date(fields, part, common_months, G_N_ELEMENTS(common_months), NULL);
 }
+#endif
 
+#if !defined(RESOURCE_SINGLE_CUSTOM) || defined(RESOURCE_ISO_WEEK)
 static gchar *
 format_iso(const CalendarFields *fields,
            CalendarDatePart part)
@@ -284,7 +317,9 @@ format_iso(const CalendarFields *fields,
                            fields->month,
                            fields->day);
 }
+#endif
 
+#if !defined(RESOURCE_SINGLE_CUSTOM) || defined(RESOURCE_ROMAN)
 static gchar *
 format_roman(const CalendarFields *fields,
              CalendarDatePart part)
@@ -299,7 +334,9 @@ format_roman(const CalendarFields *fields,
 
     return calendar_roman_format_date(fields);
 }
+#endif
 
+#if !defined(RESOURCE_SINGLE_CUSTOM) || defined(RESOURCE_FRENCH_REPUBLICAN)
 static gchar *
 format_french(const CalendarFields *fields,
               CalendarDatePart part)
@@ -320,7 +357,9 @@ format_french(const CalendarFields *fields,
                            month_name,
                            roman_year);
 }
+#endif
 
+#if !defined(RESOURCE_SINGLE_CUSTOM) || defined(RESOURCE_BAHAI)
 static gchar *
 format_bahai(const CalendarFields *fields,
              CalendarDatePart part)
@@ -339,7 +378,9 @@ format_bahai(const CalendarFields *fields,
                            month_name,
                            (long long)fields->year);
 }
+#endif
 
+#if !defined(RESOURCE_SINGLE_CUSTOM) || defined(RESOURCE_INTERNATIONAL_FIXED)
 static gchar *
 format_fixed(const CalendarFields *fields,
              CalendarDatePart part)
@@ -358,7 +399,9 @@ format_fixed(const CalendarFields *fields,
 
     return calendar_format_named_date(fields, part, fixed_months, G_N_ELEMENTS(fixed_months), NULL);
 }
+#endif
 
+#if !defined(RESOURCE_SINGLE_CUSTOM) || defined(RESOURCE_WORLD)
 static gchar *
 format_world(const CalendarFields *fields,
              CalendarDatePart part)
@@ -377,7 +420,9 @@ format_world(const CalendarFields *fields,
 
     return calendar_format_named_date(fields, part, common_months, G_N_ELEMENTS(common_months), NULL);
 }
+#endif
 
+#if !defined(RESOURCE_SINGLE_CUSTOM) || defined(RESOURCE_POSITIVIST)
 static gchar *
 format_positivist(const CalendarFields *fields,
                   CalendarDatePart part)
@@ -397,6 +442,7 @@ format_positivist(const CalendarFields *fields,
 
     return calendar_format_named_date(fields, part, positivist_months, G_N_ELEMENTS(positivist_months), NULL);
 }
+#endif
 
 /*
  * Sparse, mode-indexed provider registry.  Empty slots correspond to ICU

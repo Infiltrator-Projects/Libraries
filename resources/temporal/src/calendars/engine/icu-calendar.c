@@ -5,8 +5,8 @@
  * ICU/CLDR calendar adapter.
  *
  * ICU owns the remaining delegated calendar conversion, era/lunisolar data
- * and locale-sensitive formatting. Calendar always opens those calendars
- * calendars in UTC and places the JDN at UTC noon.  Noon avoids any midnight
+ * and locale-sensitive formatting. Common opens those calendars
+ * in UTC and places the JDN at UTC noon.  Noon avoids any midnight
  * ambiguity while UTC ensures that host timezone and daylight-saving changes
  * cannot alter a date-only conversion.
  */
@@ -29,7 +29,7 @@
 #define MILLISECONDS_PER_DAY 86400000.0
 /*
  * ICU's Gregorian calendar is hybrid by default: Julian before the 1582
- * cutover and Gregorian afterwards.  Calendar's "gregorian" provider is
+ * cutover and Gregorian afterwards.  the "gregorian" provider is
  * explicitly proleptic, so place the ICU cutover far before the supported
  * civil range.  -8.64e15 ms is 100,000,000 days before the Unix epoch.
  */
@@ -96,19 +96,37 @@ open_icu_calendar(const gchar *calendar_keyword,
     return calendar;
 }
 
-static UDate
-jdn_to_udate(gint64 jdn)
+/*
+ * ICU dates span ±100 million days as milliseconds since Unix epoch.
+ * Store the civil JDN at UTC noon: the upper allowed JDN is one day before
+ * the maximum. Check before subtracting, casting, or calling ICU.
+ */
+#define ICU_MIN_DAY_OFFSET (-G_GINT64_CONSTANT(100000000))
+#define ICU_MAX_DAY_OFFSET G_GINT64_CONSTANT(99999999)
+#define ICU_MILLIS_ABSOLUTE_LIMIT 8640000000000000.0
+static gboolean jdn_to_udate(gint64 jdn, UDate *out)
 {
-    return (UDate)(jdn - CALENDAR_UNIX_EPOCH_JDN) *
-               MILLISECONDS_PER_DAY +
+    if (!out ||
+        jdn < CALENDAR_UNIX_EPOCH_JDN + ICU_MIN_DAY_OFFSET ||
+        jdn > CALENDAR_UNIX_EPOCH_JDN + ICU_MAX_DAY_OFFSET)
+        return FALSE;
+    const gint64 days = jdn - CALENDAR_UNIX_EPOCH_JDN;
+    *out = (UDate)days * MILLISECONDS_PER_DAY +
            MILLISECONDS_PER_DAY / 2.0;
+    return TRUE;
 }
-
-static gint64
-udate_to_jdn(UDate date)
+static gboolean udate_to_jdn(UDate date, gint64 *out)
 {
-    return (gint64)floor(date / MILLISECONDS_PER_DAY) +
-           CALENDAR_UNIX_EPOCH_JDN;
+    UDate noon;
+    if (!out || !isfinite(date) ||
+        date < -ICU_MILLIS_ABSOLUTE_LIMIT ||
+        date > ICU_MILLIS_ABSOLUTE_LIMIT)
+        return FALSE;
+    const gint64 days = (gint64)floor(date / MILLISECONDS_PER_DAY);
+    const gint64 result = CALENDAR_UNIX_EPOCH_JDN + days;
+    if (!jdn_to_udate(result, &noon)) return FALSE;
+    *out = result;
+    return TRUE;
 }
 
 gboolean
@@ -119,23 +137,30 @@ calendar_icu_fields_from_jdn(
 {
     UErrorCode status = U_ZERO_ERROR;
     UCalendar *calendar;
+    UDate utc_noon;
+    CalendarCalendarFields converted = {0};
 
     g_return_val_if_fail(fields != NULL, FALSE);
+    if (!jdn_to_udate(jdn, &utc_noon)) return FALSE;
 
     calendar = open_icu_calendar(calendar_keyword, &status);
     if (U_FAILURE(status) || calendar == NULL)
         return FALSE;
 
-    ucal_setMillis(calendar, jdn_to_udate(jdn), &status);
-    fields->year = ucal_get(calendar, UCAL_YEAR, &status);
-    fields->month = ucal_get(calendar, UCAL_MONTH, &status) + 1;
-    fields->day = ucal_get(calendar, UCAL_DATE, &status);
-    fields->auxiliary = ucal_get(calendar, UCAL_ERA, &status);
-    fields->special =
-        ucal_get(calendar, UCAL_IS_LEAP_MONTH, &status) != 0;
+    ucal_setMillis(calendar, utc_noon, &status);
+    if (U_SUCCESS(status))
+    {
+        converted.year = ucal_get(calendar, UCAL_YEAR, &status);
+        converted.month = ucal_get(calendar, UCAL_MONTH, &status) + 1;
+        converted.day = ucal_get(calendar, UCAL_DATE, &status);
+        converted.auxiliary = ucal_get(calendar, UCAL_ERA, &status);
+        converted.special =
+            ucal_get(calendar, UCAL_IS_LEAP_MONTH, &status) != 0;
+    }
     ucal_close(calendar);
-
-    return U_SUCCESS(status);
+    if (U_FAILURE(status)) return FALSE;
+    *fields = converted;
+    return TRUE;
 }
 
 static gchar *
@@ -243,7 +268,9 @@ calendar_icu_format(CalendarCalendarMode format_profile,
     gint32 length;
     gchar *result;
     const gchar *pattern = pattern_for_part(format_profile, part);
+    UDate utc_noon;
 
+    if (!jdn_to_udate(jdn, &utc_noon)) return g_strdup("");
     if (!make_icu_locale(calendar_keyword, locale, G_N_ELEMENTS(locale)))
         return g_strdup("");
 
@@ -282,7 +309,7 @@ calendar_icu_format(CalendarCalendarMode format_profile,
     ucal_close(calendar);
 
     length = udat_format(formatter,
-                         jdn_to_udate(jdn),
+                         utc_noon,
                          output,
                          capacity,
                          NULL,
@@ -307,7 +334,7 @@ calendar_icu_format(CalendarCalendarMode format_profile,
         capacity = (gint32)element_count;
         output = g_malloc(allocation_bytes);
         length = udat_format(formatter,
-                             jdn_to_udate(jdn),
+                             utc_noon,
                              output,
                              capacity,
                              NULL,
@@ -329,11 +356,15 @@ icu_add(const gchar *calendar_keyword,
         gint amount)
 {
     UErrorCode status = U_ZERO_ERROR;
-    UCalendar *calendar = open_icu_calendar(calendar_keyword, &status);
+    UCalendar *calendar;
+    UDate utc_noon;
+    gint64 converted;
     gint original_day;
     gint maximum_day;
     UDate result;
 
+    if (!jdn_to_udate(jdn, &utc_noon)) return G_MAXINT64;
+    calendar = open_icu_calendar(calendar_keyword, &status);
     if (U_FAILURE(status) || calendar == NULL)
         return G_MAXINT64;
 
@@ -342,7 +373,7 @@ icu_add(const gchar *calendar_keyword,
      * with an explicit clamp. This makes the navigation rule independent of
      * ICU's leniency behaviour: preserve the day when the target permits it.
      */
-    ucal_setMillis(calendar, jdn_to_udate(jdn), &status);
+    ucal_setMillis(calendar, utc_noon, &status);
     original_day = ucal_get(calendar, UCAL_DATE, &status);
     ucal_set(calendar, UCAL_DATE, 1);
     ucal_add(calendar, field, amount, &status);
@@ -354,7 +385,8 @@ icu_add(const gchar *calendar_keyword,
     result = ucal_getMillis(calendar, &status);
     ucal_close(calendar);
 
-    return U_SUCCESS(status) ? udate_to_jdn(result) : G_MAXINT64;
+    return U_SUCCESS(status) && udate_to_jdn(result, &converted)
+        ? converted : G_MAXINT64;
 }
 
 gint64
@@ -362,17 +394,22 @@ calendar_icu_month_start(const gchar *calendar_keyword,
                               gint64 jdn)
 {
     UErrorCode status = U_ZERO_ERROR;
-    UCalendar *calendar = open_icu_calendar(calendar_keyword, &status);
+    UCalendar *calendar;
     UDate result;
+    UDate utc_noon;
+    gint64 converted;
 
+    if (!jdn_to_udate(jdn, &utc_noon)) return G_MAXINT64;
+    calendar = open_icu_calendar(calendar_keyword, &status);
     if (U_FAILURE(status) || calendar == NULL)
         return G_MAXINT64;
 
-    ucal_setMillis(calendar, jdn_to_udate(jdn), &status);
+    ucal_setMillis(calendar, utc_noon, &status);
     ucal_set(calendar, UCAL_DATE, 1);
     result = ucal_getMillis(calendar, &status);
     ucal_close(calendar);
-    return U_SUCCESS(status) ? udate_to_jdn(result) : G_MAXINT64;
+    return U_SUCCESS(status) && udate_to_jdn(result, &converted)
+        ? converted : G_MAXINT64;
 }
 
 gint64

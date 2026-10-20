@@ -339,7 +339,7 @@ open_hebrew_calendar(UErrorCode *status)
 static UDate
 jdn_to_udate(int64_t jdn)
 {
-    return (UDate)(jdn - HEBREW_UNIX_EPOCH_JDN) *
+    return ((UDate)jdn - (UDate)HEBREW_UNIX_EPOCH_JDN) *
                MILLISECONDS_PER_DAY +
            MILLISECONDS_PER_DAY / 2.0;
 }

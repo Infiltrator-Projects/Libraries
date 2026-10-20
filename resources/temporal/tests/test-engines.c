@@ -6,6 +6,7 @@
 #include "calendar-ancient.h"
 #include "calendar-reform.h"
 #include "calendar-historical.h"
+#include "icu-calendar.h"
 #include "julian-day.h"
 #include "time-astronomy.h"
 #include <glib.h>
@@ -417,6 +418,73 @@ static void test_correction_loops_are_bounded(void)
     g_assert_cmpint(fields.month, ==, 0);
 }
 
+/* ICU has a finite UDate horizon. Every operation must reject impossible
+ * JDNs before subtraction, conversion, navigation, or text generation. */
+static void test_icu_finite_dates_and_failure_outputs(void)
+{
+    const gint64 invalid[] = {
+        G_MININT64, G_MAXINT64,
+        CALENDAR_UNIX_EPOCH_JDN - G_GINT64_CONSTANT(100000001),
+        CALENDAR_UNIX_EPOCH_JDN + G_GINT64_CONSTANT(100000000)
+    };
+    for (gsize i = 0; i < G_N_ELEMENTS(invalid); ++i)
+    {
+        CalendarCalendarFields fields = { .year = 17, .month = 23 };
+        g_autofree gchar *label = NULL;
+        g_assert_false(calendar_icu_fields_from_jdn(
+            "gregorian", invalid[i], &fields));
+        g_assert_cmpint(fields.year, ==, 17);
+        g_assert_cmpint(fields.month, ==, 23);
+        label = calendar_icu_format(CALENDAR_CALENDAR_MODE_GREGORIAN,
+                                    "gregorian", invalid[i],
+                                    CALENDAR_DATE_PART_FULL);
+        g_assert_cmpstr(label, ==, "");
+        g_assert_cmpint(calendar_icu_month_start(
+            "gregorian", invalid[i]), ==, G_MAXINT64);
+        g_assert_cmpint(calendar_icu_add_months(
+            "gregorian", invalid[i], 1), ==, G_MAXINT64);
+        g_assert_cmpint(calendar_icu_add_years(
+            "gregorian", invalid[i], -1), ==, G_MAXINT64);
+    }
+
+    CalendarCalendarFields epoch = { 0 };
+    g_assert_true(calendar_icu_fields_from_jdn(
+        "gregorian", CALENDAR_UNIX_EPOCH_JDN, &epoch));
+    g_assert_cmpint(epoch.year, ==, 1970);
+    g_assert_cmpint(epoch.month, ==, 1);
+    g_assert_cmpint(epoch.day, ==, 1);
+}
+
+static void test_non_icu_correction_domain(void)
+{
+    const gint64 samples[] = {
+        -G_GINT64_CONSTANT(1000000001),
+        G_GINT64_CONSTANT(1000000001),
+        -G_GINT64_CONSTANT(10000000000),
+        G_GINT64_CONSTANT(10000000000)
+    };
+    for (gsize i = 0; i < G_N_ELEMENTS(samples); ++i)
+    {
+        CalendarCalendarFields fields = {0};
+        calendar_french_fields_from_jdn(samples[i], &fields);
+        g_assert_cmpint(fields.month, >=, 1);
+        g_assert_cmpint(fields.day, >=, 1);
+        g_assert_cmpint(calendar_french_fields_to_jdn(&fields),
+                        ==, samples[i]);
+        calendar_revised_julian_fields_from_jdn(samples[i], &fields);
+        g_assert_cmpint(fields.month, >=, 1);
+        g_assert_cmpint(fields.day, >=, 1);
+        g_assert_cmpint(calendar_revised_julian_fields_to_jdn(&fields),
+                        ==, samples[i]);
+    }
+    CalendarCalendarFields fields = {0};
+    const gint64 beyond = (G_GINT64_CONSTANT(1) << 52) + 1;
+    calendar_french_fields_from_jdn(beyond, &fields);
+    g_assert_cmpint(fields.month, ==, 0);
+    calendar_revised_julian_fields_from_jdn(-beyond, &fields);
+    g_assert_cmpint(fields.month, ==, 0);
+}
+
 int main(int argc, char **argv)
 {
     g_test_init(&argc, &argv, NULL);
@@ -427,6 +495,8 @@ int main(int argc, char **argv)
     g_test_add_func("/resource-engine/solar-instant-overflow-rejection", test_solar_instant_overflow_rejection);
     g_test_add_func("/resource-engine/compact-solar-contract", test_compact_solar_contract);
     g_test_add_func("/resource-engine/bounded-extreme-corrections", test_correction_loops_are_bounded);
+    g_test_add_func("/resource-engine/icu-date-domain", test_icu_finite_dates_and_failure_outputs);
+    g_test_add_func("/resource-engine/independent-correction-domain", test_non_icu_correction_domain);
     g_test_add_func("/resource-engine/complete-civil-year-domain", test_complete_civil_year_domain);
     g_test_add_func("/resource-engine/roman-extreme-format-is-bounded", test_roman_extreme_format_is_bounded);
     return g_test_run();

@@ -35,7 +35,7 @@ gboolean
 calendar_french_is_leap(gint64 year)
 {
     /*
-     * Calendar uses the Romme-style arithmetic continuation: apply the
+     * This resource uses the Romme-style arithmetic continuation: apply the
      * Gregorian 4/100/400 rule to the following Republican year number. This
      * choice is deterministic for proleptic dates where historical practice
      * does not define a single answer.

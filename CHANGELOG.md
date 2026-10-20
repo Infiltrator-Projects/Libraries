@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.19.71 — 2026-10-20
+
+- Validate ICU Julian day numbers before integer subtraction or floating
+  conversion, validate reverse results and preserve outputs on failure.
+- Give French Republican and Revised Julian arithmetic a wider, mathematically
+  justified date domain independent of ICU's finite millisecond limits.
+- Remove broad compiler warning suppression in custom calendar modules;
+  exclude unreferenced provider helper families during compilation.
+- Retain debug information in CI builds while stripping debug-only sections
+  from the staged resource Debian package.
+- Expand all-calendar cross-operation tests around leap dates and era changes;
+  add ICU and independent arithmetic boundary regression tests; correct stale
+  architecture comments.
+
+
 ## 1.19.70 — 2026-10-20
 
 - Compile only the selected custom calendar descriptor into each extracted

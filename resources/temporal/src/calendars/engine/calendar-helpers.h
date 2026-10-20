@@ -8,15 +8,17 @@
 #include "julian-day.h"
 
 /*
- * Arithmetic inverse-year estimators are only meaningful across the supported
- * finite civil-date domain. This 200-million-day span includes every historic
- * implementation period without approaching int64 saturation in year/epoch
- * products. ICU's signed millisecond horizon is the corresponding bound.
+ * French Republican and Revised Julian arithmetic is independent of ICU.
+ * When |JDN| <= 2^52, binary64 represents the initial JDN exactly; the
+ * estimated year is < 2^44 in magnitude and its integer year-start product
+ * (at most 366 days/year) cannot overflow int64. Bounded correction then
+ * compares meaningful year boundaries, not saturated sentinel values.
  */
+#define CALENDAR_CORRECTED_YEAR_MAX_ABS_JDN (G_GINT64_CONSTANT(1) << 52)
 static inline gboolean calendar_corrected_year_jdn_supported(gint64 jdn)
 {
-    return jdn >= CALENDAR_UNIX_EPOCH_JDN - G_GINT64_CONSTANT(100000000) &&
-           jdn <= CALENDAR_UNIX_EPOCH_JDN + G_GINT64_CONSTANT(100000000);
+    return jdn >= -CALENDAR_CORRECTED_YEAR_MAX_ABS_JDN &&
+           jdn <= CALENDAR_CORRECTED_YEAR_MAX_ABS_JDN;
 }
 
 G_BEGIN_DECLS

@@ -47,3 +47,15 @@ Each provider's fields operation defines its supported date domain. Formatting
 and navigation must reject the same unsupported inputs, including dates beyond
 the bounded Umm al-Qura table. Extreme saturated Julian-day conversions must
 terminate with an explicit unsupported result rather than looping indefinitely.
+
+## Numeric contracts and deployment size
+
+ICU-backed calendars validate Julian day numbers before converting to the
+finite millisecond date representation, including checked reverse conversion.
+French Republican and Revised Julian arithmetic use their own, wider
+binary64/integer-safe estimation domain instead of inheriting ICU's limits.
+The module names, historical rules and public ABIs are unchanged.
+
+CI retains symbolized builds for debugging. Only deployed resource copies are
+stripped of DWARF sections; exported functions and runtime ABI stay intact.
+The reproducibility and cross-distribution tests qualify the staged bytes.

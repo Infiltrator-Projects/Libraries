@@ -163,3 +163,11 @@ that range. Hebrew molad arithmetic accepts the bounded civil-date/JDN domain
 its ICU presentation can represent. French Republican and Revised Julian
 conversion do not assert meaningful results after year correction loses
 precision at extreme JDN values; such inputs explicitly fail.
+
+## Numeric representation is not historicity
+
+ICU-backed providers have a finite millisecond representation range, taking
+UTC-noon placement into account. French Republican and Revised Julian year
+inverses have a separate larger numeric domain determined by binary64 JDN
+exactness and bounded integer year-start products. Neither range is a legal
+or historical adoption date.
