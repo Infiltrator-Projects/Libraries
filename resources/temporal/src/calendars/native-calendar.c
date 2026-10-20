@@ -140,6 +140,12 @@ custom_fields(const ResourceCalendar *provider,
     if (!calendar_iso_week_jdn_representable(jdn)) return FALSE;
 #elif defined(RESOURCE_INTERNATIONAL_FIXED) || defined(RESOURCE_WORLD) || defined(RESOURCE_POSITIVIST) || defined(RESOURCE_BAHAI)
     if (!calendar_gregorian_jdn_representable(jdn)) return FALSE;
+#elif defined(RESOURCE_MAYAN)
+    /* Both subtracting the epoch and reconstructing the tun in signed i64
+     * need headroom. A saturated intermediate is not a reversible date. */
+    if (jdn < G_MININT64 + G_GINT64_CONSTANT(584283) + 360 ||
+        jdn > G_MAXINT64 - G_GINT64_CONSTANT(584283) - 360)
+        return FALSE;
 #endif
     calendar_custom_fields_from_jdn(builtin->mode, jdn, fields);
     /* Only the bounded-correction chronologies use the all-zero record

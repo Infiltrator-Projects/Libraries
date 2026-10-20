@@ -56,7 +56,11 @@ provider_fields(const InfiltratrTemporalCalendarProvider *provider,
     if (fields == NULL)
         return false;
 
-    calendar_arithmetic_persian_fields_from_jdn(jdn, &native_fields);
+    if (!calendar_arithmetic_persian_fields_from_jdn(jdn, &native_fields) ||
+        calendar_arithmetic_persian_fields_to_jdn(
+            native_fields.year, native_fields.month, native_fields.day) != jdn)
+        return false;
+
     *fields = (InfiltratrTemporalCalendarFields){
         .year = native_fields.year,
         .month = native_fields.month,
@@ -86,9 +90,10 @@ provider_format(const InfiltratrTemporalCalendarProvider *provider,
     gchar *text;
     size_t text_length;
 
-    (void)provider;
+    InfiltratrTemporalCalendarFields checked;
     if (buffer == NULL || capacity == 0U || length == NULL ||
-        calendar_part == CALENDAR_DATE_PART_INVALID)
+        calendar_part == CALENDAR_DATE_PART_INVALID ||
+        !provider_fields(provider, jdn, &checked))
     {
         return false;
     }
@@ -124,7 +129,11 @@ provider_period_start(const InfiltratrTemporalCalendarProvider *provider,
     if (result == NULL || !provider_fields(provider, jdn, &fields))
         return false;
     fields.day = 1;
-    *result = fields_to_jdn(&fields);
+    const int64_t candidate = fields_to_jdn(&fields);
+    InfiltratrTemporalCalendarFields checked;
+    if (!provider_fields(provider, candidate, &checked))
+        return false;
+    *result = candidate;
     return true;
 }
 
@@ -152,7 +161,11 @@ provider_add_periods(const InfiltratrTemporalCalendarProvider *provider,
     fields.day = MIN(
         fields.day,
         calendar_arithmetic_persian_month_length(year, fields.month));
-    *result = fields_to_jdn(&fields);
+    const int64_t candidate = fields_to_jdn(&fields);
+    InfiltratrTemporalCalendarFields checked;
+    if (!provider_fields(provider, candidate, &checked))
+        return false;
+    *result = candidate;
     return true;
 }
 
@@ -171,7 +184,11 @@ provider_add_years(const InfiltratrTemporalCalendarProvider *provider,
     fields.day = MIN(
         fields.day,
         calendar_arithmetic_persian_month_length(fields.year, fields.month));
-    *result = fields_to_jdn(&fields);
+    const int64_t candidate = fields_to_jdn(&fields);
+    InfiltratrTemporalCalendarFields checked;
+    if (!provider_fields(provider, candidate, &checked))
+        return false;
+    *result = candidate;
     return true;
 }
 

@@ -128,49 +128,65 @@ persian_to_jdn(gint64 year,
     return calendar_i64_add_saturating(result, day - 1);
 }
 
-static void
-persian_from_jdn(gint64 jdn,
-                 CalendarCalendarFields *fields)
+/*
+ * The inverse estimates a year from a 33-year cycle, then checks its actual
+ * year starts. Restrict it to the ICU UTC-noon date domain used by this
+ * resource's renderer. That also bounds all intermediate integer products.
+ * In particular, a derived month must be validated BEFORE table indexing.
+ */
+static gboolean
+persian_from_jdn(gint64 jdn, CalendarCalendarFields *fields)
 {
     static const gint month_offsets[] = {
         0, 0, 31, 62, 93, 124, 155, 186,
         216, 246, 276, 306, 336
     };
-    const gint64 days_since_epoch = calendar_i64_subtract_saturating(
-        jdn, CALENDAR_PERSIAN_EPOCH_JDN);
-    gint64 year = calendar_i64_add_saturating(
-        calendar_floor_divide(
-            calendar_i64_add_saturating(
-                calendar_i64_multiply_saturating(
-                    33, days_since_epoch),
-                3),
-            12053),
-        1);
-    gint64 day_index = calendar_i64_subtract_saturating(
-        days_since_epoch, persian_first_day_offset(year));
-    gint month;
+    gint64 year, start, next, day_index;
+    gint month, day;
 
-    if (day_index == 365 && persian_is_correction_year(year))
+    if (fields == NULL ||
+        jdn < INT64_C(2440588) - INT64_C(100000000) ||
+        jdn > INT64_C(2440588) + INT64_C(99999999))
+        return FALSE;
+
+    const gint64 days_since_epoch = jdn - CALENDAR_PERSIAN_EPOCH_JDN;
+    year = calendar_floor_divide(33 * days_since_epoch + 3, 12053) + 1;
+
+    /* The cycle estimate is normally exact or adjacent. Bound adjustment
+     * rather than allowing a corrupt estimate to loop indefinitely. */
+    for (gint attempt = 0; attempt < 8; ++attempt)
     {
-        year = calendar_i64_add_saturating(year, 1);
-        day_index = 0;
+        start = CALENDAR_PERSIAN_EPOCH_JDN + persian_first_day_offset(year);
+        next = CALENDAR_PERSIAN_EPOCH_JDN + persian_first_day_offset(year + 1);
+        if (jdn < start)
+            --year;
+        else if (jdn >= next)
+            ++year;
+        else
+            break;
     }
+    start = CALENDAR_PERSIAN_EPOCH_JDN + persian_first_day_offset(year);
+    next = CALENDAR_PERSIAN_EPOCH_JDN + persian_first_day_offset(year + 1);
+    if (jdn < start || jdn >= next)
+        return FALSE;
 
-    month = day_index < 216 ?
-        (gint)calendar_floor_divide(day_index, 31) + 1 :
-        (gint)calendar_floor_divide(
-            calendar_i64_subtract_saturating(day_index, 6), 30) + 1;
+    day_index = jdn - start;
+    if (day_index < 0 || day_index > 365)
+        return FALSE;
+    month = day_index < 186
+        ? (gint)(day_index / 31) + 1
+        : (gint)((day_index - 186) / 30) + 7;
+    if (month < 1 || month > 12)
+        return FALSE;
+    day = (gint)(day_index - month_offsets[month]) + 1;
+    if (day < 1 || day > persian_month_length(year, month))
+        return FALSE;
 
     *fields = (CalendarCalendarFields){
-        .year = year,
-        .month = month,
-        .day = (gint)calendar_i64_add_saturating(
-            calendar_i64_subtract_saturating(
-                day_index, month_offsets[month]),
-            1),
-        .auxiliary = 0,
-        .special = FALSE
+        .year = year, .month = month, .day = day,
+        .auxiliary = 0, .special = FALSE
     };
+    return TRUE;
 }
 
 gint
@@ -188,10 +204,10 @@ calendar_arithmetic_persian_fields_to_jdn(gint64 year,
     return persian_to_jdn(year, month, day);
 }
 
-void
+gboolean
 calendar_arithmetic_persian_fields_from_jdn(
     gint64 jdn,
     CalendarCalendarFields *fields)
 {
-    persian_from_jdn(jdn, fields);
+    return persian_from_jdn(jdn, fields);
 }

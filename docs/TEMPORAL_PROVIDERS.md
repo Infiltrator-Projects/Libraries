@@ -104,6 +104,16 @@ reverse numeric conversion. Invalid dates are rejected explicitly.
 Independent French Republican and Revised Julian chronologies use a wider
 binary64/year-boundary-safe domain rather than ICU's unrelated limit.
 
+## Persian and Maya arithmetic boundaries
+
+Persian year estimation is bounded by the same UTC-noon day horizon used for
+ICU presentation. Its year estimate is checked against actual year starts and
+both month and day are validated before lookup or publication. Failure applies
+consistently to fields, formatting and period navigation, without rewriting
+caller output. The Maya Long Count checks signed epoch subtraction and reserves
+a tun of intermediate headroom at both signed-JDN endpoints; it does not
+substitute a saturated but plausible historical date.
+
 ## Civil-year and historical-year refusal
 
 The proleptic Gregorian, Julian, ISO-week and derived historical resource

@@ -74,12 +74,18 @@ calendar_mayan_fields_from_jdn(
     gint64 jdn,
     CalendarCalendarFields *fields)
 {
-    const gint64 total_kin = jdn - MAYAN_EPOCH_JDN;
-    const gint64 tun = floor_divide(total_kin, MAYAN_KIN_PER_TUN);
-    const gint kin_in_tun =
-        (gint)positive_modulo(total_kin, MAYAN_KIN_PER_TUN);
+    gint64 total_kin;
+    gint64 tun;
+    gint kin_in_tun;
 
     g_return_if_fail(fields != NULL);
+    if (!infiltratr_i64_subtract_checked(jdn, MAYAN_EPOCH_JDN, &total_kin))
+    {
+        *fields = (CalendarCalendarFields){ 0 };
+        return;
+    }
+    tun = floor_divide(total_kin, MAYAN_KIN_PER_TUN);
+    kin_in_tun = (gint)positive_modulo(total_kin, MAYAN_KIN_PER_TUN);
 
     fields->year = tun;
     fields->month = kin_in_tun / MAYAN_KIN_PER_UINAL;

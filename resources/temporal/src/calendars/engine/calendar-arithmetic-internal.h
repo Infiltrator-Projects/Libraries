@@ -70,7 +70,7 @@ gint calendar_arithmetic_persian_month_length(gint64 year,
 gint64 calendar_arithmetic_persian_fields_to_jdn(gint64 year,
                                                    gint month,
                                                    gint day);
-void calendar_arithmetic_persian_fields_from_jdn(
+gboolean calendar_arithmetic_persian_fields_from_jdn(
     gint64 jdn,
     CalendarCalendarFields *fields);
 

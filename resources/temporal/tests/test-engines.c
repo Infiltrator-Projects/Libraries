@@ -406,6 +406,21 @@ static void test_compact_solar_contract(void)
 
 /* Direct engine callers must also terminate on impossible numerical input;
  * the resource ABI's refusal alone is not enough to prevent an infinite loop. */
+/* The private Maya converter is also directly callable by engine tests.
+ * An unrepresentable epoch subtraction must not execute signed overflow. */
+static void test_mayan_extreme_arithmetic(void)
+{
+    CalendarCalendarFields fields = { .year = 42 };
+    calendar_mayan_fields_from_jdn(G_MININT64, &fields);
+    g_assert_cmpint(fields.year, ==, 0);
+    g_assert_cmpint(fields.month, ==, 0);
+    g_assert_cmpint(fields.day, ==, 0);
+    calendar_mayan_fields_from_jdn(INT64_C(584283), &fields);
+    g_assert_cmpint(fields.year, ==, 0);
+    g_assert_cmpint(fields.month, ==, 0);
+    g_assert_cmpint(fields.day, ==, 0);
+}
+
 static void test_correction_loops_are_bounded(void)
 {
     CalendarCalendarFields fields = {0};
@@ -541,6 +556,7 @@ int main(int argc, char **argv)
     g_test_add_func("/resource-engine/solar-instant-overflow-rejection", test_solar_instant_overflow_rejection);
     g_test_add_func("/resource-engine/compact-solar-contract", test_compact_solar_contract);
     g_test_add_func("/resource-engine/bounded-extreme-corrections", test_correction_loops_are_bounded);
+    g_test_add_func("/resource-engine/mayan-extreme-arithmetic", test_mayan_extreme_arithmetic);
     g_test_add_func("/resource-engine/icu-date-domain", test_icu_finite_dates_and_failure_outputs);
     g_test_add_func("/resource-engine/independent-correction-domain", test_non_icu_correction_domain);
     g_test_add_func("/resource-engine/complete-civil-year-domain", test_complete_civil_year_domain);
