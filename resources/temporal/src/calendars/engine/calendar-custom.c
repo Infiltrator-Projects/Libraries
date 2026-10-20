@@ -183,7 +183,7 @@ iso_fields_to_jdn(const CalendarFields *fields)
 }
 #endif
 
-#if !defined(RESOURCE_SINGLE_CUSTOM) || defined(RESOURCE_JULIAN)
+#if !defined(RESOURCE_SINGLE_CUSTOM) || defined(RESOURCE_JULIAN) || defined(RESOURCE_ROMAN)
 static void
 julian_fields_from_jdn(gint64 jdn,
                        CalendarFields *fields)
@@ -203,7 +203,7 @@ julian_fields_from_jdn(gint64 jdn,
 }
 #endif
 
-#if !defined(RESOURCE_SINGLE_CUSTOM) || defined(RESOURCE_JULIAN)
+#if !defined(RESOURCE_SINGLE_CUSTOM) || defined(RESOURCE_JULIAN) || defined(RESOURCE_ROMAN)
 static gint64
 julian_fields_to_jdn(const CalendarFields *fields)
 {
@@ -211,7 +211,7 @@ julian_fields_to_jdn(const CalendarFields *fields)
 }
 #endif
 
-#if !defined(RESOURCE_SINGLE_CUSTOM) || defined(RESOURCE_JULIAN)
+#if !defined(RESOURCE_SINGLE_CUSTOM) || defined(RESOURCE_JULIAN) || defined(RESOURCE_ROMAN)
 static gint
 julian_month_length(const CalendarFields *fields)
 {
@@ -279,6 +279,7 @@ positivist_month_length(const CalendarFields *fields)
 }
 #endif
 
+#if !defined(RESOURCE_SINGLE_CUSTOM) || (!defined(RESOURCE_BAHAI) && !defined(RESOURCE_BYZANTINE))
 static gint
 default_period_index(gint month)
 {
@@ -290,6 +291,7 @@ default_month_from_period(gint period)
 {
     return period + 1;
 }
+#endif
 
 #if !defined(RESOURCE_SINGLE_CUSTOM) || defined(RESOURCE_JULIAN)
 static gchar *
