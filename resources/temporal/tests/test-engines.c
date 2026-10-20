@@ -6,6 +6,7 @@
 #include "calendar-ancient.h"
 #include "calendar-reform.h"
 #include "calendar-historical.h"
+#include "calendar-bahai.h"
 #include "icu-calendar.h"
 #include "julian-day.h"
 #include "time-astronomy.h"
@@ -485,6 +486,51 @@ static void test_non_icu_correction_domain(void)
     g_assert_cmpint(fields.month, ==, 0);
 }
 
+/*
+ * Civil conversion returns gint years. The resource must validate input JDN
+ * before narrowing; exact endpoint checks protect the limit computation.
+ */
+static void test_checked_civil_jdn_bounds(void)
+{
+    const gint64 gmin = calendar_gregorian_to_jdn(G_MININT, 1, 1);
+    const gint64 gmax = calendar_gregorian_to_jdn(G_MAXINT, 12, 31);
+    const gint64 jmin = calendar_julian_to_jdn(G_MININT, 1, 1);
+    const gint64 jmax = calendar_julian_to_jdn(G_MAXINT, 12, 31);
+    g_assert_true(calendar_gregorian_jdn_representable(gmin));
+    g_assert_true(calendar_gregorian_jdn_representable(gmax));
+    g_assert_false(calendar_gregorian_jdn_representable(gmin - 1));
+    g_assert_false(calendar_gregorian_jdn_representable(gmax + 1));
+    g_assert_true(calendar_julian_jdn_representable(jmin));
+    g_assert_true(calendar_julian_jdn_representable(jmax));
+    g_assert_false(calendar_julian_jdn_representable(jmin - 1));
+    g_assert_false(calendar_julian_jdn_representable(jmax + 1));
+    g_assert_false(calendar_iso_week_jdn_representable(G_MININT64));
+    g_assert_false(calendar_iso_week_jdn_representable(G_MAXINT64));
+}
+
+/* An impossible Badíʿ year must not resolve to Naw-Rúz 1844. The private
+ * engine uses the same explicit invalid-date result as its resource adapter. */
+static void test_bahai_rejects_invalid_year(void)
+{
+    CalendarCalendarFields fields = { .year = G_MAXINT64, .month = 1, .day = 1 };
+    const gint64 epoch = calendar_gregorian_to_jdn(1844, 3, 21);
+    g_assert_cmpint(calendar_bahai_intercalary_days(G_MAXINT64), ==, 0);
+    g_assert_cmpint(calendar_bahai_intercalary_days(G_MININT64), ==, 0);
+    g_assert_cmpint(calendar_bahai_fields_to_jdn(&fields), ==, G_MAXINT64);
+    g_assert_cmpint(calendar_bahai_fields_to_jdn(&fields), !=, epoch);
+    calendar_bahai_fields_from_jdn(G_MAXINT64, &fields);
+    g_assert_cmpint(fields.month, ==, 0);
+    g_assert_cmpint(fields.day, ==, 0);
+    calendar_bahai_fields_from_jdn(G_MININT64, &fields);
+    g_assert_cmpint(fields.day, ==, 0);
+    /* Legitimate intercalary days must not be mistaken for the invalid
+     * sentinel simply because the Badíʿ month number is zero. */
+    calendar_bahai_fields_from_jdn(calendar_gregorian_to_jdn(2024, 2, 28), &fields);
+    g_assert_cmpint(fields.day, >=, 1);
+    g_assert_cmpint(calendar_bahai_fields_to_jdn(&fields), ==,
+                    calendar_gregorian_to_jdn(2024, 2, 28));
+}
+
 int main(int argc, char **argv)
 {
     g_test_init(&argc, &argv, NULL);
@@ -498,6 +544,8 @@ int main(int argc, char **argv)
     g_test_add_func("/resource-engine/icu-date-domain", test_icu_finite_dates_and_failure_outputs);
     g_test_add_func("/resource-engine/independent-correction-domain", test_non_icu_correction_domain);
     g_test_add_func("/resource-engine/complete-civil-year-domain", test_complete_civil_year_domain);
+    g_test_add_func("/resource-engine/checked-civil-jdn-bounds", test_checked_civil_jdn_bounds);
+    g_test_add_func("/resource-engine/bahai-invalid-year-refusal", test_bahai_rejects_invalid_year);
     g_test_add_func("/resource-engine/roman-extreme-format-is-bounded", test_roman_extreme_format_is_bounded);
     return g_test_run();
 }

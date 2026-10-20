@@ -620,6 +620,8 @@ calendar_custom_month_start(CalendarMode mode,
         return CALENDAR_UNIX_EPOCH_JDN;
 
     provider->fields_from_jdn(jdn, &fields);
+    if (mode == CALENDAR_CALENDAR_MODE_BAHAI && fields.day == 0)
+        return G_MAXINT64;
     fields.day = provider->period_origin_day;
     return provider->fields_to_jdn(&fields);
 }
@@ -644,6 +646,8 @@ calendar_custom_add_months(CalendarMode mode,
                 amount, provider->fixed_period_days));
 
     provider->fields_from_jdn(jdn, &fields);
+    if (mode == CALENDAR_CALENDAR_MODE_BAHAI && fields.day == 0)
+        return G_MAXINT64;
     period = provider->period_index(fields.month);
     serial = calendar_i64_add_saturating(
         calendar_i64_add_saturating(
@@ -677,6 +681,8 @@ calendar_custom_add_years(CalendarMode mode,
                 amount, provider->fixed_year_days));
 
     provider->fields_from_jdn(jdn, &fields);
+    if (mode == CALENDAR_CALENDAR_MODE_BAHAI && fields.day == 0)
+        return G_MAXINT64;
     fields.year = calendar_i64_add_saturating(fields.year, amount);
     if (provider->clamp_iso_weeks)
         fields.month = MIN(fields.month, iso_weeks_in_year(fields.year));

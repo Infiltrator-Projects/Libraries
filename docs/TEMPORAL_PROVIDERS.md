@@ -103,3 +103,12 @@ millisecond horizon before conversion, formatting, period navigation or
 reverse numeric conversion. Invalid dates are rejected explicitly.
 Independent French Republican and Revised Julian chronologies use a wider
 binary64/year-boundary-safe domain rather than ICU's unrelated limit.
+
+## Civil-year and historical-year refusal
+
+The proleptic Gregorian, Julian, ISO-week and derived historical resource
+adapters reject JDNs whose conversion would narrow a civil year outside
+GLib's `gint` representation. These limits follow actual Gregorian/Julian
+year endpoints rather than arbitrary epoch windows. A failed Bahá'í year-start
+calculation likewise propagates failure through fields, formatting and
+navigation; the genuine 1844 epoch must never serve as an error fallback.

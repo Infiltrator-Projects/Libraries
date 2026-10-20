@@ -52,6 +52,30 @@ gint calendar_gregorian_day_of_year(gint year,
 gint calendar_iso_weekday(gint64 jdn);
 gchar *calendar_format_iso_date(gint64 jdn);
 
+/*
+ * The civil inverse functions store their year in gint. A JDN outside the
+ * complete representable civil year span must be rejected BEFORE narrowing
+ * that year; a wrapped year could otherwise appear perfectly valid.
+ *
+ * These tests do not imply historical use in the extreme years. ISO weeks
+ * need one extra Gregorian year on either side for week-year rollover.
+ */
+static inline gboolean calendar_gregorian_jdn_representable(gint64 jdn)
+{
+    return jdn >= calendar_gregorian_to_jdn(G_MININT, 1, 1) &&
+           jdn <= calendar_gregorian_to_jdn(G_MAXINT, 12, 31);
+}
+static inline gboolean calendar_julian_jdn_representable(gint64 jdn)
+{
+    return jdn >= calendar_julian_to_jdn(G_MININT, 1, 1) &&
+           jdn <= calendar_julian_to_jdn(G_MAXINT, 12, 31);
+}
+static inline gboolean calendar_iso_week_jdn_representable(gint64 jdn)
+{
+    return jdn >= calendar_gregorian_to_jdn(G_MININT + 1, 1, 1) &&
+           jdn <= calendar_gregorian_to_jdn(G_MAXINT - 1, 12, 31);
+}
+
 G_END_DECLS
 
 #endif

@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.19.72 — 2026-10-20
+
+- Reject calendar JDNs that would narrow the true Gregorian/Julian civil
+  year outside a 32-bit field; cover Gregorian, Julian, ISO-week, Swedish,
+  Roman, Byzantine and derived custom calendars.
+- Propagate Badíʿ calendar year-start calculation failure explicitly rather
+  than substituting the unrelated 21 March 1844 epoch; preserve valid
+  intercalary month-zero semantics.
+- Extend engine and installed-resource tests for extreme JDN inputs,
+  exact civil-year endpoints and Badíʿ epoch/failure separation. Document
+  the numerical domain contracts without altering stable resource identities.
+
+
 ## 1.19.71 — 2026-10-20
 
 - Validate ICU Julian day numbers before integer subtraction or floating

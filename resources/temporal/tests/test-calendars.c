@@ -190,7 +190,27 @@ static void test_unsupported_dates_fail_consistently(void)
         { "french-republican", G_MININT64 },
         { "french-republican", G_MAXINT64 },
         { "revised-julian", G_MININT64 },
-        { "revised-julian", G_MAXINT64 }
+        { "revised-julian", G_MAXINT64 },
+        { "gregorian", G_MININT64 },
+        { "gregorian", G_MAXINT64 },
+        { "julian", G_MININT64 },
+        { "julian", G_MAXINT64 },
+        { "iso-week", G_MININT64 },
+        { "iso-week", G_MAXINT64 },
+        { "roman", G_MININT64 },
+        { "roman", G_MAXINT64 },
+        { "byzantine", G_MININT64 },
+        { "byzantine", G_MAXINT64 },
+        { "international-fixed", G_MININT64 },
+        { "international-fixed", G_MAXINT64 },
+        { "world", G_MININT64 },
+        { "world", G_MAXINT64 },
+        { "positivist", G_MININT64 },
+        { "positivist", G_MAXINT64 },
+        { "swedish-historical", G_MININT64 },
+        { "swedish-historical", G_MAXINT64 },
+        { "bahai", G_MININT64 },
+        { "bahai", G_MAXINT64 }
     };
     for (gsize i = 0U; i < G_N_ELEMENTS(cases); ++i)
     {

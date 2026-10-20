@@ -5,7 +5,7 @@
  * Badíʿ calendar conversion.
  *
  * Years 1-171 B.E. retain the historically used Western civil convention:
- * Naw-Rúz is 21 March. From 172 B.E. (2015) onward Calendar implements
+ * Naw-Rúz is 21 March. From 172 B.E. (2015) onward this resource implements
  * the unified rule announced by the Universal House of Justice: Tehran is the
  * reference location, the northern vernal equinox is calculated
  * astronomically, and Naw-Rúz is the Tehran civil date whose sunset follows
@@ -153,95 +153,91 @@ modern_naw_ruz_jdn(gint gregorian_year)
     return apparent < dusk ? tehran_civil_jdn : calendar_i64_add_saturating(tehran_civil_jdn, 1);
 }
 
-static gint64
-bahai_year_start_jdn(gint64 bahai_year)
+/* Out-of-domain years are not the 1844 epoch. Explicit status is essential:
+ * both field conversion and period navigation must fail rather than silently
+ * reporting an unrelated, but seemingly valid, historical date. */
+static gboolean
+bahai_year_start_jdn(gint64 bahai_year, gint64 *result)
 {
-    const gint64 gregorian_year = calendar_i64_add_saturating(
-        bahai_year, BAHAI_TO_GREGORIAN_YEAR_OFFSET);
+    if (result == NULL ||
+        bahai_year < (gint64)G_MININT - BAHAI_TO_GREGORIAN_YEAR_OFFSET ||
+        bahai_year > (gint64)G_MAXINT - BAHAI_TO_GREGORIAN_YEAR_OFFSET)
+        return FALSE;
 
-    if (bahai_year >= MODERN_BAHAI_FIRST_YEAR &&
-        gregorian_year >= 1000 && gregorian_year <= 3000)
-    {
-        return modern_naw_ruz_jdn((gint)gregorian_year);
-    }
-
-    g_return_val_if_fail(gregorian_year >= G_MININT &&
-                         gregorian_year <= G_MAXINT,
-                         gregorian_to_jdn(1844, 3, 21));
-    return gregorian_to_jdn((gint)gregorian_year, 3, 21);
+    const gint64 gregorian_year =
+        bahai_year + BAHAI_TO_GREGORIAN_YEAR_OFFSET;
+    *result = bahai_year >= MODERN_BAHAI_FIRST_YEAR &&
+              gregorian_year >= 1000 && gregorian_year <= 3000
+        ? modern_naw_ruz_jdn((gint)gregorian_year)
+        : gregorian_to_jdn(gregorian_year, 3, 21);
+    return TRUE;
 }
 
 gint
 calendar_bahai_intercalary_days(gint64 bahai_year)
 {
-    return (gint)calendar_i64_subtract_saturating(
-        calendar_i64_subtract_saturating(
-            bahai_year_start_jdn(
-                calendar_i64_add_saturating(bahai_year, 1)),
-            bahai_year_start_jdn(bahai_year)),
-        361);
+    gint64 start, next;
+    if (!bahai_year_start_jdn(bahai_year, &start) ||
+        !bahai_year_start_jdn(bahai_year + 1, &next))
+        return 0;
+    const gint64 span = next - start;
+    /* Badíʿ years have 365 or 366 days; an unexpected computed year
+     * boundary is a calculation failure, not a calendar value. */
+    return span == 365 || span == 366 ? (gint)(span - 361) : 0;
 }
 
 void
-calendar_bahai_fields_from_jdn(
-    gint64 jdn,
-    CalendarCalendarFields *fields)
+calendar_bahai_fields_from_jdn(gint64 jdn, CalendarCalendarFields *fields)
 {
-    gint gregorian_year;
-    gint gregorian_month;
-    gint gregorian_day;
-    gint64 bahai_year;
-    gint64 start;
-    gint day_index;
+    gint gregorian_year, month, day;
+    gint64 bahai_year, start, next;
+    gint64 day_index;
     gint intercalary;
-
+    CalendarCalendarFields converted = { 0 };
     g_return_if_fail(fields != NULL);
+    *fields = converted;
 
-    jdn_to_gregorian(
-        jdn, &gregorian_year, &gregorian_month, &gregorian_day);
-    (void)gregorian_month;
-    (void)gregorian_day;
-    bahai_year =
-        (gint64)gregorian_year - BAHAI_TO_GREGORIAN_YEAR_OFFSET;
-    start = bahai_year_start_jdn(bahai_year);
+    /* jdn_to_gregorian narrows the civil year to gint. */
+    if (!calendar_gregorian_jdn_representable(jdn)) return;
+    jdn_to_gregorian(jdn, &gregorian_year, &month, &day);
+    (void)month; (void)day;
+    bahai_year = (gint64)gregorian_year - BAHAI_TO_GREGORIAN_YEAR_OFFSET;
+    if (!bahai_year_start_jdn(bahai_year, &start)) return;
     if (jdn < start)
     {
-        bahai_year = calendar_i64_subtract_saturating(
-            bahai_year, 1);
-        start = bahai_year_start_jdn(bahai_year);
+        --bahai_year;
+        if (!bahai_year_start_jdn(bahai_year, &start)) return;
     }
-    else if (jdn >= bahai_year_start_jdn(calendar_i64_add_saturating(bahai_year, 1)))
+    if (!bahai_year_start_jdn(bahai_year + 1, &next)) return;
+    if (jdn >= next)
     {
-        bahai_year = calendar_i64_add_saturating(
-            bahai_year, 1);
-        start = bahai_year_start_jdn(bahai_year);
+        ++bahai_year;
+        start = next;
+        if (!bahai_year_start_jdn(bahai_year + 1, &next)) return;
     }
-
-    fields->year = bahai_year;
-    day_index = (gint)calendar_i64_subtract_saturating(
-        jdn, start);
+    if (jdn < start || jdn >= next) return;
     intercalary = calendar_bahai_intercalary_days(bahai_year);
+    if (intercalary != 4 && intercalary != 5) return;
 
+    day_index = jdn - start;
+    converted.year = bahai_year;
     if (day_index < 18 * 19)
     {
-        fields->month = day_index / 19 + 1;
-        fields->day = day_index % 19 + 1;
-        fields->special = FALSE;
+        converted.month = (gint)(day_index / 19) + 1;
+        converted.day = (gint)(day_index % 19) + 1;
     }
     else if (day_index < 18 * 19 + intercalary)
     {
-        fields->month = 0;
-        fields->day = day_index - 18 * 19 + 1;
-        fields->special = TRUE;
+        converted.month = 0;
+        converted.day = (gint)(day_index - 18 * 19) + 1;
+        converted.special = TRUE;
     }
     else
     {
-        fields->month = 19;
-        fields->day = day_index - 18 * 19 - intercalary + 1;
-        fields->special = FALSE;
+        converted.month = 19;
+        converted.day = (gint)(day_index - 18 * 19 - intercalary) + 1;
     }
-
-    fields->auxiliary = 0;
+    *fields = converted;
 }
 
 gint
@@ -265,23 +261,28 @@ calendar_bahai_month_from_period(gint period)
 }
 
 gint64
-calendar_bahai_fields_to_jdn(
-    const CalendarCalendarFields *fields)
+calendar_bahai_fields_to_jdn(const CalendarCalendarFields *fields)
 {
-    gint64 start;
-    gint offset;
-
-    g_return_val_if_fail(fields != NULL, gregorian_to_jdn(1844, 3, 21));
-    start = bahai_year_start_jdn(fields->year);
-
+    gint64 start, candidate;
+    gint offset, max_day;
+    if (fields == NULL || !bahai_year_start_jdn(fields->year, &start))
+        return G_MAXINT64;
     if (fields->month >= 1 && fields->month <= 18)
+    {
         offset = (fields->month - 1) * 19;
-    else if (fields->month == 0)
-        offset = 18 * 19;
-    else
-        offset = 18 * 19 + calendar_bahai_intercalary_days(fields->year);
+        max_day = 19;
+    }
+    else if (fields->month == 0 || fields->month == 19)
+    {
+        const gint intercalary = calendar_bahai_intercalary_days(fields->year);
+        if (intercalary != 4 && intercalary != 5) return G_MAXINT64;
+        offset = 18 * 19 + (fields->month == 19 ? intercalary : 0);
+        max_day = fields->month == 0 ? intercalary : 19;
+    }
+    else return G_MAXINT64;
 
-    return calendar_i64_add_saturating(
-        calendar_i64_add_saturating(start, offset),
-        fields->day - 1);
+    if (fields->day < 1 || fields->day > max_day) return G_MAXINT64;
+    candidate = start + offset + fields->day - 1;
+    return calendar_gregorian_jdn_representable(candidate)
+        ? candidate : G_MAXINT64;
 }

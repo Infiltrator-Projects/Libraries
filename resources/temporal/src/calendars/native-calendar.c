@@ -8,6 +8,7 @@
 #include "calendar-swedish.h"
 #include "icu-calendar.h"
 #include "catalogue.h"
+#include "julian-day.h"
 #include <string.h>
 
 typedef struct ResourceCalendar ResourceCalendar;
@@ -133,12 +134,22 @@ custom_fields(const ResourceCalendar *provider,
 {
     const ResourceCalendar *builtin = provider;
 
+#if defined(RESOURCE_JULIAN) || defined(RESOURCE_ROMAN) || defined(RESOURCE_BYZANTINE)
+    if (!calendar_julian_jdn_representable(jdn)) return FALSE;
+#elif defined(RESOURCE_ISO_WEEK)
+    if (!calendar_iso_week_jdn_representable(jdn)) return FALSE;
+#elif defined(RESOURCE_INTERNATIONAL_FIXED) || defined(RESOURCE_WORLD) || defined(RESOURCE_POSITIVIST) || defined(RESOURCE_BAHAI)
+    if (!calendar_gregorian_jdn_representable(jdn)) return FALSE;
+#endif
     calendar_custom_fields_from_jdn(builtin->mode, jdn, fields);
     /* Only the bounded-correction chronologies use the all-zero record
      * as an explicit invalid-date sentinel. Other systems (e.g. Maya)
      * legitimately possess month/day zero. */
 #if defined(RESOURCE_FRENCH_REPUBLICAN) || defined(RESOURCE_REVISED_JULIAN)
     return fields->month > 0 && fields->day > 0;
+#elif defined(RESOURCE_BAHAI)
+    /* Badíʿ intercalary month zero is valid; a zero DAY is not. */
+    return fields->day > 0;
 #else
     return TRUE;
 #endif
@@ -195,6 +206,9 @@ swedish_fields(const ResourceCalendar *provider,
                CalendarCalendarFields *fields)
 {
     (void)provider;
+    if (jdn < calendar_julian_to_jdn(G_MININT, 1, 1) ||
+        jdn > calendar_gregorian_to_jdn(G_MAXINT, 12, 31))
+        return FALSE;
     calendar_swedish_fields_from_jdn(jdn, fields);
     return TRUE;
 }

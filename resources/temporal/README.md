@@ -59,3 +59,16 @@ The module names, historical rules and public ABIs are unchanged.
 CI retains symbolized builds for debugging. Only deployed resource copies are
 stripped of DWARF sections; exported functions and runtime ABI stay intact.
 The reproducibility and cross-distribution tests qualify the staged bytes.
+
+## Checked civil-date representation
+
+Calendar resources using the 32-bit Gregorian or Julian civil-year inverse
+validate JDN representability before narrowing the year. ISO weeks preserve
+headroom for adjacent week-year rollover. Formatting and period navigation
+share the same admissibility boundary and fail explicitly without substituting
+a plausible but incorrect date.
+
+The Badíʿ (Bahá'í) resource now distinguishes a failed year-start computation
+from its historically meaningful 1844 epoch. Invalid years do not silently
+become 21 March 1844, and a legitimate intercalary month numbered zero is
+not confused with a failed field conversion.

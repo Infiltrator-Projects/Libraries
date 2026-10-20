@@ -171,3 +171,10 @@ UTC-noon placement into account. French Republican and Revised Julian year
 inverses have a separate larger numeric domain determined by binary64 JDN
 exactness and bounded integer year-start products. Neither range is a legal
 or historical adoption date.
+
+## Distinguishing epoch dates from failed arithmetic
+
+The Badíʿ epoch at 21 March 1844 is a historical reference, not an error
+sentinel. Arithmetic beyond the representable civil-year domain is rejected
+rather than mapped to that epoch. Derived dates across Gregorian/Julian civil
+year narrowing are similarly rejected without presenting wrapped dates.
