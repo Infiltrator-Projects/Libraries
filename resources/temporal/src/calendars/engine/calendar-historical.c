@@ -194,6 +194,11 @@ calendar_revised_julian_fields_from_jdn(
     gint month = 1;
 
     g_return_if_fail(fields != NULL);
+    if (!calendar_corrected_year_jdn_supported(jdn))
+    {
+        *fields = (CalendarCalendarFields){ 0 };
+        return;
+    }
 
     year = (gint64)floorl(
         ((long double)jdn - (long double)anchor) / 365.2422222222222L) +

@@ -110,6 +110,11 @@ calendar_french_fields_from_jdn(
     gint day_of_year;
 
     g_return_if_fail(fields != NULL);
+    if (!calendar_corrected_year_jdn_supported(jdn))
+    {
+        *fields = (CalendarCalendarFields){ 0 };
+        return;
+    }
 
     /* Initial year estimates normally differ by at most one. At extreme
      * JDNs saturating conversion cannot converge; cap correction work and

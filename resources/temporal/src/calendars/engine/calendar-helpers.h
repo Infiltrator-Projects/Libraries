@@ -5,6 +5,19 @@
 #define CALENDAR_CALENDAR_HELPERS_H
 
 #include "calendar-engine-types.h"
+#include "julian-day.h"
+
+/*
+ * Arithmetic inverse-year estimators are only meaningful across the supported
+ * finite civil-date domain. This 200-million-day span includes every historic
+ * implementation period without approaching int64 saturation in year/epoch
+ * products. ICU's signed millisecond horizon is the corresponding bound.
+ */
+static inline gboolean calendar_corrected_year_jdn_supported(gint64 jdn)
+{
+    return jdn >= CALENDAR_UNIX_EPOCH_JDN - G_GINT64_CONSTANT(100000000) &&
+           jdn <= CALENDAR_UNIX_EPOCH_JDN + G_GINT64_CONSTANT(100000000);
+}
 
 G_BEGIN_DECLS
 
