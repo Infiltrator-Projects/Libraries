@@ -484,16 +484,32 @@ hebrew_format_jdn(int64_t jdn,
     return result;
 }
 
+/*
+ * ICU presentation supports only a finite day span, and molad inversions
+ * cannot safely approximate arbitrary int64 JDNs. All five ABI operations
+ * must honor this domain before running Hebrew year correction arithmetic.
+ */
+static bool hebrew_fields_checked(int64_t jdn,
+                                  InfiltratrTemporalCalendarFields *fields)
+{
+    if (fields == NULL ||
+        jdn < HEBREW_UNIX_EPOCH_JDN - INT64_C(100000000) ||
+        jdn > HEBREW_UNIX_EPOCH_JDN + INT64_C(100000000))
+        return false;
+    hebrew_from_jdn(jdn, fields);
+    return fields->month >= 1 && fields->month <= 13 &&
+           fields->day >= 1 &&
+           fields->day <= hebrew_month_length(fields->year, fields->month) &&
+           hebrew_to_jdn(fields->year, fields->month, fields->day) == jdn;
+}
+
 static bool
 provider_fields(const InfiltratrTemporalCalendarProvider *provider,
                 int64_t jdn,
                 InfiltratrTemporalCalendarFields *fields)
 {
     (void)provider;
-    if (fields == NULL)
-        return false;
-    hebrew_from_jdn(jdn, fields);
-    return true;
+    return hebrew_fields_checked(jdn, fields);
 }
 
 static bool
@@ -515,6 +531,8 @@ provider_format(const InfiltratrTemporalCalendarProvider *provider,
         return false;
     }
 
+    InfiltratrTemporalCalendarFields validated;
+    if (!hebrew_fields_checked(jdn, &validated)) return false;
     text = hebrew_format_jdn(jdn, part);
     if (text == NULL || text[0] == '\0')
     {
@@ -542,9 +560,8 @@ provider_period_start(const InfiltratrTemporalCalendarProvider *provider,
     InfiltratrTemporalCalendarFields fields;
 
     (void)provider;
-    if (result == NULL)
+    if (result == NULL || !hebrew_fields_checked(jdn, &fields))
         return false;
-    hebrew_from_jdn(jdn, &fields);
     *result = hebrew_to_jdn(fields.year, fields.month, 1);
     return true;
 }
@@ -558,11 +575,15 @@ provider_add_periods(const InfiltratrTemporalCalendarProvider *provider,
     InfiltratrTemporalCalendarFields fields;
 
     (void)provider;
-    if (result == NULL)
+    if (result == NULL || !hebrew_fields_checked(jdn, &fields))
         return false;
-    hebrew_from_jdn(jdn, &fields);
     hebrew_add_months_to_fields(&fields, amount);
-    *result = hebrew_to_jdn(fields.year, fields.month, fields.day);
+    const int64_t candidate =
+        hebrew_to_jdn(fields.year, fields.month, fields.day);
+    if (candidate < HEBREW_UNIX_EPOCH_JDN - INT64_C(100000000) ||
+        candidate > HEBREW_UNIX_EPOCH_JDN + INT64_C(100000000))
+        return false;
+    *result = candidate;
     return true;
 }
 
@@ -575,15 +596,19 @@ provider_add_years(const InfiltratrTemporalCalendarProvider *provider,
     InfiltratrTemporalCalendarFields fields;
 
     (void)provider;
-    if (result == NULL)
+    if (result == NULL || !hebrew_fields_checked(jdn, &fields))
         return false;
-    hebrew_from_jdn(jdn, &fields);
     fields.year = infiltratr_i64_add_saturating(fields.year, amount);
     if (fields.month == 6 && !hebrew_is_leap(fields.year))
         fields.month = 7;
     fields.day = MIN(fields.day,
                      hebrew_month_length(fields.year, fields.month));
-    *result = hebrew_to_jdn(fields.year, fields.month, fields.day);
+    const int64_t candidate =
+        hebrew_to_jdn(fields.year, fields.month, fields.day);
+    if (candidate < HEBREW_UNIX_EPOCH_JDN - INT64_C(100000000) ||
+        candidate > HEBREW_UNIX_EPOCH_JDN + INT64_C(100000000))
+        return false;
+    *result = candidate;
     return true;
 }
 

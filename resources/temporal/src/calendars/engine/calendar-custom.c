@@ -30,6 +30,15 @@
 
 #include <glib/gi18n-lib.h>
 
+/* Generic unit tests keep the complete engine. The separately compiled
+ * custom .so requires only its selected row; linker section collection then
+ * removes unrelated provider functions and their constant tables. */
+#if defined(RESOURCE_SINGLE_CUSTOM) && defined(__GNUC__)
+#pragma GCC diagnostic ignored "-Wunused-function"
+#pragma GCC diagnostic ignored "-Wunused-const-variable"
+#endif
+
+
 typedef CalendarCalendarMode CalendarMode;
 typedef CalendarCalendarFields CalendarFields;
 
@@ -394,16 +403,21 @@ format_positivist(const CalendarFields *fields,
  * calendars and are intentionally rejected by custom_provider().
  */
 static const CustomCalendarProvider custom_providers[CALENDAR_CALENDAR_MODE_COUNT] = {
+#if !defined(RESOURCE_SINGLE_CUSTOM) || defined(RESOURCE_JULIAN)
     [CALENDAR_CALENDAR_MODE_JULIAN] = {
         julian_fields_from_jdn, julian_fields_to_jdn, julian_month_length,
         format_julian, default_period_index, default_month_from_period,
         12, 0, 0, 1, FALSE
     },
+#endif
+#if !defined(RESOURCE_SINGLE_CUSTOM) || defined(RESOURCE_ISO_WEEK)
     [CALENDAR_CALENDAR_MODE_ISO_WEEK] = {
         iso_fields_from_jdn, iso_fields_to_jdn, iso_month_length,
         format_iso, default_period_index, default_month_from_period,
         0, 7, 0, 1, TRUE
     },
+#endif
+#if !defined(RESOURCE_SINGLE_CUSTOM) || defined(RESOURCE_FRENCH_REPUBLICAN)
     [CALENDAR_CALENDAR_MODE_FRENCH_REPUBLICAN] = {
         calendar_french_fields_from_jdn,
         calendar_french_fields_to_jdn,
@@ -411,11 +425,15 @@ static const CustomCalendarProvider custom_providers[CALENDAR_CALENDAR_MODE_COUN
         default_period_index, default_month_from_period,
         13, 0, 0, 1, FALSE
     },
+#endif
+#if !defined(RESOURCE_SINGLE_CUSTOM) || defined(RESOURCE_ROMAN)
     [CALENDAR_CALENDAR_MODE_ROMAN] = {
         julian_fields_from_jdn, julian_fields_to_jdn, julian_month_length,
         format_roman, default_period_index, default_month_from_period,
         12, 0, 0, 1, FALSE
     },
+#endif
+#if !defined(RESOURCE_SINGLE_CUSTOM) || defined(RESOURCE_MAYAN)
     [CALENDAR_CALENDAR_MODE_MAYAN] = {
         calendar_mayan_fields_from_jdn,
         calendar_mayan_fields_to_jdn,
@@ -423,6 +441,8 @@ static const CustomCalendarProvider custom_providers[CALENDAR_CALENDAR_MODE_COUN
         default_period_index, default_month_from_period,
         18, 20, 360, 0, FALSE
     },
+#endif
+#if !defined(RESOURCE_SINGLE_CUSTOM) || defined(RESOURCE_BAHAI)
     [CALENDAR_CALENDAR_MODE_BAHAI] = {
         calendar_bahai_fields_from_jdn,
         calendar_bahai_fields_to_jdn,
@@ -431,6 +451,8 @@ static const CustomCalendarProvider custom_providers[CALENDAR_CALENDAR_MODE_COUN
         calendar_bahai_month_from_period,
         20, 0, 0, 1, FALSE
     },
+#endif
+#if !defined(RESOURCE_SINGLE_CUSTOM) || defined(RESOURCE_INTERNATIONAL_FIXED)
     [CALENDAR_CALENDAR_MODE_INTERNATIONAL_FIXED] = {
         calendar_fixed_fields_from_jdn,
         calendar_fixed_fields_to_jdn,
@@ -438,6 +460,8 @@ static const CustomCalendarProvider custom_providers[CALENDAR_CALENDAR_MODE_COUN
         default_period_index, default_month_from_period,
         13, 0, 0, 1, FALSE
     },
+#endif
+#if !defined(RESOURCE_SINGLE_CUSTOM) || defined(RESOURCE_WORLD)
     [CALENDAR_CALENDAR_MODE_WORLD] = {
         calendar_world_fields_from_jdn,
         calendar_world_fields_to_jdn,
@@ -445,6 +469,8 @@ static const CustomCalendarProvider custom_providers[CALENDAR_CALENDAR_MODE_COUN
         default_period_index, default_month_from_period,
         12, 0, 0, 1, FALSE
     },
+#endif
+#if !defined(RESOURCE_SINGLE_CUSTOM) || defined(RESOURCE_POSITIVIST)
     [CALENDAR_CALENDAR_MODE_POSITIVIST] = {
         calendar_positivist_fields_from_jdn,
         calendar_positivist_fields_to_jdn,
@@ -452,6 +478,8 @@ static const CustomCalendarProvider custom_providers[CALENDAR_CALENDAR_MODE_COUN
         default_period_index, default_month_from_period,
         13, 0, 0, 1, FALSE
     },
+#endif
+#if !defined(RESOURCE_SINGLE_CUSTOM) || defined(RESOURCE_REVISED_JULIAN)
     [CALENDAR_CALENDAR_MODE_REVISED_JULIAN] = {
         calendar_revised_julian_fields_from_jdn,
         calendar_revised_julian_fields_to_jdn,
@@ -460,6 +488,8 @@ static const CustomCalendarProvider custom_providers[CALENDAR_CALENDAR_MODE_COUN
         default_period_index, default_month_from_period,
         12, 0, 0, 1, FALSE
     },
+#endif
+#if !defined(RESOURCE_SINGLE_CUSTOM) || defined(RESOURCE_BYZANTINE)
     [CALENDAR_CALENDAR_MODE_BYZANTINE] = {
         calendar_byzantine_fields_from_jdn,
         calendar_byzantine_fields_to_jdn,
@@ -469,6 +499,8 @@ static const CustomCalendarProvider custom_providers[CALENDAR_CALENDAR_MODE_COUN
         calendar_byzantine_month_from_period,
         12, 0, 0, 1, FALSE
     },
+#endif
+#if !defined(RESOURCE_SINGLE_CUSTOM) || defined(RESOURCE_EGYPTIAN_NABONASSAR)
     [CALENDAR_CALENDAR_MODE_EGYPTIAN_NABONASSAR] = {
         calendar_egyptian_fields_from_jdn,
         calendar_egyptian_fields_to_jdn,
@@ -477,6 +509,8 @@ static const CustomCalendarProvider custom_providers[CALENDAR_CALENDAR_MODE_COUN
         default_period_index, default_month_from_period,
         13, 0, 365, 1, FALSE
     },
+#endif
+#if !defined(RESOURCE_SINGLE_CUSTOM) || defined(RESOURCE_ARMENIAN_TRADITIONAL)
     [CALENDAR_CALENDAR_MODE_ARMENIAN_TRADITIONAL] = {
         calendar_armenian_fields_from_jdn,
         calendar_armenian_fields_to_jdn,
@@ -485,6 +519,7 @@ static const CustomCalendarProvider custom_providers[CALENDAR_CALENDAR_MODE_COUN
         default_period_index, default_month_from_period,
         13, 0, 365, 1, FALSE
     }
+#endif
 };
 
 static const CustomCalendarProvider *

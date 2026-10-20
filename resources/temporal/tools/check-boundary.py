@@ -26,4 +26,18 @@ for directory, count, entry in [
 for path in (root / "src").rglob("*.[ch]"):
     text = path.read_text()
     assert not re.search(r'#\s*include\s*[<"](?:.*src/core/|calendar-internal\.h|calendar-core\.h)', text), path
-print("54 independently loadable modules; no Calendar application build or ABI dependency")
+# An extracted module must not retain unrelated historical algorithms only
+# because the generic engine-test archive contains every provider.
+for filename, forbidden in [
+    ("Julian Calendar.so", ("calendar_mayan_fields_from_jdn",
+                            "calendar_french_fields_from_jdn")),
+    ("French Republican Calendar.so", ("calendar_mayan_fields_from_jdn",
+                                      "calendar_revised_julian_fields_from_jdn")),
+    ("Maya Long Count Calendar.so", ("calendar_french_fields_from_jdn",
+                                    "calendar_revised_julian_fields_from_jdn")),
+]:
+    module = build / "calendar-resources" / filename
+    symbols = subprocess.check_output(["nm", "--defined-only", str(module)], text=True)
+    defined = {line.split()[-1] for line in symbols.splitlines() if line.split()}
+    assert all(name not in defined for name in forbidden), (module, forbidden)
+print("54 independent modules; no unrelated historical engines in custom binaries")

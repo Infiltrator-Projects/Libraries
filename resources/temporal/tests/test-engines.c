@@ -4,6 +4,8 @@
 #include "calendar-helpers.h"
 #include "calendar-swedish.h"
 #include "calendar-ancient.h"
+#include "calendar-reform.h"
+#include "calendar-historical.h"
 #include "julian-day.h"
 #include "time-astronomy.h"
 #include <glib.h>
@@ -400,6 +402,21 @@ static void test_compact_solar_contract(void)
     g_assert_true(isfinite(declination));
 }
 
+/* Direct engine callers must also terminate on impossible numerical input;
+ * the resource ABI's refusal alone is not enough to prevent an infinite loop. */
+static void test_correction_loops_are_bounded(void)
+{
+    CalendarCalendarFields fields = {0};
+    calendar_french_fields_from_jdn(G_MININT64, &fields);
+    g_assert_cmpint(fields.month, ==, 0);
+    calendar_french_fields_from_jdn(G_MAXINT64, &fields);
+    g_assert_cmpint(fields.month, ==, 0);
+    calendar_revised_julian_fields_from_jdn(G_MININT64, &fields);
+    g_assert_cmpint(fields.month, ==, 0);
+    calendar_revised_julian_fields_from_jdn(G_MAXINT64, &fields);
+    g_assert_cmpint(fields.month, ==, 0);
+}
+
 int main(int argc, char **argv)
 {
     g_test_init(&argc, &argv, NULL);
@@ -409,6 +426,7 @@ int main(int argc, char **argv)
     g_test_add_func("/resource-engine/swedish-historical-boundaries", test_swedish_historical_boundaries);
     g_test_add_func("/resource-engine/solar-instant-overflow-rejection", test_solar_instant_overflow_rejection);
     g_test_add_func("/resource-engine/compact-solar-contract", test_compact_solar_contract);
+    g_test_add_func("/resource-engine/bounded-extreme-corrections", test_correction_loops_are_bounded);
     g_test_add_func("/resource-engine/complete-civil-year-domain", test_complete_civil_year_domain);
     g_test_add_func("/resource-engine/roman-extreme-format-is-bounded", test_roman_extreme_format_is_bounded);
     return g_test_run();

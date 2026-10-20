@@ -14,7 +14,7 @@ CPPFLAGS += -Isrc/support -Isrc/calendars -Isrc/calendars/engine -I../../src -I.
     -DGLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_74 -DGLIB_VERSION_MAX_ALLOWED=GLIB_VERSION_2_74 \
     -DGETTEXT_PACKAGE=\"infiltrator-temporal-resources\" -DU_DISABLE_RENAMING=1
 CFLAGS ?= -O2 -g
-CFLAGS += -std=c11 -fPIC -Wall -Wextra -Wpedantic -Werror -Wformat=2 \
+CFLAGS += -std=c11 -fPIC -ffunction-sections -fdata-sections -Wall -Wextra -Wpedantic -Werror -Wformat=2 \
     -Wshadow -Wstrict-prototypes -Wmissing-prototypes -fstack-protector-strong -fno-common \
     -ffile-prefix-map=$(CURDIR)=. -fdebug-prefix-map=$(CURDIR)=.
 CORE_CFLAGS := $(shell $(PKG_CONFIG) --cflags glib-2.0 icu-i18n)
@@ -49,6 +49,10 @@ CALENDAR_RESOURCE_BUILD_DIR := $(BUILD_DIR)/calendar-resources
 CALENDAR_RESOURCE_MAP := src/calendars/calendar-resource.map
 EXTRACTED_CALENDAR_RESOURCE_NAMES := iso-week julian revised-julian islamic-umalqura islamic-civil islamic-tbla islamic bahai buddhist ethiopian ethiopic-amete-alem chinese dangi indian japanese minguo roman byzantine egyptian-nabonassar armenian-traditional mayan french-republican swedish-historical international-fixed world positivist
 CALENDAR_RESOURCE_NAMES := hebrew gregorian persian coptic thai-buddhist-solar $(EXTRACTED_CALENDAR_RESOURCE_NAMES)
+# One descriptor per compiled custom resource; archive retains full test engine.
+CUSTOM_CALENDAR_RESOURCE_NAMES := iso-week julian revised-julian bahai roman byzantine egyptian-nabonassar armenian-traditional mayan french-republican international-fixed world positivist
+calendar_selected_custom_source = $(if $(filter $(1),$(CUSTOM_CALENDAR_RESOURCE_NAMES)),src/calendars/engine/calendar-custom.c,)
+calendar_selected_custom_define = $(if $(filter $(1),$(CUSTOM_CALENDAR_RESOURCE_NAMES)),-DRESOURCE_SINGLE_CUSTOM=1,)
 HEBREW_RESOURCE_SOURCE := src/calendars/hebrew.c
 GREGORIAN_RESOURCE_SOURCE := src/calendars/gregorian.c
 PERSIAN_RESOURCE_SOURCE := src/calendars/persian.c
@@ -193,13 +197,14 @@ endef
 $(foreach id,hebrew gregorian persian coptic thai-buddhist-solar,$(eval $(call build_native_calendar,$(id))))
 
 define build_extracted_calendar
-$(call calendar_target,$(1)): src/calendars/native-calendar.c src/calendars/catalogue.h $(RESOURCE_ENGINE_ARCHIVE) src/support/julian-day.c $(INFILTRATR_COMMON_ARCHIVE) $(CALENDAR_RESOURCE_MAP)
+$(call calendar_target,$(1)): src/calendars/native-calendar.c src/calendars/catalogue.h $(call calendar_selected_custom_source,$(1)) $(RESOURCE_ENGINE_ARCHIVE) src/support/julian-day.c $(INFILTRATR_COMMON_ARCHIVE) $(CALENDAR_RESOURCE_MAP)
 	@mkdir -p "$(CALENDAR_RESOURCE_BUILD_DIR)"
-	$(CC) $(CPPFLAGS) $(CFLAGS) -fvisibility=hidden -DRESOURCE_$(calendar_variant_$(1)) $(CORE_CFLAGS) \
+	$(CC) $(CPPFLAGS) $(CFLAGS) -fvisibility=hidden -DRESOURCE_$(calendar_variant_$(1)) $(call calendar_selected_custom_define,$(1)) $(CORE_CFLAGS) \
 		-DINFILTRATR_TEMPORAL_DISPLAY_NAME='"$(calendar_name_$(1))"' \
 		-shared src/calendars/native-calendar.c src/support/julian-day.c \
+		$(call calendar_selected_custom_source,$(1)) \
 		$(RESOURCE_ENGINE_ARCHIVE) $(INFILTRATR_COMMON_ARCHIVE) \
-		-Wl,--version-script=$(CALENDAR_RESOURCE_MAP) -Wl,-z,defs \
+		-Wl,--version-script=$(CALENDAR_RESOURCE_MAP) -Wl,-z,defs -Wl,--gc-sections \
 		-o "$$@" $(LDFLAGS) $(CORE_LIBS) $(ICU_BRIDGE_LIBS) $(MATH_LIBS)
 endef
 $(foreach id,$(EXTRACTED_CALENDAR_RESOURCE_NAMES),$(eval $(call build_extracted_calendar,$(id))))

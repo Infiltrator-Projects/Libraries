@@ -199,13 +199,29 @@ calendar_revised_julian_fields_from_jdn(
         ((long double)jdn - (long double)anchor) / 365.2422222222222L) +
         REVISED_JULIAN_ANCHOR_YEAR;
 
-    while (jdn < revised_julian_year_start(year))
+    /* Initial year estimates normally differ by at most one. At extreme
+     * JDNs saturating conversion cannot converge; cap correction work and
+     * signal unsupported input instead of trapping an app in a loop. */
+    for (gint i = 0; i < 8 && jdn < revised_julian_year_start(year); ++i)
         year = calendar_i64_subtract_saturating(year, 1);
-    while (jdn >= revised_julian_year_start(calendar_i64_add_saturating(year, 1)))
+    for (gint i = 0; i < 8 &&
+         jdn >= revised_julian_year_start(calendar_i64_add_saturating(year, 1)); ++i)
         year = calendar_i64_add_saturating(year, 1);
+    if (jdn < revised_julian_year_start(year) ||
+        jdn >= revised_julian_year_start(calendar_i64_add_saturating(year, 1)))
+    {
+        *fields = (CalendarCalendarFields){ 0 };
+        return;
+    }
 
     start = revised_julian_year_start(year);
-    remaining = (gint)(jdn - start);
+    const gint64 offset = calendar_i64_subtract_saturating(jdn, start);
+    if (offset < 0 || offset > 365)
+    {
+        *fields = (CalendarCalendarFields){ 0 };
+        return;
+    }
+    remaining = (gint)offset;
     while (month < 12)
     {
         CalendarCalendarFields cursor = {

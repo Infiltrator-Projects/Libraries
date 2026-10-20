@@ -175,6 +175,102 @@ static void test_thai_historical_missing_months(void)
     infiltratr_temporal_calendar_module_free(module);
 }
 
+/*
+ * Field extraction is the authority for whether a provider supports a JDN.
+ * A renderer (including ICU) must not silently invent a date after that
+ * conversion fails. Failure cannot partially overwrite caller-owned output.
+ */
+static void test_unsupported_dates_fail_consistently(void)
+{
+    static const struct { const char *id; gint64 day; } cases[] = {
+        { "islamic-umalqura", INT64_C(2408761) },
+        { "islamic-umalqura", INT64_C(2515427) },
+        { "hebrew", G_MININT64 },
+        { "hebrew", G_MAXINT64 },
+        { "french-republican", G_MININT64 },
+        { "french-republican", G_MAXINT64 },
+        { "revised-julian", G_MININT64 },
+        { "revised-julian", G_MAXINT64 }
+    };
+    for (gsize i = 0U; i < G_N_ELEMENTS(cases); ++i)
+    {
+        g_autofree gchar *name = test_calendar_filename(cases[i].id);
+        g_autofree gchar *path = g_build_filename(
+            TEST_CALENDAR_RESOURCE_DIRECTORY, name, NULL);
+        InfiltratrTemporalCalendarModule *module =
+            infiltratr_temporal_calendar_module_open(path);
+        InfiltratrTemporalCalendarFields fields = {0};
+        char text[256] = "untouched";
+        size_t length = 17U;
+        gint64 output = INT64_C(1234567);
+        g_assert_nonnull(module);
+        g_test_message("invalid %s JDN %" G_GINT64_FORMAT,
+                       cases[i].id, cases[i].day);
+        g_assert_false(infiltratr_temporal_calendar_fields_from_jdn(
+            module, cases[i].day, &fields));
+        g_assert_false(infiltratr_temporal_calendar_format(
+            module, cases[i].day,
+            INFILTRATR_TEMPORAL_CALENDAR_DATE_PART_FULL,
+            text, sizeof(text), &length));
+        g_assert_cmpstr(text, ==, "untouched");
+        g_assert_cmpuint(length, ==, 17U);
+        g_assert_false(infiltratr_temporal_calendar_period_start(
+            module, cases[i].day, &output));
+        g_assert_false(infiltratr_temporal_calendar_add_periods(
+            module, cases[i].day, 1, &output));
+        g_assert_false(infiltratr_temporal_calendar_add_years(
+            module, cases[i].day, 1, &output));
+        g_assert_cmpint(output, ==, INT64_C(1234567));
+        infiltratr_temporal_calendar_module_free(module);
+    }
+}
+
+/* No individual provider may use a different chronology when navigating
+ * than when it formats or extracts the resulting date. */
+static void test_calendar_navigation_cross_checks(void)
+{
+    g_autofree gchar *catalogue = NULL;
+    gchar **ids;
+    g_assert_true(g_file_get_contents(
+        "src/calendars/catalogue.txt", &catalogue, NULL, NULL));
+    ids = g_strsplit(catalogue, "\n", -1);
+    for (guint i = 0U; ids[i] != NULL; ++i)
+    {
+        if (ids[i][0] == '\0') continue;
+        g_autofree gchar *filename = test_calendar_filename(ids[i]);
+        g_autofree gchar *path = g_build_filename(
+            TEST_CALENDAR_RESOURCE_DIRECTORY, filename, NULL);
+        InfiltratrTemporalCalendarModule *module =
+            infiltratr_temporal_calendar_module_open(path);
+        g_assert_nonnull(module);
+        for (gint64 jdn = INT64_C(2451545);
+             jdn <= INT64_C(2451546); ++jdn)
+        {
+            InfiltratrTemporalCalendarFields fields;
+            gint64 new_day;
+            char formatted[1024];
+            g_assert_true(infiltratr_temporal_calendar_fields_from_jdn(
+                module, jdn, &fields));
+            for (gint amount = -1; amount <= 1; amount += 2)
+            {
+                g_assert_true(infiltratr_temporal_calendar_add_periods(
+                    module, jdn, amount, &new_day));
+                g_assert_true(infiltratr_temporal_calendar_fields_from_jdn(
+                    module, new_day, &fields));
+                g_assert_true(infiltratr_temporal_calendar_format(
+                    module, new_day, INFILTRATR_TEMPORAL_CALENDAR_DATE_PART_FULL,
+                    formatted, sizeof(formatted), NULL));
+                g_assert_true(infiltratr_temporal_calendar_add_years(
+                    module, jdn, amount, &new_day));
+                g_assert_true(infiltratr_temporal_calendar_fields_from_jdn(
+                    module, new_day, &fields));
+            }
+        }
+        infiltratr_temporal_calendar_module_free(module);
+    }
+    g_strfreev(ids);
+}
+
 /* Several readers race first-touch initialization. The catalogue must be
  * completely published before any thread sees optional entries. */
 static gpointer catalogue_reader(gpointer user_data)
@@ -207,5 +303,7 @@ int main(int argc, char **argv)
     g_test_add_func("/resources/00-concurrent-catalogue-initialization", test_concurrent_catalogue_readers);
     g_test_add_func("/resources/historical-chronology-anchors", test_historical_chronology_anchors);
     g_test_add_func("/resources/thai-historical-transition", test_thai_historical_missing_months);
+    g_test_add_func("/resources/unsupported-dates-fail-consistently", test_unsupported_dates_fail_consistently);
+    g_test_add_func("/resources/calendar-navigation-cross-checks", test_calendar_navigation_cross_checks);
     return g_test_run();
 }

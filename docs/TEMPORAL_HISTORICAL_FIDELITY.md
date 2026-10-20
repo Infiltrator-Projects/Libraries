@@ -153,3 +153,13 @@ Remaining rows reflect repository source inspection rather than independently
 proven exhaustive historical accuracy. No additional calendar may be called
 "historically verified" until its entire claimed period and variants have
 adequate evidence and regression vectors.
+
+## Numeric representation constraints
+
+The historical calendar model and its computational validity range are separate
+claims. Umm al-Qura's finite AH 1300–1600 month table is binding for fields,
+formatting and navigation even when ICU might display a plausible date beyond
+that range. Hebrew molad arithmetic accepts the bounded civil-date/JDN domain
+its ICU presentation can represent. French Republican and Revised Julian
+conversion do not assert meaningful results after year correction loses
+precision at extreme JDN values; such inputs explicitly fail.

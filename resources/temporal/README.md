@@ -34,3 +34,16 @@ Common CI installs and executes those exact package bytes on Debian 12, Debian 1
 and Ubuntu 24.04. Newer build-host headers must not raise the shipped GLib ABI.
 `tools/check-installed.sh` tests every installed provider through the public ABI
 without rebuilding any implementation.
+
+## Compiled resource isolation
+
+The full calendar engine archive is retained for direct unit qualification.
+Extracted custom calendars compile a single selected descriptor and collect
+unreferenced functions/data at the resource link step; this prevents a Julian
+calendar binary, for example, from carrying Maya and French Republican rules.
+The boundary checker inspects internal symbols in representative `.so` files.
+
+Each provider's fields operation defines its supported date domain. Formatting
+and navigation must reject the same unsupported inputs, including dates beyond
+the bounded Umm al-Qura table. Extreme saturated Julian-day conversions must
+terminate with an explicit unsupported result rather than looping indefinitely.

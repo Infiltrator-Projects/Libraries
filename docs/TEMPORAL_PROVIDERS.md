@@ -86,3 +86,12 @@ For example, the stable clock ID `decimal` is compiled directly as
 ABIs and resolve by stable metadata ID, not by filename. Tests reject any
 filename that differs from the provider's embedded canonical name. APT package
 upgrades remove the package-owned old short-name files; no aliases are shipped.
+
+## Chronology-domain consistency
+
+Field extraction is authoritative for whether a provider supports an input
+JDN. Text formatting, period start and navigation may never use a broader
+chronology simply because ICU or another renderer knows one. In particular,
+Umm al-Qura is bounded to AH 1300–1600 across all operations. Numerical
+extremes must be rejected with bounded work and without mutating caller-owned
+output on failure. This contract is exercised through all resource ABIs.

@@ -134,7 +134,14 @@ custom_fields(const ResourceCalendar *provider,
     const ResourceCalendar *builtin = provider;
 
     calendar_custom_fields_from_jdn(builtin->mode, jdn, fields);
+    /* Only the bounded-correction chronologies use the all-zero record
+     * as an explicit invalid-date sentinel. Other systems (e.g. Maya)
+     * legitimately possess month/day zero. */
+#if defined(RESOURCE_FRENCH_REPUBLICAN) || defined(RESOURCE_REVISED_JULIAN)
+    return fields->month > 0 && fields->day > 0;
+#else
     return TRUE;
+#endif
 }
 
 static gchar *
@@ -145,7 +152,8 @@ custom_format(const ResourceCalendar *provider,
     const ResourceCalendar *builtin = provider;
     CalendarCalendarFields fields;
 
-    calendar_custom_fields_from_jdn(builtin->mode, jdn, &fields);
+    if (!custom_fields(provider, jdn, &fields))
+        return NULL;
     return calendar_custom_format(builtin->mode, &fields, part);
 }
 
@@ -259,10 +267,15 @@ static bool format(const InfiltratrTemporalCalendarProvider *self,
     char *buffer, size_t capacity, size_t *length)
 {
     gchar *text;
+    CalendarCalendarFields validated_fields;
     (void)self;
     if (buffer == NULL || capacity == 0U ||
         part < INFILTRATR_TEMPORAL_CALENDAR_DATE_PART_DAY ||
-        part > INFILTRATR_TEMPORAL_CALENDAR_DATE_PART_FULL) return false;
+        part > INFILTRATR_TEMPORAL_CALENDAR_DATE_PART_FULL ||
+        !native.fields_from_jdn(&native, jdn, &validated_fields))
+        return false;
+    /* Field conversion owns supported chronology. Formatting must not ask
+     * ICU to invent dates outside a bounded arithmetic provider's range. */
     text = native.format(&native, jdn, (CalendarDatePart)part);
     if (text == NULL || *text == '\0') { g_free(text); return false; }
     const size_t size = strlen(text);

@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.19.70 — 2026-10-20
+
+- Compile only the selected custom calendar descriptor into each extracted
+  calendar .so, collect unused engine sections, and assert isolation from
+  unrelated history algorithms in the binary boundary checker.
+- Make every extracted calendar's ICU/localized format obey the same supported
+  date range as its field conversion, including bounded Umm al-Qura years.
+- Bound correction loops for French Republican and Revised Julian arithmetic,
+  and reject Hebrew JDNs outside its representable civil/ICU date domain.
+- Extend resource and engine tests for extreme failure and navigation parity
+  without changing any of the 31 calendar or 23 clock identities.
+
+
 ## 1.19.69 — 2026-10-20
 
 - Select calendar and clock modules by fully validated executable provider

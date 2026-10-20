@@ -4,7 +4,7 @@
 /*
  * Reform-calendar conversion.
  *
- * Calendar uses the arithmetic (Romme-style) continuation of the French
+ * The resource uses the arithmetic (Romme-style) continuation of the French
  * Republican calendar: the historical epoch is fixed at JDN 2375840 and leap
  * years follow the shifted Gregorian 400-year rule.  That choice is deliberate
  * because several incompatible post-historical proposals exist; callers must
@@ -111,13 +111,29 @@ calendar_french_fields_from_jdn(
 
     g_return_if_fail(fields != NULL);
 
-    while (jdn < french_year_start(year))
+    /* Initial year estimates normally differ by at most one. At extreme
+     * JDNs saturating conversion cannot converge; cap correction work and
+     * signal unsupported input instead of trapping an app in a loop. */
+    for (gint i = 0; i < 8 && jdn < french_year_start(year); ++i)
         year = calendar_i64_subtract_saturating(year, 1);
-    while (jdn >= french_year_start(calendar_i64_add_saturating(year, 1)))
+    for (gint i = 0; i < 8 &&
+         jdn >= french_year_start(calendar_i64_add_saturating(year, 1)); ++i)
         year = calendar_i64_add_saturating(year, 1);
+    if (jdn < french_year_start(year) ||
+        jdn >= french_year_start(calendar_i64_add_saturating(year, 1)))
+    {
+        *fields = (CalendarCalendarFields){ 0 };
+        return;
+    }
 
     start = french_year_start(year);
-    day_of_year = (gint)(jdn - start);
+    const gint64 offset = calendar_i64_subtract_saturating(jdn, start);
+    if (offset < 0 || offset > 365)
+    {
+        *fields = (CalendarCalendarFields){ 0 };
+        return;
+    }
+    day_of_year = (gint)offset;
 
     fields->year = year;
     fields->month = day_of_year / 30 + 1;
