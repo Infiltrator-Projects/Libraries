@@ -5,6 +5,7 @@
 #include "calendar-engine-types.h"
 #include "calendar-arithmetic.h"
 #include "calendar-custom.h"
+#include "calendar-historical.h"
 #include "calendar-swedish.h"
 #include "icu-calendar.h"
 #include "catalogue.h"
@@ -156,6 +157,10 @@ custom_fields(const ResourceCalendar *provider,
 #elif defined(RESOURCE_BAHAI)
     /* Badíʿ intercalary month zero is valid; a zero DAY is not. */
     return fields->day > 0;
+#elif defined(RESOURCE_EGYPTIAN_NABONASSAR)
+    return calendar_egyptian_jdn_reversible(jdn, fields);
+#elif defined(RESOURCE_ARMENIAN_TRADITIONAL)
+    return calendar_armenian_jdn_reversible(jdn, fields);
 #else
     return TRUE;
 #endif

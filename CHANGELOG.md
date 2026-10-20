@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.19.74 — 2026-10-21
+
+- Reject non-reversible Egyptian Nabonassar and Armenian wandering-year JDN
+  extremes using checked year, epoch and day arithmetic.
+- Align Hebrew fields with ICU's finite UTC-noon display horizon, and remove
+  duplicated ICU locale, Unicode conversion, formatting and buffer machinery.
+  The native Hebrew chronology remains independent.
+- Replace expensive polar seasonal N/A future probes with bounded one-minute
+  retries; valid clocks must still locate a real visible tick.
+- Extend installed-ABI tests for ancient/ICU date rejection and polar retries;
+  preserve all 54 resource IDs, canonical names and public ABI contracts.
+
+
 ## 1.19.73 — 2026-10-20
 
 - Reject unsupported Persian arithmetic before indexing month offsets; validate

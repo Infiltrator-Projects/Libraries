@@ -180,7 +180,7 @@ $(RESOURCE_ENGINE_ARCHIVE): $(RESOURCE_ENGINE_OBJECTS)
 
 # Each compiler invocation produces its canonical named .so directly; no
 # post-build rename, alias or application-specific display substitution.
-calendar_native_sources_hebrew := src/calendars/hebrew.c src/calendars/engine/icu-compat-bridge.c
+calendar_native_sources_hebrew := src/calendars/hebrew.c src/support/julian-day.c src/calendars/engine/icu-calendar.c src/calendars/engine/icu-compat-bridge.c
 calendar_native_sources_gregorian := src/calendars/gregorian.c src/support/julian-day.c src/calendars/engine/icu-calendar.c src/calendars/engine/icu-compat-bridge.c
 calendar_native_sources_persian := src/calendars/persian.c src/calendars/arithmetic-persian.c src/support/julian-day.c src/calendars/engine/icu-calendar.c src/calendars/engine/icu-compat-bridge.c
 calendar_native_sources_coptic := src/calendars/coptic.c src/calendars/engine/calendar-arithmetic-coptic.c src/support/julian-day.c src/calendars/engine/icu-calendar.c src/calendars/engine/icu-compat-bridge.c
@@ -193,7 +193,7 @@ $(call calendar_target,$(1)): $(calendar_native_sources_$(1)) $(CALENDAR_NATIVE_
 		-frandom-seed=$(REPRO_SEED_PREFIX)-$(1)-resource \
 		-DINFILTRATR_TEMPORAL_DISPLAY_NAME='"$(calendar_name_$(1))"' \
 		-shared $(calendar_native_sources_$(1)) $(INFILTRATR_COMMON_ARCHIVE) \
-		-Wl,--version-script=$(CALENDAR_RESOURCE_MAP) -o "$$@" \
+		-Wl,--version-script=$(CALENDAR_RESOURCE_MAP) -Wl,--gc-sections -o "$$@" \
 		$(LDFLAGS) $(CORE_LIBS) $(ICU_BRIDGE_LIBS) $(MATH_LIBS)
 endef
 $(foreach id,hebrew gregorian persian coptic thai-buddhist-solar,$(eval $(call build_native_calendar,$(id))))

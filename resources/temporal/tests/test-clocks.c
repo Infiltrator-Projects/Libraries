@@ -610,6 +610,32 @@ static void test_seasonal_resources(void)
     g_assert_true(g_str_has_prefix(text,"Heure "));
 }
 
+/* Undefined polar solar events have no boundary to bisect. */
+static void test_seasonal_polar_retry(void)
+{
+    static const char *const ids[] = {
+        "roman-temporal", "japanese-temporal",
+        "japanese-temporal-early", "nuremberg-solar"
+    };
+    for (gsize i = 0U; i < G_N_ELEMENTS(ids); ++i) {
+        g_autofree gchar *path = test_clock_path(ids[i]);
+        InfiltratrTemporalClockModule *module =
+            infiltratr_temporal_clock_module_open(path);
+        char text[256] = {0};
+        guint32 delay = 0U;
+        g_assert_nonnull(module);
+        g_assert_true(infiltratr_temporal_clock_format(
+            module, "en", INT64_C(946728000000000), 0,
+            false, false, 90.0, 0.0, text, sizeof(text), NULL));
+        g_assert_true(g_str_has_prefix(text, "N/A"));
+        g_assert_true(infiltratr_temporal_clock_next_tick(
+            module, INT64_C(946728000000000), 0,
+            false, 90.0, 0.0, &delay));
+        g_assert_cmpuint(delay, ==, 60000U);
+        infiltratr_temporal_clock_module_free(module);
+    }
+}
+
 static void test_localized_edo_clock(void)
 {
     static const struct {
@@ -686,6 +712,7 @@ int main(int argc, char **argv)
     g_test_add_func("/clock-resource/known-epoch-vectors",
                     test_resource_known_epoch_vectors);
     g_test_add_func("/clock-resource/seasonal-boundaries",test_seasonal_resources);
+    g_test_add_func("/clock-resource/seasonal-polar-retry", test_seasonal_polar_retry);
     g_test_add_func("/clock-resource/edo-locales",test_localized_edo_clock);
     g_test_add_func("/clock-resource/conventional-ui-language",test_conventional_ui_language);
     return g_test_run();

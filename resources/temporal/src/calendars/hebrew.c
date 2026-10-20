@@ -16,10 +16,7 @@
 #include <infiltratr/temporal_calendar.h>
 
 #include <glib.h>
-#include <unicode/ucal.h>
-#include <unicode/udat.h>
-#include <unicode/uloc.h>
-#include <unicode/ustring.h>
+#include "resource-format.h"
 
 #include <stdint.h>
 #include <string.h>
@@ -32,7 +29,6 @@
 #define CALENDAR_RESOURCE_EXPORT
 #endif
 
-#define MILLISECONDS_PER_DAY 86400000.0
 #define HEBREW_UNIX_EPOCH_JDN INT64_C(2440588)
 
 enum
@@ -69,7 +65,6 @@ static const gint hebrew_leap_month_start[14][3] = {
     { 354, 355, 356 }, { 383, 384, 385 }
 };
 
-static const UChar utc_zone[] = { 0x0055, 0x0054, 0x0043, 0 };
 
 static int64_t
 floor_divide(int64_t value,
@@ -297,193 +292,6 @@ hebrew_add_months_to_fields(InfiltratrTemporalCalendarFields *fields,
     fields->day = MIN(fields->day, hebrew_month_length(year, fields->month));
 }
 
-static gboolean
-make_icu_locale(gchar *locale,
-                gint32 locale_capacity)
-{
-    UErrorCode status = U_ZERO_ERROR;
-    const gchar *language;
-
-    if (locale == NULL || locale_capacity <= 0)
-        return FALSE;
-
-    language = g_get_language_names()[0];
-    if (infiltratr_string_equal(language, "C") ||
-        infiltratr_string_equal(language, "POSIX"))
-    {
-        language = "en_US";
-    }
-    infiltratr_copy_string(locale, (size_t)locale_capacity, language);
-    uloc_setKeywordValue("calendar",
-                         "hebrew",
-                         locale,
-                         locale_capacity,
-                         &status);
-    return U_SUCCESS(status);
-}
-
-static UCalendar *
-open_hebrew_calendar(UErrorCode *status)
-{
-    gchar locale[ULOC_FULLNAME_CAPACITY];
-
-    if (!make_icu_locale(locale, G_N_ELEMENTS(locale)))
-    {
-        *status = U_ILLEGAL_ARGUMENT_ERROR;
-        return NULL;
-    }
-
-    return ucal_open(utc_zone, 3, locale, UCAL_DEFAULT, status);
-}
-
-static UDate
-jdn_to_udate(int64_t jdn)
-{
-    return ((UDate)jdn - (UDate)HEBREW_UNIX_EPOCH_JDN) *
-               MILLISECONDS_PER_DAY +
-           MILLISECONDS_PER_DAY / 2.0;
-}
-
-static gchar *
-utf16_to_utf8(const UChar *source,
-              gint32 source_length)
-{
-    UErrorCode status = U_ZERO_ERROR;
-    gint32 required = 0;
-    gchar *result;
-    size_t capacity = 0U;
-
-    u_strToUTF8(NULL, 0, &required, source, source_length, &status);
-    if (status != U_BUFFER_OVERFLOW_ERROR && U_FAILURE(status))
-        return g_strdup("");
-
-    status = U_ZERO_ERROR;
-    if (required < 0 ||
-        !infiltratr_size_add_checked((size_t)required, 1U, &capacity) ||
-        capacity > (size_t)G_MAXINT32)
-    {
-        return g_strdup("");
-    }
-
-    result = g_malloc(capacity);
-    u_strToUTF8(result,
-                (gint32)capacity,
-                NULL,
-                source,
-                source_length,
-                &status);
-    if (U_FAILURE(status))
-    {
-        g_free(result);
-        return g_strdup("");
-    }
-    return result;
-}
-
-static const gchar *
-pattern_for_part(InfiltratrTemporalCalendarDatePart part)
-{
-    if (part == INFILTRATR_TEMPORAL_CALENDAR_DATE_PART_DAY)
-        return "d";
-    if (part == INFILTRATR_TEMPORAL_CALENDAR_DATE_PART_MONTH)
-        return "LLLL";
-    if (part == INFILTRATR_TEMPORAL_CALENDAR_DATE_PART_YEAR)
-        return "y";
-    if (part == INFILTRATR_TEMPORAL_CALENDAR_DATE_PART_FULL)
-        return "EEEE, d MMMM y G";
-    return "d MMMM y G";
-}
-
-static gchar *
-hebrew_format_jdn(int64_t jdn,
-                  InfiltratrTemporalCalendarDatePart part)
-{
-    UErrorCode status = U_ZERO_ERROR;
-    gchar locale[ULOC_FULLNAME_CAPACITY];
-    UChar pattern_utf16[128];
-    gint32 pattern_length = 0;
-    UDateFormat *formatter;
-    UCalendar *calendar;
-    UChar stack_buffer[256];
-    UChar *output = stack_buffer;
-    gint32 capacity = G_N_ELEMENTS(stack_buffer);
-    gint32 length;
-    gchar *result;
-    const gchar *pattern = pattern_for_part(part);
-
-    if (!make_icu_locale(locale, G_N_ELEMENTS(locale)))
-        return g_strdup("");
-
-    u_strFromUTF8(pattern_utf16,
-                  G_N_ELEMENTS(pattern_utf16),
-                  &pattern_length,
-                  pattern,
-                  -1,
-                  &status);
-    if (U_FAILURE(status))
-        return g_strdup("");
-
-    formatter = udat_open(UDAT_PATTERN,
-                          UDAT_PATTERN,
-                          locale,
-                          utc_zone,
-                          3,
-                          pattern_utf16,
-                          pattern_length,
-                          &status);
-    if (U_FAILURE(status) || formatter == NULL)
-        return g_strdup("");
-
-    calendar = open_hebrew_calendar(&status);
-    if (U_FAILURE(status) || calendar == NULL)
-    {
-        udat_close(formatter);
-        return g_strdup("");
-    }
-    udat_setCalendar(formatter, calendar);
-    ucal_close(calendar);
-
-    length = udat_format(formatter,
-                         jdn_to_udate(jdn),
-                         output,
-                         capacity,
-                         NULL,
-                         &status);
-    if (status == U_BUFFER_OVERFLOW_ERROR)
-    {
-        size_t element_count = 0U;
-        size_t allocation_bytes = 0U;
-
-        status = U_ZERO_ERROR;
-        if (length < 0 ||
-            !infiltratr_size_add_checked(
-                (size_t)length, 1U, &element_count) ||
-            element_count > (size_t)G_MAXINT32 ||
-            !infiltratr_size_multiply_checked(
-                element_count, sizeof(UChar), &allocation_bytes))
-        {
-            udat_close(formatter);
-            return g_strdup("");
-        }
-
-        capacity = (gint32)element_count;
-        output = g_malloc(allocation_bytes);
-        length = udat_format(formatter,
-                             jdn_to_udate(jdn),
-                             output,
-                             capacity,
-                             NULL,
-                             &status);
-    }
-
-    result = U_FAILURE(status) ? g_strdup("") :
-             utf16_to_utf8(output, length);
-    if (output != stack_buffer)
-        g_free(output);
-    udat_close(formatter);
-    return result;
-}
-
 /*
  * ICU presentation supports only a finite day span, and molad inversions
  * cannot safely approximate arbitrary int64 JDNs. All five ABI operations
@@ -494,7 +302,7 @@ static bool hebrew_fields_checked(int64_t jdn,
 {
     if (fields == NULL ||
         jdn < HEBREW_UNIX_EPOCH_JDN - INT64_C(100000000) ||
-        jdn > HEBREW_UNIX_EPOCH_JDN + INT64_C(100000000))
+        jdn > HEBREW_UNIX_EPOCH_JDN + INT64_C(99999999))
         return false;
     hebrew_from_jdn(jdn, fields);
     return fields->month >= 1 && fields->month <= 13 &&
@@ -516,40 +324,20 @@ static bool
 provider_format(const InfiltratrTemporalCalendarProvider *provider,
                 int64_t jdn,
                 InfiltratrTemporalCalendarDatePart part,
-                char *buffer,
-                size_t capacity,
-                size_t *length)
+                char *buffer, size_t capacity, size_t *length)
 {
-    gchar *text;
-    size_t text_length;
+    InfiltratrTemporalCalendarFields checked;
 
     (void)provider;
     if (buffer == NULL || capacity == 0U || length == NULL ||
-        part <= INFILTRATR_TEMPORAL_CALENDAR_DATE_PART_INVALID ||
-        part > INFILTRATR_TEMPORAL_CALENDAR_DATE_PART_FULL)
-    {
+        !hebrew_fields_checked(jdn, &checked))
         return false;
-    }
 
-    InfiltratrTemporalCalendarFields validated;
-    if (!hebrew_fields_checked(jdn, &validated)) return false;
-    text = hebrew_format_jdn(jdn, part);
-    if (text == NULL || text[0] == '\0')
-    {
-        g_free(text);
-        return false;
-    }
-    text_length = strlen(text);
-    if (text_length >= capacity)
-    {
-        g_free(text);
-        return false;
-    }
-
-    infiltratr_copy_string(buffer, capacity, text);
-    *length = text_length;
-    g_free(text);
-    return true;
+    /* The Hebrew arithmetic stays local; ICU conversion and text ownership
+     * use the same private helper as the other independently built modules. */
+    return resource_format_icu(
+        CALENDAR_CALENDAR_MODE_HEBREW, "hebrew", jdn, part,
+        buffer, capacity, length);
 }
 
 static bool

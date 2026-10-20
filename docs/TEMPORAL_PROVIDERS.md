@@ -114,6 +114,17 @@ caller output. The Maya Long Count checks signed epoch subtraction and reserves
 a tun of intermediate headroom at both signed-JDN endpoints; it does not
 substitute a saturated but plausible historical date.
 
+## Reversible ancient dates and unavailable polar events
+
+Egyptian Nabonassar and traditional Armenian date conversion now rejects
+non-reversible signed-JDN extremes: intermediate arithmetic must be checked,
+not saturated and presented as historic. Hebrew fields and ICU formatting
+share the same finite UTC-noon domain.
+
+Seasonal clocks return a one-minute retry for an undefined polar solar event
+without probing a synthetic 36-hour timeline. For valid clock faces, next-tick
+scheduling continues to require an actual visible change.
+
 ## Civil-year and historical-year refusal
 
 The proleptic Gregorian, Julian, ISO-week and derived historical resource

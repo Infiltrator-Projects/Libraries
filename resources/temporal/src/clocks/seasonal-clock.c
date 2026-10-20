@@ -545,10 +545,6 @@ static bool format_clock_mode(const InfiltratrI18n *language,
         return false;
     }
 
-    if (strcmp(mode, "standard") == 0) {
-        return false;
-    }
-
     if (strcmp(mode, "roman-temporal") == 0) {
         static const char *const roman[] = {
             "I", "II", "III", "IV", "V", "VI",
@@ -714,6 +710,12 @@ static bool next_tick(const InfiltratrTemporalClockProvider *self,
     if (milliseconds == NULL || !render(NULL, NULL, instant, offset, seconds,
             false, latitude, longitude, initial, sizeof(initial), NULL))
         return false;
+    /* Solar events are undefined in polar N/A periods. Retry without
+     * searching 36 hours of identical unavailable clock faces. */
+    if (strncmp(initial, "N/A", 3U) == 0) {
+        *milliseconds = 60000U;
+        return true;
+    }
     for (;;) {
         const int64_t delta = (int64_t)high * 1000;
         if (instant > INT64_MAX - delta ||
@@ -721,11 +723,8 @@ static bool next_tick(const InfiltratrTemporalClockProvider *self,
                 latitude, longitude, future, sizeof(future), NULL))
             return false;
         if (strcmp(initial, future) != 0) break;
-        if (high == maximum) {
-            /* Polar N/A intervals are explicitly unavailable, retried later. */
-            *milliseconds = 60000U;
-            return true;
-        }
+        if (high == maximum)
+            return false; /* A valid clock must actually change. */
         low = high;
         if (step < 60000U) step = step > 30000U ? 60000U : step * 2U;
         high = maximum - high < step ? maximum : high + step;

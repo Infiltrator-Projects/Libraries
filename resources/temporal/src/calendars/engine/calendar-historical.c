@@ -25,6 +25,7 @@
 #include "calendar-helpers.h"
 #include "julian-day.h"
 
+#include <infiltratr/arithmetic.h>
 #include <glib/gi18n-lib.h>
 #include <math.h>
 
@@ -337,6 +338,45 @@ calendar_byzantine_format(
     return calendar_format_named_date(fields, part, common_months, G_N_ELEMENTS(common_months), "A.M.");
 }
 
+/*
+ * Wandering 365-day years use one checked inverse. Saturation would make
+ * INT64_MAX appear to round-trip even when the intermediate year*365 or
+ * epoch addition overflowed. No provider may mistake that for a date.
+ */
+static gboolean
+wandering_fields_to_jdn_checked(const CalendarCalendarFields *fields,
+                               gint64 epoch, gint64 *result)
+{
+    gint64 years, days, year_start, candidate;
+    gint offset;
+
+    if (fields == NULL || result == NULL ||
+        fields->month < 1 || fields->month > 13 ||
+        fields->day < 1 ||
+        fields->day > (fields->month == 13 ? 5 : 30))
+        return FALSE;
+
+    offset = (fields->month <= 12 ? (fields->month - 1) * 30 : 360) +
+             fields->day - 1;
+    if (!infiltratr_i64_add_checked(fields->year, -1, &years) ||
+        !infiltratr_i64_multiply_checked(years, 365, &days) ||
+        !infiltratr_i64_add_checked(epoch, days, &year_start) ||
+        !infiltratr_i64_add_checked(year_start, offset, &candidate))
+        return FALSE;
+
+    *result = candidate;
+    return TRUE;
+}
+
+gboolean
+calendar_egyptian_jdn_reversible(gint64 jdn,
+                                 const CalendarCalendarFields *fields)
+{
+    gint64 result;
+    return wandering_fields_to_jdn_checked(
+        fields, EGYPTIAN_NABONASSAR_EPOCH_JDN, &result) && result == jdn;
+}
+
 void
 calendar_egyptian_fields_from_jdn(
     gint64 jdn,
@@ -361,27 +401,12 @@ calendar_egyptian_fields_from_jdn(
 }
 
 gint64
-calendar_egyptian_fields_to_jdn(
-    const CalendarCalendarFields *fields)
+calendar_egyptian_fields_to_jdn(const CalendarCalendarFields *fields)
 {
-    gint offset;
-
-    g_return_val_if_fail(fields != NULL, EGYPTIAN_NABONASSAR_EPOCH_JDN);
-
-    offset = fields->month <= 12 ?
-        (fields->month - 1) * 30 :
-        360;
-
-    gint64 result = EGYPTIAN_NABONASSAR_EPOCH_JDN;
-
-    result = calendar_i64_add_saturating(
-        result,
-        calendar_i64_multiply_saturating(
-            calendar_i64_subtract_saturating(fields->year, 1),
-            365));
-    result = calendar_i64_add_saturating(result, offset);
-    return calendar_i64_add_saturating(
-        result, fields->day - 1);
+    gint64 result;
+    return wandering_fields_to_jdn_checked(
+        fields, EGYPTIAN_NABONASSAR_EPOCH_JDN, &result)
+        ? result : G_MAXINT64;
 }
 
 gint
@@ -419,6 +444,15 @@ static const gchar *const armenian_months[] = {
     N_("Aweleacʿ")
 };
 
+gboolean
+calendar_armenian_jdn_reversible(gint64 jdn,
+                                 const CalendarCalendarFields *fields)
+{
+    gint64 result;
+    return wandering_fields_to_jdn_checked(
+        fields, ARMENIAN_EPOCH_JDN, &result) && result == jdn;
+}
+
 void
 calendar_armenian_fields_from_jdn(
     gint64 jdn,
@@ -442,23 +476,11 @@ calendar_armenian_fields_from_jdn(
 }
 
 gint64
-calendar_armenian_fields_to_jdn(
-    const CalendarCalendarFields *fields)
+calendar_armenian_fields_to_jdn(const CalendarCalendarFields *fields)
 {
-    gint offset;
-
-    g_return_val_if_fail(fields != NULL, ARMENIAN_EPOCH_JDN);
-    offset = fields->month <= 12 ? (fields->month - 1) * 30 : 360;
-    gint64 result = ARMENIAN_EPOCH_JDN;
-
-    result = calendar_i64_add_saturating(
-        result,
-        calendar_i64_multiply_saturating(
-            calendar_i64_subtract_saturating(fields->year, 1),
-            365));
-    result = calendar_i64_add_saturating(result, offset);
-    return calendar_i64_add_saturating(
-        result, fields->day - 1);
+    gint64 result;
+    return wandering_fields_to_jdn_checked(fields, ARMENIAN_EPOCH_JDN, &result)
+        ? result : G_MAXINT64;
 }
 
 gint

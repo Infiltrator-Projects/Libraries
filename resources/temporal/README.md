@@ -28,8 +28,8 @@ implementations remain unavailable rather than using an embedded custom copy.
 the Calendar repository, its private headers, its application library or its
 release pipeline.
 
-The Gregorian, Coptic, and Persian native adapters share one private ICU
-text-and-buffer helper compiled into each separate module. Their chronology,
+The Gregorian, Coptic, Persian, and Hebrew native adapters share one private
+ICU text-and-buffer helper compiled into each separate module. Their chronology,
 era/year semantics and navigation remain distinct, with no shared runtime
 resource dependency.
 
@@ -74,6 +74,14 @@ validate JDN representability before narrowing the year. ISO weeks preserve
 headroom for adjacent week-year rollover. Formatting and period navigation
 share the same admissibility boundary and fail explicitly without substituting
 a plausible but incorrect date.
+
+The Egyptian Nabonassar and traditional Armenian wandering-year resources
+reject non-reversible signed-JDN extremes rather than presenting saturated
+epoch arithmetic as genuine calendar dates. Hebrew field extraction and text
+formatting use the identical finite ICU UTC-noon domain.
+
+Polar seasonal clocks with unavailable solar events schedule a one-minute
+retry without searching 36 hours of unchanged N/A output.
 
 The Badíʿ (Bahá'í) resource now distinguishes a failed year-start computation
 from its historically meaningful 1844 epoch. Invalid years do not silently

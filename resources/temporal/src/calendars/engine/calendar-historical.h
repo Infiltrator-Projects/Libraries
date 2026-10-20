@@ -37,6 +37,8 @@ gchar *calendar_byzantine_format(
     const CalendarCalendarFields *fields,
     CalendarDatePart part);
 
+gboolean calendar_egyptian_jdn_reversible(
+    gint64 jdn, const CalendarCalendarFields *fields);
 void calendar_egyptian_fields_from_jdn(
     gint64 jdn,
     CalendarCalendarFields *fields);
@@ -48,6 +50,8 @@ gchar *calendar_egyptian_format(
     const CalendarCalendarFields *fields,
     CalendarDatePart part);
 
+gboolean calendar_armenian_jdn_reversible(
+    gint64 jdn, const CalendarCalendarFields *fields);
 void calendar_armenian_fields_from_jdn(
     gint64 jdn,
     CalendarCalendarFields *fields);
