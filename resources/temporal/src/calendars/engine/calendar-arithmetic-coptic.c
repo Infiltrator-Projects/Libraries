@@ -2,7 +2,7 @@
 // Copyright (C) 1993-2026 Shannon Smith
 
 /*
- * Calendar-owned Coptic and Ethiopic arithmetic.
+ * Resource-owned Coptic and Ethiopic arithmetic.
  *
  * The shared 13-month leap cycle, Coptic/Ethiopic epochs and Amete
  * Mihret/Amete Alem year mapping stay together. Keeping year-era mapping in

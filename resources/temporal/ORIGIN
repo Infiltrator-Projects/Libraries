@@ -1,5 +1,7 @@
 Imported from Infiltrator-Projects/Calendar at a193e8e9f289f8adbf99b2a15d7a93ffd50e4571.
-Source implementations are preserved; only their private include boundary changes.
+Checksums below identify the original import baseline, not current source
+hashes. Correctness, historical-fidelity and implementation refinements since
+import are maintained in Git history and CHANGELOG.md.
 The resource project has no Calendar application or repository build dependency.
 
 d9f9a014d6a508fd16a748e0783bdaf43522889fa35126eeb6523d583397cb91  src/resources/calendars/arithmetic-persian.c

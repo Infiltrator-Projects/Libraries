@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.19.73 — 2026-10-20
+
+- Reject unsupported Persian arithmetic before indexing month offsets; validate
+  year boundaries, month lengths, inverse conversion, and the ICU display domain.
+- Guard Maya Long Count epoch subtraction and inverse-conversion headroom.
+- Distinguish failed solar-origin clock calculations from polar no-crossing
+  conditions and fail rather than accepting an invalid next-tick comparison.
+- Compile common fixed-day phase arithmetic and native ICU text formatting
+  through private headers into independent resource modules; keep all 54 IDs
+  and executable ABI boundaries unchanged.
+- Extend installed-provider and engine boundary regression tests; clarify
+  resource ownership and historical-source provenance in maintained docs.
+
 ## 1.19.72 — 2026-10-20
 
 - Reject calendar JDNs that would narrow the true Gregorian/Julian civil

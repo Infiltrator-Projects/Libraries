@@ -1,12 +1,14 @@
 # Shared system temporal resources
 
 Common owns the source, build, tests, Debian package and releases of these
-31 calendar and 23 clock implementations. The modules are separately compiled build products. The compiler emits the
-complete human-readable canonical filenames directly, and the same name is
-embedded in their metadata. Stable provider IDs are independent of filenames;
-there are no aliases, post-build renames or display-only disguises. The selectable provider implementations are loaded from their system
-files; Calendar, Files and System Settings do not compile or replace them.
+31 calendar and 23 clock implementations. Every module is independently
+compiled, directly named using its canonical human-readable filename, and
+identified by stable metadata. No aliases or post-build renames are needed.
+Calendar, Files and System Settings load these installed capabilities rather
+than building or embedding private implementations.
 Neutral coordinate and formatting helpers remain shared Common APIs.
+One private fixed-day helper owns signed modulo and UTC-offset arithmetic,
+compiled into each using clock without coupling the installed resource files.
 The compact NOAA/GML solar mathematics is maintained in a single private
 Common header, compiled separately into the relevant `.so` providers
 without linking their lifetimes together. Distinct historic rules remain

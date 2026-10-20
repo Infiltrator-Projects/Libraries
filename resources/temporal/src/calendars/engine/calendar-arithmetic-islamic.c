@@ -2,7 +2,7 @@
 // Copyright (C) 1993-2026 Shannon Smith
 
 /*
- * Calendar-owned Islamic arithmetic families.
+ * Resource-owned Islamic arithmetic families.
  *
  * Civil/tabular arithmetic and the bounded Umm al-Qura table stay in one
  * module so their epochs, month rules and conversion boundaries are reviewed

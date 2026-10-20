@@ -2,7 +2,7 @@
 // Copyright (C) 1993-2026 Shannon Smith
 
 /*
- * Calendar-owned Indian National (Saka) arithmetic.
+ * Resource-owned Indian National (Saka) arithmetic.
  *
  * Gregorian-year anchoring, Chaitra leap behaviour, month lengths and JDN
  * conversion remain one private chronology family.

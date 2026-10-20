@@ -2,14 +2,14 @@
 // Copyright (C) 1993-2026 Shannon Smith
 
 /*
- * Calendar-owned arithmetic calendar engines.
+ * Resource-owned arithmetic calendar engines.
  *
  * These rules intentionally replace ICU only where the calendar itself is a
  * deterministic arithmetic system. ICU remains the locale-formatting authority
- * for these providers until Calendar also owns the corresponding locale data.
+ * for these resources; locale data is not owned by the Calendar application.
  *
  * Epochs and arithmetic follow the same civil-date/JDN convention used by the
- * rest of Calendar: an integral JDN identifies a civil date at midnight.
+ * rest of the resource pack: an integral JDN identifies a civil date at midnight.
  *
  * Invariants:
  * - this module owns rules and numeric continuation, never locale presentation;

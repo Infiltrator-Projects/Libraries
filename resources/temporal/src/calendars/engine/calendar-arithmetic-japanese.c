@@ -2,10 +2,10 @@
 // Copyright (C) 1993-2026 Shannon Smith
 
 /*
- * Calendar-owned Japanese imperial-era arithmetic.
+ * Resource-owned Japanese imperial-era arithmetic.
  *
  * Modern era boundaries, era-year conversion and Gregorian/JDN mapping stay
- * together so host ICU era-table changes cannot alter Calendar's native
+ * together so host ICU era-table changes cannot alter this resource's native
  * arithmetic behaviour. Locale-sensitive presentation remains outside this
  * private module.
  */
@@ -25,7 +25,7 @@ typedef struct
 
 /*
  * CLDR's modern Japanese era boundary data. CLDR 49 / ICU 79 removes the
- * pre-Meiji era sequence, so Calendar owns the stable modern boundary that
+ * pre-Meiji era sequence, so this resource owns the stable modern boundary that
  * current ICU itself converges on instead of inheriting version-dependent
  * historical-era tables from the host.
  */

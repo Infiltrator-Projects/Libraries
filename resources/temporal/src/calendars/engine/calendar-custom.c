@@ -2,11 +2,11 @@
 // Copyright (C) 1993-2026 Shannon Smith
 
 /*
- * Built-in non-ICU calendar providers.
+ * Private non-ICU chronology descriptors.
  *
  * Every custom calendar is described by one immutable operation table.  The
- * public CalendarSystem facade never needs to know whether a period is a
- * Julian month, ISO week, Mayan uinal or Badíʿ month: it asks the provider to
+ * resource ABI adapter never needs to know whether a period is a Julian
+ * month, ISO week, Maya uinal or Badíʿ month: it asks the provider to
  * convert JDN <-> fields, format the fields and navigate periods.
  *
  * The table is intentionally data-driven.  Adding a new custom calendar means
