@@ -373,8 +373,12 @@ calendar_egyptian_jdn_reversible(gint64 jdn,
                                  const CalendarCalendarFields *fields)
 {
     gint64 result;
-    return wandering_fields_to_jdn_checked(
-        fields, EGYPTIAN_NABONASSAR_EPOCH_JDN, &result) && result == jdn;
+    /* The private navigation engine reserves INT64_MAX as failure. It must
+     * never also identify an admissible date at the executable ABI. */
+    return jdn != G_MAXINT64 &&
+        wandering_fields_to_jdn_checked(
+            fields, EGYPTIAN_NABONASSAR_EPOCH_JDN, &result) &&
+        result == jdn;
 }
 
 void
@@ -449,8 +453,9 @@ calendar_armenian_jdn_reversible(gint64 jdn,
                                  const CalendarCalendarFields *fields)
 {
     gint64 result;
-    return wandering_fields_to_jdn_checked(
-        fields, ARMENIAN_EPOCH_JDN, &result) && result == jdn;
+    return jdn != G_MAXINT64 &&
+        wandering_fields_to_jdn_checked(
+            fields, ARMENIAN_EPOCH_JDN, &result) && result == jdn;
 }
 
 void
