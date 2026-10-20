@@ -79,7 +79,7 @@ calendar_mayan_fields_from_jdn(
     gint kin_in_tun;
 
     g_return_if_fail(fields != NULL);
-    if (!infiltratr_i64_subtract_checked(jdn, MAYAN_EPOCH_JDN, &total_kin))
+    if (!infiltratr_i64_add_checked(jdn, -MAYAN_EPOCH_JDN, &total_kin))
     {
         *fields = (CalendarCalendarFields){ 0 };
         return;
