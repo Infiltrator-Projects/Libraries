@@ -497,6 +497,34 @@ static void test_solar_origin_hour_resources(void)
     }
 }
 
+/* Signed-endpoint failures cannot masquerade as stable polar N/A output. */
+static void test_solar_origin_extremes(void)
+{
+    static const char *const ids[] = {
+        "italian-hours", "babylonian-hours",
+        "babylonian-ancient", "indian-ghati"
+    };
+    for (gsize i = 0; i < G_N_ELEMENTS(ids); ++i) {
+        g_autofree gchar *path = test_clock_path(ids[i]);
+        InfiltratrTemporalClockModule *module =
+            infiltratr_temporal_clock_module_open(path);
+        g_assert_nonnull(module);
+        for (gsize j = 0; j < 2; ++j) {
+            const int64_t instant = j == 0 ? INT64_MIN : INT64_MAX;
+            char output[128] = "unchanged";
+            uint32_t delay = 17U;
+            g_assert_false(infiltratr_temporal_clock_format(
+                module, "en", instant, 0, true, false,
+                -36.39, 145.36, output, sizeof(output), NULL));
+            g_assert_cmpstr(output, ==, "unchanged");
+            g_assert_false(infiltratr_temporal_clock_next_tick(
+                module, instant, 0, true, -36.39, 145.36, &delay));
+            g_assert_cmpuint(delay, ==, 17U);
+        }
+        infiltratr_temporal_clock_module_free(module);
+    }
+}
+
 #define CHECK(expression) g_assert_true(expression)
 static bool resource_test_format_localized(const char *locale,const char *id,
     int64_t instant,int32_t offset,bool seconds,bool vertical,bool configured,
@@ -620,6 +648,7 @@ static void test_localized_edo_clock(void)
 int main(int argc, char **argv)
 {
     g_test_init(&argc, &argv, NULL);
+    g_test_add_func("/clock-resource/solar-origin-extremes", test_solar_origin_extremes);
     g_test_add_func("/clock-resource/five-executable-modes",
                     test_five_clock_resources);
     g_test_add_func("/clock-resource/julian-executable-modes",

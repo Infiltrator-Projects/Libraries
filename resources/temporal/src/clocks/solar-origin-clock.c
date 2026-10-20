@@ -31,8 +31,11 @@
 #define CLOCK_SUFFIX "IT"
 #endif
 
-static int64_t floor_div(int64_t n, int64_t d)
-{ int64_t q = n / d; return n % d < 0 ? q - 1 : q; }
+static int64_t floor_div(int64_t value, int64_t divisor)
+{
+    const int64_t quotient = value / divisor;
+    return value % divisor < 0 ? quotient - 1 : quotient;
+}
 
 /* Gregorian 400-year arithmetic avoids time_t, localtime and locale drift. */
 /* Origin and calendar traditions differ; the solar model is shared. */
@@ -95,9 +98,12 @@ static bool render(const InfiltratrTemporalClockProvider *self,
                    char *dst, size_t capacity, size_t *length)
 {
     (void)self; (void)locale; (void)offset;
-    if (!dst || capacity==0 || !isfinite(lat) || lat < -90.0 ||
+    /* Unrepresentable instants must not look like genuine polar N/A. */
+    if (!dst || capacity == 0 || !isfinite(lat) || lat < -90.0 ||
         lat > 90.0 || !isfinite(lon) || lon < -180.0 ||
-        lon > 180.0) return false;
+        lon > 180.0 || instant < INT64_MIN + 3 * US_DAY ||
+        instant > INT64_MAX - 3 * US_DAY)
+        return false;
     char text[96]; int n;
     int64_t origin;
     if (!previous_origin(instant,lat,lon,&origin)) {
@@ -133,14 +139,24 @@ static bool render(const InfiltratrTemporalClockProvider *self,
     return true;
 }
 
-static bool changed(int64_t instant,uint32_t delay,bool seconds,
-                    double lat,double lon,const char *previous)
+/*
+ * The observer needs three distinct results: unchanged, changed, and failed.
+ * A failed future render must never be confused with a stable solar interval.
+ */
+static bool changed(int64_t instant, uint32_t delay, bool seconds,
+                    double lat, double lon, const char *previous,
+                    bool *different)
 {
-    int64_t delta=(int64_t)delay*1000;
+    const int64_t delta = (int64_t)delay * INT64_C(1000);
     char output[96];
-    return instant<=INT64_MAX-delta &&
-        render(NULL,NULL,instant+delta,0,seconds,false,lat,lon,
-               output,sizeof(output),NULL) && strcmp(previous,output)!=0;
+
+    if (different == NULL || previous == NULL ||
+        instant > INT64_MAX - delta ||
+        !render(NULL, NULL, instant + delta, 0, seconds, false,
+                lat, lon, output, sizeof(output), NULL))
+        return false;
+    *different = strcmp(previous, output) != 0;
+    return true;
 }
 
 static bool next_tick(const InfiltratrTemporalClockProvider *self,
@@ -160,18 +176,23 @@ static bool next_tick(const InfiltratrTemporalClockProvider *self,
 #else
     uint32_t hi=seconds?2000U:61000U;
 #endif
-    if (!changed(instant,hi,seconds,lat,lon,previous)) {
-        /* A polar interval without a crossing has stable N/A output. */
-        if (strncmp(previous,"N/A ",4)==0) {
-            *milliseconds=60000U;
+    bool different = false;
+    if (!changed(instant, hi, seconds, lat, lon, previous, &different))
+        return false;
+    if (!different) {
+        /* Only a genuine polar no-crossing condition permits N/A retry. */
+        if (strncmp(previous, "N/A ", 4) == 0) {
+            *milliseconds = 60000U;
             return true;
         }
         return false;
     }
-    while (hi-lo>1) {
-        uint32_t mid=lo+(hi-lo)/2;
-        if (changed(instant,mid,seconds,lat,lon,previous)) hi=mid;
-        else lo=mid;
+    while (hi - lo > 1U) {
+        const uint32_t mid = lo + (hi - lo) / 2U;
+        if (!changed(instant, mid, seconds, lat, lon, previous, &different))
+            return false;
+        if (different) hi = mid;
+        else lo = mid;
     }
     *milliseconds=hi;
     return true;
