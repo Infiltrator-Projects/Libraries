@@ -8,6 +8,7 @@
  * the solar-event calculations.
  */
 #include <infiltratr/temporal_clock_resource.h>
+#include "temporal_solar_compact.h"
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -34,47 +35,14 @@ static int64_t floor_div(int64_t n, int64_t d)
 { int64_t q = n / d; return n % d < 0 ? q - 1 : q; }
 
 /* Gregorian 400-year arithmetic avoids time_t, localtime and locale drift. */
-static bool ordinal_for(int64_t instant, int *ordinal)
+/* Origin and calendar traditions differ; the solar model is shared. */
+static bool solar_terms(int64_t instant, double *equation_minutes,
+                        double *declination_radians)
 {
-    static const int cumulative[] =
-        {0,31,59,90,120,151,181,212,243,273,304,334};
-    int64_t days = floor_div(instant, US_DAY);
-    int64_t z = days + INT64_C(719468);
-    int64_t era = floor_div(z, INT64_C(146097));
-    int64_t doe = z - era * INT64_C(146097);
-    int64_t yoe = (doe - doe/1460 + doe/36524 - doe/146096)/365;
-    int64_t doy = doe - (365*yoe + yoe/4 - yoe/100);
-    int64_t mp = (5*doy+2)/153;
-    int day = (int)(doy - (153*mp+2)/5 + 1);
-    int month = (int)(mp + (mp<10 ? 3 : -9));
-    int64_t year = yoe + era*400 + (month<=2);
-    bool leap = (year%4==0 && year%100!=0) || year%400==0;
-    if (!ordinal || month<1 || month>12 || day<1 || day>31) return false;
-    *ordinal = cumulative[month-1]+day+(leap && month>2);
-    return true;
+    return temporal_solar_compact_terms(
+        instant, equation_minutes, declination_radians);
 }
 
-/* Original NOAA compact fractional-year equation of time and declination. */
-static bool solar_terms(int64_t instant, double *eq_min, double *decl)
-{
-    int ordinal;
-    if (!ordinal_for(instant, &ordinal)) return false;
-    int64_t phase = instant % US_DAY;
-    if (phase < 0) phase += US_DAY;
-    long double utc_hour = (long double)phase/(3600.0L*US_SECOND);
-    long double gamma = 2.0L*PI/365.0L *
-        ((long double)ordinal-1.0L+(utc_hour-12.0L)/24.0L);
-    if (eq_min) *eq_min = 229.18*(0.000075+0.001868*cos((double)gamma)
-        -0.032077*sin((double)gamma)-0.014615*cos((double)(2*gamma))
-        -0.040849*sin((double)(2*gamma)));
-    if (decl) *decl = 0.006918-0.399912*cos((double)gamma)
-        +0.070257*sin((double)gamma)-0.006758*cos((double)(2*gamma))
-        +0.000907*sin((double)(2*gamma))-0.002697*cos((double)(3*gamma))
-        +0.001480*sin((double)(3*gamma));
-    return true;
-}
-
-/* Sun crossing for a UTC day, at the documented 90.833-degree zenith. */
 static bool origin_on_day(int64_t day, double lat, double lon, int64_t *event)
 {
     const int64_t safe_day = INT64_MAX/US_DAY-2;

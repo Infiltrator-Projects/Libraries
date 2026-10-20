@@ -22,6 +22,7 @@
 
 #include "time-astronomy.h"
 #include "integer-math.h"
+#include "temporal_solar_compact.h"
 
 #include <infiltratr/core.h>
 #include <math.h>
@@ -55,61 +56,15 @@ normalise_latitude(gdouble latitude)
     return infiltratr_clamp_double(latitude, -90.0, 90.0);
 }
 
-/*
- * NOAA's compact model uses one fractional-year angle to approximate both the
- * equation of time and solar declination. Keeping the two values together
- * prevents the sunrise/sunset and apparent-time providers from drifting onto
- * subtly different solar models.
- */
-static gboolean
-solar_terms(gint64 unix_microseconds,
-            gdouble *equation_minutes,
-            gdouble *declination_radians)
+/* Preserve this GLib-facing engine's representable civil date range;
+ * the mathematical model is otherwise identical to the clock modules. */
+static gboolean solar_terms(gint64 instant, gdouble *equation_minutes,
+                            gdouble *declination_radians)
 {
-    const gint64 unix_seconds =
-        calendar_floor_divide(unix_microseconds, G_USEC_PER_SEC);
-    g_autoptr(GDateTime) utc = g_date_time_new_from_unix_utc(unix_seconds);
-    gdouble fractional_hour;
-    gdouble gamma;
-
-    if (utc == NULL)
-        return FALSE;
-
-    fractional_hour =
-        g_date_time_get_hour(utc) +
-        g_date_time_get_minute(utc) / 60.0 +
-        (g_date_time_get_second(utc) +
-         g_date_time_get_microsecond(utc) / (gdouble)G_USEC_PER_SEC) /
-        3600.0;
-    gamma =
-        2.0 * G_PI / 365.0 *
-        (g_date_time_get_day_of_year(utc) - 1 +
-         (fractional_hour - 12.0) / 24.0);
-
-    if (equation_minutes != NULL)
-    {
-        *equation_minutes =
-            229.18 *
-            (0.000075 +
-             0.001868 * cos(gamma) -
-             0.032077 * sin(gamma) -
-             0.014615 * cos(2.0 * gamma) -
-             0.040849 * sin(2.0 * gamma));
-    }
-
-    if (declination_radians != NULL)
-    {
-        *declination_radians =
-            0.006918 -
-            0.399912 * cos(gamma) +
-            0.070257 * sin(gamma) -
-            0.006758 * cos(2.0 * gamma) +
-            0.000907 * sin(2.0 * gamma) -
-            0.002697 * cos(3.0 * gamma) +
-            0.001480 * sin(3.0 * gamma);
-    }
-
-    return TRUE;
+    const gint64 seconds = calendar_floor_divide(instant, G_USEC_PER_SEC);
+    g_autoptr(GDateTime) date = g_date_time_new_from_unix_utc(seconds);
+    return date != NULL && temporal_solar_compact_terms(
+        instant, equation_minutes, declination_radians);
 }
 
 long double

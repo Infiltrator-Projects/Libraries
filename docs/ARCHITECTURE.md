@@ -18,15 +18,30 @@ Common owns product-neutral behaviour only. Filesystem semantics remain in Infil
 
 ## Temporal resource discovery
 
-Calendars and clock systems are moving toward a filesystem-discovered resource model. The governing idea is simple: recognised `calendars/` and `clocks/` directories describe what additional temporal resources are installed, instead of requiring every capability to be named in a compiled master list.
+Common owns generic discovery, validated executable loading and the entire
+source, build and release of the independently compiled system temporal pack.
+The 31 calendars and 23 explicit clocks live in
+[`resources/temporal`](../resources/temporal/README.md), are published by
+Common through APT, and are installed under `/System/Resources/Calendars/`
+and `/System/Resources/Clocks/`. Calendar, Files and System Settings do
+not embed these algorithms or supply private copies.
 
-Common owns the generic discovery mechanics. The existing built-in temporal catalogue remains unchanged while this capability is introduced incrementally.
+Discovery is deterministic, validates executable provider ABI and ignores
+metadata-only or malformed files. If several candidates claim the same ID,
+the first *valid executable* in sorted directory order wins. Installed
+catalogues are stable, per-process snapshots. Concurrent initialization
+waits on a condition rather than busy-spinning, and recursive initialization
+exposes only the base catalogue, not partially constructed optional entries.
 
-The current implementation can enumerate candidate file or directory resources deterministically through `infiltratr/temporal_resource.h`. It does not yet decide how a discovered resource expresses calendar or clock behaviour. The eventual payload may be native code, data or a bundle; that representation will be chosen after real providers prove the requirements.
+A clock resource owns both rendering and its next-visible-tick calculation.
+Common's neutral compact solar model is maintained once as private source
+and compiled independently into each relevant resource; solar-event rules,
+historical conventions and labels remain provider-owned. The host Gregorian
+calendar and OS-following clock selector remain available without the pack.
 
-System Settings and other consumers should eventually enumerate the resulting installed capabilities rather than maintain independent lists. Provider-specific chronology and historical timekeeping policy do not move into Common merely because discovery does.
-
-The current design status is maintained in [TEMPORAL_PROVIDERS.md](TEMPORAL_PROVIDERS.md).
+See [Temporal Providers](TEMPORAL_PROVIDERS.md) for the executable/trust
+boundary and [Historical Fidelity](TEMPORAL_HISTORICAL_FIDELITY.md) for
+accuracy claims and documented limitations.
 
 ## Ownership and dependency rule
 

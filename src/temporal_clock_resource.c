@@ -81,21 +81,27 @@ infiltratr_temporal_clock_module_open(const char *module_path)
 
 typedef struct ClockLookup {
     const char *id;
-    char *path;
+    InfiltratrTemporalClockModule *module;
 } ClockLookup;
 
-static bool capture_clock(const InfiltratrTemporalResourceMetadata *metadata,
-                          const char *path, void *context)
+static bool capture_clock_module(
+    const InfiltratrTemporalResourceMetadata *metadata,
+    const char *path, void *context)
 {
     ClockLookup *lookup = context;
-    size_t length;
-    if (lookup == NULL || lookup->path != NULL || metadata == NULL ||
+    InfiltratrTemporalClockModule *candidate;
+    if (lookup == NULL || lookup->module != NULL || metadata == NULL ||
         metadata->id == NULL || path == NULL ||
-        strcmp(metadata->id, lookup->id) != 0) return true;
-    length = strlen(path);
-    if (length == SIZE_MAX) return true;
-    lookup->path = malloc(length + 1U);
-    if (lookup->path != NULL) memcpy(lookup->path, path, length + 1U);
+        strcmp(metadata->id, lookup->id) != 0)
+        return true;
+
+    candidate = infiltratr_temporal_clock_module_open(path);
+    if (candidate == NULL) return true;
+    if (strcmp(candidate->metadata->id, lookup->id) != 0) {
+        infiltratr_temporal_clock_module_free(candidate);
+        return true;
+    }
+    lookup->module = candidate;
     return true;
 }
 
@@ -103,27 +109,17 @@ InfiltratrTemporalClockModule *
 infiltratr_temporal_clock_module_open_id(const char *clock_id)
 {
     ClockLookup lookup;
-    InfiltratrTemporalClockModule *module = NULL;
     size_t visited = 0U;
     if (!infiltratr_temporal_id_valid(clock_id)) return NULL;
     lookup.id = clock_id;
-    lookup.path = NULL;
+    lookup.module = NULL;
     if (!infiltratr_temporal_runtime_scan_native(
             INFILTRATR_TEMPORAL_RESOURCE_CLOCK,
-            capture_clock, &lookup, &visited)) {
-        free(lookup.path);
+            capture_clock_module, &lookup, &visited)) {
+        infiltratr_temporal_clock_module_free(lookup.module);
         return NULL;
     }
-    (void)visited;
-    if (lookup.path != NULL) {
-        module = infiltratr_temporal_clock_module_open(lookup.path);
-        if (module != NULL && strcmp(module->metadata->id, clock_id) != 0) {
-            infiltratr_temporal_clock_module_free(module);
-            module = NULL;
-        }
-    }
-    free(lookup.path);
-    return module;
+    return lookup.module;
 }
 
 const InfiltratrTemporalResourceMetadata *
@@ -178,35 +174,20 @@ bool infiltratr_temporal_clock_next_tick(
  */
 struct InfiltratrTemporalClockPresentation {
     InfiltratrTemporalClockModule *module;
-    char *mode;
 };
 
 InfiltratrTemporalClockPresentation *
 infiltratr_temporal_clock_presentation_new(const char *clock_id)
 {
     InfiltratrTemporalClockPresentation *presentation;
-    const size_t length = clock_id != NULL ? strlen(clock_id) : 0U;
 
     if (!infiltratr_temporal_id_valid(clock_id) ||
         strcmp(clock_id, "standard") == 0) return NULL;
-
     presentation = calloc(1U, sizeof(*presentation));
     if (presentation == NULL) return NULL;
-    if (length == SIZE_MAX) {
-        free(presentation);
-        return NULL;
-    }
-    presentation->mode = malloc(length + 1U);
-    if (presentation->mode == NULL) {
-        free(presentation);
-        return NULL;
-    }
-    memcpy(presentation->mode, clock_id, length + 1U);
-
-    /* Every executable clock is an independently installed resource. */
     presentation->module = infiltratr_temporal_clock_module_open_id(clock_id);
     if (presentation->module == NULL) {
-        infiltratr_temporal_clock_presentation_free(presentation);
+        free(presentation);
         return NULL;
     }
     return presentation;
@@ -217,7 +198,6 @@ void infiltratr_temporal_clock_presentation_free(
 {
     if (presentation == NULL) return;
     infiltratr_temporal_clock_module_free(presentation->module);
-    free(presentation->mode);
     free(presentation);
 }
 

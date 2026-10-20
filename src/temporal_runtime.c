@@ -14,6 +14,8 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#else
+#include <pthread.h>
 #endif
 
 typedef struct RuntimeScanContext {
@@ -46,6 +48,15 @@ static size_t runtime_clock_capacity;
 static volatile LONG catalogue_state;
 #else
 static int catalogue_state;
+static pthread_mutex_t catalogue_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t catalogue_cond = PTHREAD_COND_INITIALIZER;
+#endif
+/* Module constructors may enter the catalogue recursively. Expose no
+ * partially-built optional entries to that same thread. */
+#if defined(_MSC_VER)
+static __declspec(thread) bool catalogue_initialising_here;
+#else
+static _Thread_local bool catalogue_initialising_here;
 #endif
 
 enum {
@@ -90,24 +101,26 @@ static void catalogue_mark_ready(void)
 #ifdef _WIN32
     (void)InterlockedExchange(&catalogue_state, CATALOGUE_READY);
 #else
+    /* The predicate and broadcast use the same mutex: no lost wakeups. */
+    (void)pthread_mutex_lock(&catalogue_mutex);
     __atomic_store_n(&catalogue_state, CATALOGUE_READY, __ATOMIC_RELEASE);
+    (void)pthread_cond_broadcast(&catalogue_cond);
+    (void)pthread_mutex_unlock(&catalogue_mutex);
 #endif
 }
 
-static void catalogue_wait_until_ready(void)
+static bool catalogue_wait_until_ready(void)
 {
-    while (!catalogue_is_ready()) {
+    if (catalogue_initialising_here) return false;
 #ifdef _WIN32
-        (void)SwitchToThread();
+    while (!catalogue_is_ready()) Sleep(1);
 #else
-        /*
-         * Initialisation is a bounded filesystem scan and normally completes
-         * before another caller observes this state. A compiler barrier keeps
-         * this dependency-free fallback from becoming an optimised-away loop.
-         */
-        __asm__ __volatile__("" ::: "memory");
+    (void)pthread_mutex_lock(&catalogue_mutex);
+    while (!catalogue_is_ready())
+        (void)pthread_cond_wait(&catalogue_cond, &catalogue_mutex);
+    (void)pthread_mutex_unlock(&catalogue_mutex);
 #endif
-    }
+    return true;
 }
 
 static char *copy_text(const char *text)
@@ -399,15 +412,14 @@ static void clear_runtime_clocks(void)
     runtime_clock_capacity = 0U;
 }
 
-static void catalogue_initialise(void)
+static bool catalogue_initialise(void)
 {
     size_t ignored = 0U;
 
-    if (catalogue_is_ready()) return;
-    if (!catalogue_try_begin_initialisation()) {
-        catalogue_wait_until_ready();
-        return;
-    }
+    if (catalogue_is_ready()) return true;
+    if (!catalogue_try_begin_initialisation())
+        return catalogue_wait_until_ready();
+    catalogue_initialising_here = true;
 
     if (!infiltratr_temporal_runtime_scan_native(
             INFILTRATR_TEMPORAL_RESOURCE_CALENDAR,
@@ -420,11 +432,13 @@ static void catalogue_initialise(void)
         clear_runtime_clocks();
     }
     catalogue_mark_ready();
+    catalogue_initialising_here = false;
+    return true;
 }
 
 size_t infiltratr_temporal_installed_calendar_count(void)
 {
-    catalogue_initialise();
+    if (!catalogue_initialise()) return infiltratr_temporal_calendar_count();
     return infiltratr_temporal_calendar_count() + runtime_calendar_count;
 }
 
@@ -433,7 +447,8 @@ infiltratr_temporal_installed_calendar_at(size_t index)
 {
     const size_t builtin_count = infiltratr_temporal_calendar_count();
 
-    catalogue_initialise();
+    if (!catalogue_initialise())
+        return index < builtin_count ? infiltratr_temporal_calendar_at(index) : NULL;
     if (index < builtin_count) return infiltratr_temporal_calendar_at(index);
     index -= builtin_count;
     if (index >= runtime_calendar_count) return NULL;
@@ -449,7 +464,7 @@ infiltratr_temporal_installed_calendar_find(const char *id)
     if (id == NULL) return NULL;
     builtin = infiltratr_temporal_calendar_find(id);
     if (builtin != NULL) return builtin;
-    catalogue_initialise();
+    if (!catalogue_initialise()) return NULL;
     for (index = 0U; index < runtime_calendar_count; ++index) {
         if (strcmp(runtime_calendars[index].info.id, id) == 0) {
             return &runtime_calendars[index].info;
@@ -460,14 +475,15 @@ infiltratr_temporal_installed_calendar_find(const char *id)
 
 size_t infiltratr_temporal_installed_clock_mode_count(void)
 {
-    catalogue_initialise();
+    if (!catalogue_initialise()) return 1U;
     return 1U + runtime_clock_count;
 }
 
 const InfiltratrTemporalClockModeInfo *
 infiltratr_temporal_installed_clock_mode_at(size_t index)
 {
-    catalogue_initialise();
+    if (!catalogue_initialise())
+        return index == 0U ? infiltratr_temporal_clock_mode_find("standard") : NULL;
     /* OS-following standard is a policy choice, not a native implementation. */
     if (index == 0U) return infiltratr_temporal_clock_mode_find("standard");
     index--;
@@ -483,7 +499,7 @@ infiltratr_temporal_installed_clock_mode_find(const char *id)
     if (id == NULL) return NULL;
     if (strcmp(id, "standard") == 0)
         return infiltratr_temporal_clock_mode_find("standard");
-    catalogue_initialise();
+    if (!catalogue_initialise()) return NULL;
     for (index = 0U; index < runtime_clock_count; ++index) {
         if (strcmp(runtime_clocks[index].info.id, id) == 0) {
             return &runtime_clocks[index].info;

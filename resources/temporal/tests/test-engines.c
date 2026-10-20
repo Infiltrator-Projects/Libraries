@@ -7,6 +7,8 @@
 #include "julian-day.h"
 #include "time-astronomy.h"
 #include <glib.h>
+#include <math.h>
+#include "temporal_solar_compact.h"
 static void
 test_shared_calendar_helpers(void)
 {
@@ -375,6 +377,29 @@ test_roman_extreme_format_is_bounded(void)
 
     g_assert_cmpstr(large, ==, "2147483647");
 }
+/* The private solar projection handles pre-epoch days without a negative
+ * UTC fraction and reproduces exact Gregorian leap-year ordinals. */
+static void test_compact_solar_contract(void)
+{
+    int ordinal = 0;
+    double equation = 0.0, declination = 0.0;
+    g_assert_true(temporal_solar_day_of_year(
+        INT64_C(1709164800000000), &ordinal)); /* 2024-02-29 UTC */
+    g_assert_cmpint(ordinal, ==, 60);
+    g_assert_true(temporal_solar_day_of_year(-INT64_C(1000000), &ordinal));
+    g_assert_cmpint(ordinal, ==, 365); /* 1969-12-31 UTC */
+    g_assert_true(temporal_solar_compact_terms(
+        INT64_C(1709164800000000), &equation, &declination));
+    g_assert_true(isfinite(equation));
+    g_assert_true(isfinite(declination));
+    g_assert_cmpfloat(fabs(equation), <, 30.0);
+    g_assert_cmpfloat(fabs(declination), <, 0.5);
+    g_assert_true(temporal_solar_compact_terms(
+        G_MININT64, &equation, &declination));
+    g_assert_true(isfinite(equation));
+    g_assert_true(isfinite(declination));
+}
+
 int main(int argc, char **argv)
 {
     g_test_init(&argc, &argv, NULL);
@@ -383,6 +408,7 @@ int main(int argc, char **argv)
     g_test_add_func("/resource-engine/arithmetic-calendar-engines", test_arithmetic_calendar_engines);
     g_test_add_func("/resource-engine/swedish-historical-boundaries", test_swedish_historical_boundaries);
     g_test_add_func("/resource-engine/solar-instant-overflow-rejection", test_solar_instant_overflow_rejection);
+    g_test_add_func("/resource-engine/compact-solar-contract", test_compact_solar_contract);
     g_test_add_func("/resource-engine/complete-civil-year-domain", test_complete_civil_year_domain);
     g_test_add_func("/resource-engine/roman-extreme-format-is-bounded", test_roman_extreme_format_is_bounded);
     return g_test_run();

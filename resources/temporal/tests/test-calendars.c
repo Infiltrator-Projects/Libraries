@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 /* Exercise every implementation through Common's public resource ABI. */
 #include <infiltratr/temporal_calendar.h>
+#include <infiltratr/temporal_runtime.h>
 #include <glib.h>
 #include <string.h>
 
@@ -174,10 +175,36 @@ static void test_thai_historical_missing_months(void)
     infiltratr_temporal_calendar_module_free(module);
 }
 
+/* Several readers race first-touch initialization. The catalogue must be
+ * completely published before any thread sees optional entries. */
+static gpointer catalogue_reader(gpointer user_data)
+{
+    gsize *observed_count = user_data;
+    *observed_count = infiltratr_temporal_installed_calendar_count();
+    for (gsize n = 0; n < *observed_count; ++n)
+        g_assert_nonnull(infiltratr_temporal_installed_calendar_at(n));
+    g_assert_cmpuint(infiltratr_temporal_installed_clock_mode_count(), >=, 1U);
+    return NULL;
+}
+
+static void test_concurrent_catalogue_readers(void)
+{
+    GThread *threads[8];
+    gsize counts[8] = { 0 };
+    for (gsize i = 0; i < G_N_ELEMENTS(threads); ++i)
+        threads[i] = g_thread_new("calendar-catalogue", catalogue_reader,
+                                   &counts[i]);
+    for (gsize i = 0; i < G_N_ELEMENTS(threads); ++i)
+        g_thread_join(threads[i]);
+    for (gsize i = 1; i < G_N_ELEMENTS(counts); ++i)
+        g_assert_cmpuint(counts[i], ==, counts[0]);
+}
+
 int main(int argc, char **argv)
 {
     g_test_init(&argc, &argv, NULL);
     g_test_add_func("/resources/all-calendar-providers", test_catalogue);
+    g_test_add_func("/resources/00-concurrent-catalogue-initialization", test_concurrent_catalogue_readers);
     g_test_add_func("/resources/historical-chronology-anchors", test_historical_chronology_anchors);
     g_test_add_func("/resources/thai-historical-transition", test_thai_historical_missing_months);
     return g_test_run();

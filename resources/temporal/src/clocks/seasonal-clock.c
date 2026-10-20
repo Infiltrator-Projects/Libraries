@@ -23,6 +23,7 @@
 #define CLOCK_LOCATION false
 #endif
 #include <infiltratr/temporal_clock_resource.h>
+#include "temporal_solar_compact.h"
 
 #include "infiltratr/arithmetic.h"
 #include "infiltratr/core.h"
@@ -35,17 +36,9 @@
 
 #define MICROSECONDS_PER_SECOND INT64_C(1000000)
 #define SECONDS_PER_MINUTE INT64_C(60)
-#define MINUTES_PER_HOUR INT64_C(60)
 #define SECONDS_PER_HOUR INT64_C(3600)
 #define SECONDS_PER_DAY INT64_C(86400)
 #define MICROSECONDS_PER_DAY (SECONDS_PER_DAY * MICROSECONDS_PER_SECOND)
-#define INTERNET_TICKS_PER_DAY UINT64_C(1000)
-#define HEX_TICKS_PER_DAY UINT64_C(65536)
-#define DECIMAL_SECONDS_PER_DAY UINT64_C(100000)
-#define CHINESE_DOUBLE_HOURS_PER_DAY UINT64_C(12)
-#define CHINESE_KE_PER_DAY UINT64_C(100)
-#define VIGHATI_PER_DAY UINT64_C(3600)
-#define SIDEREAL_RATE_PER_SI_SECOND (24.06570982441908L / 24.0L)
 #define INFILTRATR_PI 3.141592653589793238462643383279502884L
 
 static bool write_text(char *buffer, size_t capacity, size_t *length,
@@ -97,109 +90,13 @@ static int64_t positive_modulo(int64_t value, int64_t modulus)
     return remainder;
 }
 
-/*
- * Convert a Unix day number to Gregorian day-of-year with exact 400-year
- * cycle arithmetic. Keeping this independent of time_t makes astronomical
- * formatting deterministic on 32-bit and 64-bit hosts alike.
- */
-static bool gregorian_day_of_year(int64_t unix_microseconds,
-                                  int *day_of_year,
-                                  bool *is_leap_year)
-{
-    static const int cumulative_days[12] = {
-        0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334
-    };
-    int64_t unix_seconds;
-    int64_t days;
-    int64_t z;
-    int64_t era;
-    int64_t doe;
-    int64_t yoe;
-    int64_t doy_march;
-    int64_t mp;
-    int64_t year;
-    int month;
-    int day;
-    bool leap;
-
-    if (day_of_year == NULL) {
-        return false;
-    }
-    unix_seconds = floor_divide(unix_microseconds, MICROSECONDS_PER_SECOND);
-    days = floor_divide(unix_seconds, SECONDS_PER_DAY);
-    if (!infiltratr_i64_add_checked(days, INT64_C(719468), &z)) {
-        return false;
-    }
-
-    era = floor_divide(z, INT64_C(146097));
-    doe = z - era * INT64_C(146097);
-    yoe = (doe - doe / INT64_C(1460) + doe / INT64_C(36524) -
-           doe / INT64_C(146096)) / INT64_C(365);
-    year = yoe + era * INT64_C(400);
-    doy_march = doe - (INT64_C(365) * yoe + yoe / INT64_C(4) -
-                       yoe / INT64_C(100));
-    mp = (INT64_C(5) * doy_march + INT64_C(2)) / INT64_C(153);
-    day = (int)(doy_march - (INT64_C(153) * mp + INT64_C(2)) /
-                INT64_C(5) + INT64_C(1));
-    month = (int)(mp + (mp < 10 ? 3 : -9));
-    if (month <= 2) {
-        year++;
-    }
-
-    leap = (year % 4 == 0 && year % 100 != 0) || year % 400 == 0;
-    if (month < 1 || month > 12 || day < 1 || day > 31) {
-        return false;
-    }
-    *day_of_year = cumulative_days[month - 1] + day +
-                   (leap && month > 2 ? 1 : 0);
-    if (is_leap_year != NULL) {
-        *is_leap_year = leap;
-    }
-    return true;
-}
-
-/*
- * Compact equation-of-time and solar-declination approximation shared by the
- * apparent-solar and seasonal clock families. Both values come from the same
- * fractional-year phase so all location-aware modes remain internally
- * consistent.
- */
-static bool solar_terms(int64_t unix_microseconds,
-                        double *equation_minutes,
+/* Common's compact model is linked into each standalone historical clock;
+ * local mode code retains its distinct event and equal-hour rules. */
+static bool solar_terms(int64_t instant, double *equation_minutes,
                         double *declination_radians)
 {
-    const int64_t utc_phase =
-        positive_modulo(unix_microseconds, MICROSECONDS_PER_DAY);
-    const long double fractional_hour =
-        (long double)utc_phase /
-        ((long double)SECONDS_PER_HOUR * MICROSECONDS_PER_SECOND);
-    int day_of_year;
-    long double gamma;
-
-    if (!gregorian_day_of_year(unix_microseconds, &day_of_year, NULL)) {
-        return false;
-    }
-    gamma = 2.0L * INFILTRATR_PI / 365.0L *
-            ((long double)day_of_year - 1.0L +
-             (fractional_hour - 12.0L) / 24.0L);
-
-    if (equation_minutes != NULL) {
-        *equation_minutes = 229.18 *
-            (0.000075 + 0.001868 * cos((double)gamma) -
-             0.032077 * sin((double)gamma) -
-             0.014615 * cos((double)(2.0L * gamma)) -
-             0.040849 * sin((double)(2.0L * gamma)));
-    }
-    if (declination_radians != NULL) {
-        *declination_radians =
-            0.006918 - 0.399912 * cos((double)gamma) +
-            0.070257 * sin((double)gamma) -
-            0.006758 * cos((double)(2.0L * gamma)) +
-            0.000907 * sin((double)(2.0L * gamma)) -
-            0.002697 * cos((double)(3.0L * gamma)) +
-            0.001480 * sin((double)(3.0L * gamma));
-    }
-    return true;
+    return temporal_solar_compact_terms(
+        instant, equation_minutes, declination_radians);
 }
 
 static double clamp_longitude(double longitude)

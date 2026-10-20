@@ -9,6 +9,7 @@
  * own output rather than a duplicate application polling policy.
  */
 #include <infiltratr/temporal_clock_resource.h>
+#include "temporal_solar_compact.h"
 
 #include <math.h>
 #include <stdint.h>
@@ -17,73 +18,18 @@
 
 #define SECOND_US INT64_C(1000000)
 #define DAY_US INT64_C(86400000000)
-#define PI 3.141592653589793238462643383279502884L
-
-static int64_t floor_div(int64_t n, int64_t divisor)
-{
-    const int64_t q = n / divisor;
-    return n % divisor < 0 ? q - 1 : q;
-}
-
-static int64_t positive_mod(int64_t n, int64_t divisor)
-{
-    const int64_t r = n % divisor;
-    return r < 0 ? r + divisor : r;
-}
-
-/* Exact Gregorian 400-year arithmetic; no time_t range or locale dependence. */
-static bool day_of_year(int64_t instant, int *ordinal)
-{
-    static const int cumulative[] = {
-        0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334
-    };
-    const int64_t days = floor_div(floor_div(instant, SECOND_US),
-                                   INT64_C(86400));
-    const int64_t z = days + INT64_C(719468);
-    const int64_t era = floor_div(z, INT64_C(146097));
-    const int64_t doe = z - era * INT64_C(146097);
-    const int64_t yoe = (doe - doe / INT64_C(1460) +
-                        doe / INT64_C(36524) -
-                        doe / INT64_C(146096)) / INT64_C(365);
-    const int64_t doy_march = doe -
-        (INT64_C(365) * yoe + yoe / INT64_C(4) - yoe / INT64_C(100));
-    const int64_t mp =
-        (INT64_C(5) * doy_march + INT64_C(2)) / INT64_C(153);
-    const int day = (int)(doy_march -
-        (INT64_C(153) * mp + INT64_C(2)) / INT64_C(5) + 1);
-    const int month = (int)(mp + (mp < 10 ? 3 : -9));
-    const int64_t year = yoe + era * INT64_C(400) + (month <= 2 ? 1 : 0);
-    const bool leap =
-        (year % 4 == 0 && year % 100 != 0) || year % 400 == 0;
-    if (ordinal == NULL || month < 1 || month > 12 || day < 1 || day > 31)
-        return false;
-    *ordinal = cumulative[month - 1] + day +
-               (leap && month > 2 ? 1 : 0);
-    return true;
-}
 
 static bool apparent_seconds(int64_t instant, double longitude,
                              long double *result)
 {
-    const long double utc_phase = (long double)positive_mod(instant, DAY_US);
-    const long double fractional_hour =
-        utc_phase / (3600.0L * (long double)SECOND_US);
-    long double phase, seconds;
-    double equation_minutes;
-    int ordinal;
+    const long double utc_phase =
+        (long double)temporal_solar_mod(instant, DAY_US);
+    double equation_minutes = 0.0;
+    long double seconds;
     if (result == NULL || !isfinite(longitude) ||
         longitude < -180.0 || longitude > 180.0 ||
-        !day_of_year(instant, &ordinal))
+        !temporal_solar_compact_terms(instant, &equation_minutes, NULL))
         return false;
-
-    phase = 2.0L * PI / 365.0L *
-            ((long double)ordinal - 1.0L +
-             (fractional_hour - 12.0L) / 24.0L);
-    equation_minutes = 229.18 *
-        (0.000075 + 0.001868 * cos((double)phase) -
-         0.032077 * sin((double)phase) -
-         0.014615 * cos((double)(2.0L * phase)) -
-         0.040849 * sin((double)(2.0L * phase)));
 
     seconds = utc_phase / (long double)SECOND_US +
               (long double)longitude * 240.0L +

@@ -36,7 +36,11 @@ The installed calendar and clock catalogues admit only modules whose metadata an
 executable provider ABIs both validate. Entries have stable IDs and deterministic
 filesystem order. The OS-following `standard` clock remains a policy selector.
 A metadata-only file is never an executable capability. One invalid optional
-module is ignored without removing unrelated valid modules.
+module is ignored without removing unrelated valid modules. If multiple files
+claim the same stable ID, selection uses the first fully validated executable
+provider in sorted filesystem order; an invalid first file cannot shadow it.
+Concurrent snapshot initialization sleeps on a condition, while re-entrant
+queries see only the normal host/base selectors.
 
 The catalogue is snapshotted on first use in each process. Installing or removing
 resources affects newly started consumers without invalidating live pointers.

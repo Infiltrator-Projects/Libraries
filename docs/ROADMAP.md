@@ -4,28 +4,25 @@ This roadmap describes direction rather than a promise of dates. The exact relea
 
 ## Current foundation
 
-- maintain the published ABI and exact consumer contract;
-- keep shared primitives at least as strong as the best consumer implementation;
-- qualify Linux, Windows and Apple consumers through CI;
-- keep toolkit-neutral POSIX user paths and directory creation in Common rather than duplicating them in graphical consumers;
-- preserve the existing built-in temporal catalogue while new discovery capability is developed alongside it.
+- maintain the published portable ABI with exact pinned consumer revisions;
+- keep Common's shared primitives at least as strong as the best consumer;
+- qualify Linux, Windows and Apple and the installed resource package;
+- publish 31 independent calendar and 23 independent explicit clock modules
+  through Common, with no app-owned calendar/time algorithm fallback;
+- enumerate optional capabilities through validated executable provider ABIs
+  installed in the two native system resource directories.
 
-## Near-term direction
+## Remaining work
 
-- promote reusable behaviour only after it has proved useful in more than one consumer;
-- continue removing private duplicate helpers from consumers when the Common contract is stronger;
-- expand regression coverage whenever a shared primitive gains a new caller;
-- qualify filesystem discovery of `calendars/` and `clocks/` resource directories on supported platforms;
-- prototype one real calendar and one real clock through that discovery path;
-- use those real providers to decide whether the eventual resource payload should be compiled, declarative or hybrid;
-- only then define the minimum compatibility/validation contract required to make discovered resources usable system-wide.
-
-## Longer-term direction
-
-- add new shared capability families only where a stable product-neutral contract exists;
-- preserve backward compatibility or introduce explicit versioned ABI transitions when incompatibility is unavoidable;
-- migrate temporal systems incrementally only after the discovered-resource model proves stronger than the existing compiled catalogue;
-- let System Settings and other consumers enumerate installed temporal capabilities without maintaining their own master lists.
+- extend independent historical and astronomical regression evidence for
+  the periods and approximations recorded in
+  [Historical Fidelity](TEMPORAL_HISTORICAL_FIDELITY.md);
+- add adversarial duplicate, malformed and concurrent discovery fixtures
+  across supported platforms, retaining deterministic fail-closed behavior;
+- implement further calendar or time systems only when their historical
+  contracts, evidence and distinct stable IDs are justified;
+- keep calendar/time domain rules owned by their individual resources and
+  resist extra runtime abstraction without demonstrated value.
 
 ## Admission rule
 

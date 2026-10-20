@@ -7,6 +7,10 @@ embedded in their metadata. Stable provider IDs are independent of filenames;
 there are no aliases, post-build renames or display-only disguises. The selectable provider implementations are loaded from their system
 files; Calendar, Files and System Settings do not compile or replace them.
 Neutral coordinate and formatting helpers remain shared Common APIs.
+The compact NOAA/GML solar mathematics is maintained in a single private
+Common header, compiled separately into the relevant `.so` providers
+without linking their lifetimes together. Distinct historic rules remain
+implemented and qualified in each owning clock.
 
 From the Common repository, run `make temporal-resource-check` or
 `make temporal-resource-package`. The Debian package retains its existing

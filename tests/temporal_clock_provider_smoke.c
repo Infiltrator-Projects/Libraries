@@ -12,8 +12,8 @@
     return 1; } } while (0)
 
 
-/* All eighteen extracted clock IDs must fail closed without a system module.
- * Unmigrated IDs retain their legacy rendering during the migration. */
+/* All 23 explicit clocks now require installed modules. Neither a compiled
+ * clock-face fallback nor a partial migration remains. */
 static int test_system_presentation(void)
 {
     static const char *const migrated[] = {

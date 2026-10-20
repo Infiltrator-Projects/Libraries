@@ -9,7 +9,8 @@ COMMON_ROOT := ../..
 VERSION := $(strip $(file <../../VERSION))
 INFILTRATR_COMMON_ARCHIVE := $(BUILD_DIR)/common/libinfiltratr-common.a
 INFILTRATR_COMMON_HEADERS := $(wildcard ../../include/infiltratr/*.h)
-CPPFLAGS += -Isrc/support -Isrc/calendars -Isrc/calendars/engine -I../../include \
+INFILTRATR_SOLAR_HEADER := ../../src/temporal_solar_compact.h
+CPPFLAGS += -Isrc/support -Isrc/calendars -Isrc/calendars/engine -I../../src -I../../include \
     -DGLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_74 -DGLIB_VERSION_MAX_ALLOWED=GLIB_VERSION_2_74 \
     -DGETTEXT_PACKAGE=\"infiltrator-temporal-resources\" -DU_DISABLE_RENAMING=1
 CFLAGS ?= -O2 -g
@@ -310,8 +311,9 @@ common-build:
 	    CPPFLAGS="-Iinclude" CFLAGS="-O2 -g -fPIC -ffile-prefix-map=$(abspath $(COMMON_ROOT))=. -fdebug-prefix-map=$(abspath $(COMMON_ROOT))=." all
 $(INFILTRATR_COMMON_ARCHIVE): common-build
 	@:
+$(CALENDAR_RESOURCES) $(CLOCK_RESOURCES): $(INFILTRATR_SOLAR_HEADER)
 $(CALENDAR_RESOURCES): $(RESOURCE_ENGINE_HEADERS) $(HEADERS)
-$(BUILD_DIR)/%.o: src/%.c $(RESOURCE_ENGINE_HEADERS) $(HEADERS)
+$(BUILD_DIR)/%.o: src/%.c $(RESOURCE_ENGINE_HEADERS) $(HEADERS) $(INFILTRATR_SOLAR_HEADER)
 	@mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(CORE_CFLAGS) -MMD -MP -c "$<" -o "$@"
 $(BUILD_DIR)/test-clocks: tests/test-clocks.c tests/resource-test-path.h $(CLOCK_RESOURCES) $(INFILTRATR_COMMON_ARCHIVE)

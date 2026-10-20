@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.19.69 — 2026-10-20
+
+- Select calendar and clock modules by fully validated executable provider
+  ABI; invalid earlier duplicate-ID claims cannot conceal valid resources.
+- Replace catalogue initialization busy-wait with coordinated publication,
+  prevent reentrant exposure of partially scanned optional capabilities.
+- Consolidate the NOAA/GML compact solar model across separately compiled
+  clocks, duration formatting and the temporal astronomy engine. Remove
+  unused presentation state and clock migration residue.
+- Update maintained design documentation to the completed resource model.
+
+
 - Compile all 53 native calendar and clock providers directly under canonical human-readable .so filenames, with matching embedded metadata and stable IDs. Qualify filename/ABI consistency and reject stale short-name build artifacts.
 
 ## 1.19.64 — 2026-10-18

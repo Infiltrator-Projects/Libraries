@@ -50,13 +50,22 @@ This file records durable architectural decisions for Libraries.
 
 **Consequence.** Dependencies sit behind narrow boundaries and are replaceable without changing consumer meaning where practical.
 
-## ADR-007 — Temporal capabilities move toward filesystem-discovered resources
+## ADR-007 — Temporal capabilities use executable filesystem resources
 
-**Decision.** Calendars and clock systems should ultimately be discoverable from recognised resource directories rather than requiring a compiled master capability list.
+**Decision.** Additional calendars and explicit clocks are independently
+compiled resources discovered under the two case-sensitive system directories.
+The first provider with valid metadata **and executable ABI** in deterministic
+filename order owns a duplicate ID. Invalid earlier files cannot mask it.
 
-**Rationale.** Adding a temporal system should become an installation operation rather than coordinated source edits across Common, Calendar and System Settings.
+**Rationale.** Installation must be independent of applications and metadata
+alone cannot demonstrate an executable clock or calendar. No compiled optional
+capability list is authoritative for available modules.
 
-**Consequence.** Existing compiled catalogues remain valid and unchanged during migration. Common owns the generic discovery mechanism, while each calendar/clock owns its specific rules. The physical resource representation is deliberately not fixed yet: compiled code, data and bundle approaches remain open until real providers prove what is required. The current additive scanner is described in [TEMPORAL_PROVIDERS.md](TEMPORAL_PROVIDERS.md).
+**Consequence.** Common owns validated loading and catalogue snapshots;
+individual resources own historical semantics. The host Gregorian and
+OS-following time selectors remain base capabilities. Any future bundle
+format requires a justified ABI revision. This replaces the original
+provisional discovery migration.
 
 ## ADR-008 — Common owns shared system temporal implementations
 

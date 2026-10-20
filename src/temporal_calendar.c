@@ -113,32 +113,30 @@ infiltratr_temporal_calendar_module_open(const char *module_path)
 }
 
 typedef struct CalendarLookup {
-    const char *calendar_id;
-    char *module_path;
+    const char *id;
+    InfiltratrTemporalCalendarModule *module;
 } CalendarLookup;
 
-static bool capture_calendar_path(
+/* The first executable, ABI-valid provider wins in scan order. A preceding
+ * metadata-only module cannot reserve the ID and shadow a usable module. */
+static bool capture_calendar_module(
     const InfiltratrTemporalResourceMetadata *metadata,
-    const char *module_path,
-    void *user_data)
+    const char *path, void *user_data)
 {
     CalendarLookup *lookup = user_data;
-    size_t length;
+    InfiltratrTemporalCalendarModule *candidate;
+    if (lookup == NULL || lookup->module != NULL || metadata == NULL ||
+        metadata->id == NULL || path == NULL ||
+        strcmp(metadata->id, lookup->id) != 0)
+        return true;
 
-    if (lookup == NULL || lookup->module_path != NULL ||
-        metadata == NULL || module_path == NULL ||
-        strcmp(metadata->id, lookup->calendar_id) != 0) {
+    candidate = infiltratr_temporal_calendar_module_open(path);
+    if (candidate == NULL) return true;
+    if (strcmp(candidate->metadata->id, lookup->id) != 0) {
+        infiltratr_temporal_calendar_module_free(candidate);
         return true;
     }
-
-    length = strlen(module_path);
-    if (length == SIZE_MAX) {
-        return true;
-    }
-    lookup->module_path = malloc(length + 1U);
-    if (lookup->module_path != NULL) {
-        memcpy(lookup->module_path, module_path, length + 1U);
-    }
+    lookup->module = candidate;
     return true;
 }
 
@@ -146,39 +144,21 @@ InfiltratrTemporalCalendarModule *
 infiltratr_temporal_calendar_module_open_id(const char *calendar_id)
 {
     CalendarLookup lookup;
-    InfiltratrTemporalCalendarModule *module = NULL;
     size_t visited = 0U;
+    if (!infiltratr_temporal_id_valid(calendar_id)) return NULL;
 
-    if (!infiltratr_temporal_id_valid(calendar_id)) {
-        return NULL;
-    }
-
-    lookup.calendar_id = calendar_id;
-    lookup.module_path = NULL;
+    lookup.id = calendar_id;
+    lookup.module = NULL;
     if (!infiltratr_temporal_runtime_scan_native(
             INFILTRATR_TEMPORAL_RESOURCE_CALENDAR,
-            capture_calendar_path,
-            &lookup,
-            &visited)) {
-        free(lookup.module_path);
+            capture_calendar_module, &lookup, &visited)) {
+        infiltratr_temporal_calendar_module_free(lookup.module);
         return strcmp(calendar_id, "gregorian") == 0
             ? infiltratr_temporal_calendar_module_open_system() : NULL;
     }
-    (void)visited;
-
-    if (lookup.module_path != NULL) {
-        module = infiltratr_temporal_calendar_module_open(lookup.module_path);
-        if (module != NULL &&
-            strcmp(module->metadata->id, calendar_id) != 0) {
-            infiltratr_temporal_calendar_module_free(module);
-            module = NULL;
-        }
-    }
-    free(lookup.module_path);
-    if (module == NULL && strcmp(calendar_id, "gregorian") == 0) {
-        module = infiltratr_temporal_calendar_module_open_system();
-    }
-    return module;
+    if (lookup.module == NULL && strcmp(calendar_id, "gregorian") == 0)
+        return infiltratr_temporal_calendar_module_open_system();
+    return lookup.module;
 }
 
 void infiltratr_temporal_calendar_module_free(
