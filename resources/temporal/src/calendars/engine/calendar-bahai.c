@@ -121,8 +121,8 @@ delta_t_seconds(gint year)
     }
 }
 
-static gint64
-modern_naw_ruz_jdn(gint gregorian_year)
+static gboolean
+modern_naw_ruz_jdn(gint gregorian_year, gint64 *result)
 {
     const long double jde_tt = march_equinox_jde_tt(gregorian_year);
     const long double jd_utc =
@@ -137,20 +137,29 @@ modern_naw_ruz_jdn(gint gregorian_year)
     const gint64 tehran_civil_jdn = calendar_i64_add_saturating(
         floor_divide(local_microseconds, MICROSECONDS_PER_DAY),
         CALENDAR_UNIX_EPOCH_JDN);
-    long double dawn = 0.0L;
-    long double dusk = 0.0L;
-    const long double apparent =
-        calendar_apparent_solar_seconds(
-            unix_microseconds, TEHRAN_LONGITUDE);
+    /* Civil and apparent-solar midnight differ. Comparing wrapped solar
+     * seconds to a civil date can move an equinox near midnight by a whole
+     * day (2060), producing impossible 364/367-day years. Compare UTC instants
+     * at the sunset belonging to that Tehran civil date instead. Noon in
+     * Tehran also lies on the same UTC date; years 1000..3000 fit gint64. */
+    const gint64 tehran_noon_microseconds =
+        (tehran_civil_jdn - CALENDAR_UNIX_EPOCH_JDN) * MICROSECONDS_PER_DAY +
+        MICROSECONDS_PER_DAY / 2 -
+        (gint64)TEHRAN_UTC_OFFSET_SECONDS * G_USEC_PER_SEC;
+    gint64 dawn = 0;
+    gint64 dusk = 0;
 
-    if (!calendar_solar_day_boundaries(
-            unix_microseconds, TEHRAN_LATITUDE, 0.833, &dawn, &dusk))
+    if (!calendar_solar_boundary_instants(
+            tehran_noon_microseconds, TEHRAN_LATITUDE, TEHRAN_LONGITUDE,
+            0.833, &dawn, &dusk))
     {
-        return tehran_civil_jdn;
+        return FALSE;
     }
 
     (void)dawn;
-    return apparent < dusk ? tehran_civil_jdn : calendar_i64_add_saturating(tehran_civil_jdn, 1);
+    *result = unix_microseconds < dusk
+        ? tehran_civil_jdn : tehran_civil_jdn + 1;
+    return TRUE;
 }
 
 /* Out-of-domain years are not the 1844 epoch. Explicit status is essential:
@@ -166,10 +175,11 @@ bahai_year_start_jdn(gint64 bahai_year, gint64 *result)
 
     const gint64 gregorian_year =
         bahai_year + BAHAI_TO_GREGORIAN_YEAR_OFFSET;
-    *result = bahai_year >= MODERN_BAHAI_FIRST_YEAR &&
-              gregorian_year >= 1000 && gregorian_year <= 3000
-        ? modern_naw_ruz_jdn((gint)gregorian_year)
-        : gregorian_to_jdn(gregorian_year, 3, 21);
+    if (bahai_year >= MODERN_BAHAI_FIRST_YEAR &&
+        gregorian_year >= 1000 && gregorian_year <= 3000)
+        return modern_naw_ruz_jdn((gint)gregorian_year, result);
+
+    *result = gregorian_to_jdn(gregorian_year, 3, 21);
     return TRUE;
 }
 

@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.19.75 — 2026-10-23
+
+- Compare equinox and Tehran sunset as absolute UTC instants for Badíʿ Naw-Rúz.
+  Apparent-solar midnight no longer shifts the civil year boundary by a day.
+- Preserve explicit failure when the required solar event cannot be calculated.
+- Regress the 2060 civil/solar-midnight case through the engine and executable
+  resource ABI, and check every modern astronomical year through 2999.
+
 ## 1.19.74 — 2026-10-21
 
 - Reject non-reversible Egyptian Nabonassar and Armenian wandering-year JDN

@@ -546,6 +546,34 @@ static void test_bahai_rejects_invalid_year(void)
                     calendar_gregorian_to_jdn(2024, 2, 28));
 }
 
+static void test_bahai_civil_solar_midnight(void)
+{
+    CalendarCalendarFields fields;
+    const gint64 naw_ruz_2060 = calendar_gregorian_to_jdn(2060, 3, 20);
+
+    calendar_bahai_fields_from_jdn(naw_ruz_2060, &fields);
+    g_assert_cmpint(fields.year, ==, 217);
+    g_assert_cmpint(fields.month, ==, 1);
+    g_assert_cmpint(fields.day, ==, 1);
+
+    for (gint year = 2015; year < 3000; year++)
+    {
+        const gint64 bahai_year = year - 1843;
+        const gint intercalary = calendar_bahai_intercalary_days(bahai_year);
+        const CalendarCalendarFields start = {
+            .year = bahai_year, .month = 1, .day = 1
+        };
+        const gint64 jdn = calendar_bahai_fields_to_jdn(&start);
+
+        g_assert_cmpint(intercalary, >=, 4);
+        g_assert_cmpint(intercalary, <=, 5);
+        calendar_bahai_fields_from_jdn(jdn, &fields);
+        g_assert_cmpint(fields.year, ==, bahai_year);
+        g_assert_cmpint(fields.month, ==, 1);
+        g_assert_cmpint(fields.day, ==, 1);
+    }
+}
+
 int main(int argc, char **argv)
 {
     g_test_init(&argc, &argv, NULL);
@@ -562,6 +590,7 @@ int main(int argc, char **argv)
     g_test_add_func("/resource-engine/complete-civil-year-domain", test_complete_civil_year_domain);
     g_test_add_func("/resource-engine/checked-civil-jdn-bounds", test_checked_civil_jdn_bounds);
     g_test_add_func("/resource-engine/bahai-invalid-year-refusal", test_bahai_rejects_invalid_year);
+    g_test_add_func("/resource-engine/bahai-civil-solar-midnight", test_bahai_civil_solar_midnight);
     g_test_add_func("/resource-engine/roman-extreme-format-is-bounded", test_roman_extreme_format_is_bounded);
     return g_test_run();
 }

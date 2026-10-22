@@ -107,6 +107,7 @@ static void test_historical_chronology_anchors(void)
         { "hebrew",             2460204, 5784,  1,  1, FALSE, FALSE, FALSE, 0 },
         { "persian",            2460390, 1403,  1,  1, FALSE, FALSE, FALSE, 0 },
         { "buddhist",           2451545, 2543,  1,  1, FALSE, FALSE, FALSE, 0 },
+        { "bahai",              2473539,  217,  1,  1, FALSE, FALSE, FALSE, 0 },
         { "thai-buddhist-solar", 2419494, 2455,  4,  1, FALSE, FALSE, FALSE, 0 },
         { "thai-buddhist-solar", 2429720, 2482,  3, 31, FALSE, FALSE, FALSE, 0 },
         { "thai-buddhist-solar", 2429721, 2483,  4,  1, FALSE, FALSE, FALSE, 0 },

@@ -87,3 +87,10 @@ The Badíʿ (Bahá'í) resource now distinguishes a failed year-start computatio
 from its historically meaningful 1844 epoch. Invalid years do not silently
 become 21 March 1844, and a legitimate intercalary month numbered zero is
 not confused with a failed field conversion.
+
+Modern Badíʿ Naw-Rúz compares the equinox instant with the computed sunset
+of its Tehran civil date in UTC. Civil midnight and apparent-solar midnight
+are distinct boundaries; comparing wrapped solar fields can otherwise shift
+the civil result by a day and produce an impossible year length. Failed sunset
+calculation remains an explicit failure. The 2060 rollover and modern-year
+length invariants are covered at the engine and executable resource boundary.
