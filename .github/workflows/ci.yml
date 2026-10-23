@@ -134,7 +134,7 @@ jobs:
 
   strict-build:
     name: ${{ matrix.compiler }} strict build
-    runs-on: ${{ fromJSON(matrix.compiler == 'gcc' && '["self-hosted","Linux","X64","linux-native"]' || '["ubuntu-24.04"]') }}
+    runs-on: [self-hosted, Linux, X64, linux-native]
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -171,7 +171,7 @@ jobs:
 
   sanitizers:
     name: Clang ASan + UBSan
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, linux-native]
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
