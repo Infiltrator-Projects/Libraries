@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.19.76 — 2026-10-25
+
+- Apply compiler-probed ELF call/symbol-visibility optimisations
+  (-fno-semantic-interposition and -fno-plt) to all 31 calendar and 23
+  independently loadable clock providers from the Common resource package.
+- Preserve -O2 architecture-portable Debian 12 ABI baseline; native CPU
+  tuning and two-pass PGO require a separately qualified local rebuild,
+  never a universal CPU-specific binary published as portable.
+- Retain standalone resource paths, names, ABI and independent package identity.
+
 ## 1.19.75 — 2026-10-23
 
 - Compare equinox and Tehran sunset as absolute UTC instants for Badíʿ Naw-Rúz.
