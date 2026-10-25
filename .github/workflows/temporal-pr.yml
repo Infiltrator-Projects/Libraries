@@ -10,6 +10,7 @@ on:
       - 'include/infiltratr/core.h'
       - 'VERSION'
       - '.github/workflows/temporal-pr.yml'
+      - '.github/workflows/ci.yml'
 
 permissions:
   contents: read
@@ -34,3 +35,21 @@ jobs:
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: Verify provider build and runtime tests
         run: make CC=${{ matrix.compiler }} temporal-resource-check
+
+  native-sanitizers:
+    name: Common Clang ASan/UBSan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install sanitizer dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends clang build-essential
+      - name: Verify Common with address and undefined behavior sanitizers
+        env:
+          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: |
+          make clean
+          make CC=clang CFLAGS="-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer" check
