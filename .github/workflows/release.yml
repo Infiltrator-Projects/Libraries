@@ -18,9 +18,17 @@ jobs:
     permissions:
       contents: write
       actions: read
-    runs-on: [self-hosted, Linux, X64, linux-native]
+    # Publication needs gh/git and token permissions, not hardware-native CPU
+    # access. Avoid unprovisioned self-hosted machines without GitHub CLI.
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
+      - name: Verify publishing tools
+        run: |
+          set -euo pipefail
+          for tool in gh git sha256sum diff; do
+            command -v "$tool" >/dev/null || { echo "Missing publishing tool: $tool" >&2; exit 1; }
+          done
       - name: Check out exact tested main commit
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
