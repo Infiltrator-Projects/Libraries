@@ -1,0 +1,35 @@
+# Validate independent Calendar/clock providers on their oldest supported ABI.
+# The broader main-branch pipeline retains self-hosted jobs.
+name: Temporal providers PR
+
+on:
+  pull_request:
+    paths:
+      - 'resources/temporal/**'
+      - 'include/infiltratr/core.h'
+      - 'VERSION'
+      - '.github/workflows/temporal-pr.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  portable-providers:
+    name: Debian 12 / ${{ matrix.compiler }}
+    runs-on: ubuntu-24.04
+    container: debian:12
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - name: Install oldest supported build dependencies
+        run: |
+          apt-get update
+          apt-get install -y build-essential clang git ca-certificates python3 binutils pkg-config libglib2.0-dev libicu-dev gettext
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Trust checked-out workspace
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - name: Verify provider build and runtime tests
+        run: make CC=${{ matrix.compiler }} temporal-resource-check
