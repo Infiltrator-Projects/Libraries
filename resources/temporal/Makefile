@@ -17,8 +17,8 @@ CPPFLAGS += -Isrc/support -Isrc/calendars -Isrc/calendars/engine -I../../src -I.
 # add -march=native here: consumer machines need not share the build CPU.
 # Safe ELF optimisations are capability-tested separately for GCC and Clang.
 TEMPORAL_ELF_FLAGS := $(shell for flag in -fno-semantic-interposition -fno-plt; do \
-    printf 'int f(void){return 0;}\n' | $(CC) -std=c11 -fPIC -x c -c "$flag" -o /dev/null - \
-    >/dev/null 2>&1 && printf '%s ' "$flag"; done)
+    printf 'int f(void){return 0;}\n' | $(CC) -std=c11 -fPIC -x c -c "$$flag" -o /dev/null - \
+    >/dev/null 2>&1 && printf '%s ' "$$flag"; done)
 CFLAGS ?= -O2 -g
 CFLAGS += $(TEMPORAL_ELF_FLAGS)
 CFLAGS += -std=c11 -fPIC -ffunction-sections -fdata-sections -Wall -Wextra -Wpedantic -Werror -Wformat=2 \
