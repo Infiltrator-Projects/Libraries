@@ -13,7 +13,14 @@ INFILTRATR_SOLAR_HEADER := ../../src/temporal_solar_compact.h
 CPPFLAGS += -Isrc/support -Isrc/calendars -Isrc/calendars/engine -I../../src -I../../include \
     -DGLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_74 -DGLIB_VERSION_MAX_ALLOWED=GLIB_VERSION_2_74 \
     -DGETTEXT_PACKAGE=\"infiltrator-temporal-resources\" -DU_DISABLE_RENAMING=1
+# Temporal provider .so files ship as portable Debian 12+ binaries. Do NOT
+# add -march=native here: consumer machines need not share the build CPU.
+# Safe ELF optimisations are capability-tested separately for GCC and Clang.
+TEMPORAL_ELF_FLAGS := $(shell for flag in -fno-semantic-interposition -fno-plt; do \
+    printf 'int f(void){return 0;}\n' | $(CC) -std=c11 -fPIC -x c -c "$flag" -o /dev/null - \
+    >/dev/null 2>&1 && printf '%s ' "$flag"; done)
 CFLAGS ?= -O2 -g
+CFLAGS += $(TEMPORAL_ELF_FLAGS)
 CFLAGS += -std=c11 -fPIC -ffunction-sections -fdata-sections -Wall -Wextra -Wpedantic -Werror -Wformat=2 \
     -Wshadow -Wstrict-prototypes -Wmissing-prototypes -fstack-protector-strong -fno-common \
     -ffile-prefix-map=$(CURDIR)=. -fdebug-prefix-map=$(CURDIR)=.
