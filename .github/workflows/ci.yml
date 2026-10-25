@@ -134,15 +134,26 @@ jobs:
 
   strict-build:
     name: ${{ matrix.compiler }} strict build
-    runs-on: [self-hosted, Linux, X64, linux-native]
+    # Retain the qualified self-hosted GCC worker. Some other self-hosted
+    # workers lack Clang; ensure strict Clang runs with a provisioned toolchain.
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
       max-parallel: 2
       matrix:
-        compiler: [gcc, clang]
+        include:
+          - compiler: gcc
+            runner: [self-hosted, Linux, X64, linux-native]
+          - compiler: clang
+            runner: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install hosted Clang toolchain
+        if: matrix.compiler == 'clang'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends clang cmake build-essential
       - name: Verify local build dependencies
         shell: bash
         run: |

@@ -53,3 +53,29 @@ jobs:
         run: |
           make clean
           make CC=clang CFLAGS="-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer" check
+
+  clang-strict:
+    name: Common strict Clang on clean host
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install Clang toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends clang cmake build-essential
+      - name: Exercise full strict Clang and CMake consumer tests
+        run: |
+          make clean
+          make CC=clang check
+          make clean
+          make CC=clang portable-check
+          make clean
+          make CC=clang shared
+          cmake -S . -B cmake-build -DCMAKE_C_COMPILER=clang -DCMAKE_BUILD_TYPE=Debug -DINFILTRATR_COMMON_BUILD_TESTS=ON -DINFILTRATR_COMMON_WARNINGS_AS_ERRORS=ON -DINFILTRATR_COMMON_BUILD_SHARED=ON
+          cmake --build cmake-build --parallel
+          ctest --test-dir cmake-build --output-on-failure
+          cmake --install cmake-build --prefix "$PWD/cmake-install"
+          cmake -S tests/cmake-consumer -B cmake-consumer-build -DCMAKE_C_COMPILER=clang -DCMAKE_PREFIX_PATH="$PWD/cmake-install"
+          cmake --build cmake-consumer-build --parallel
+          ./cmake-consumer-build/infiltratr-common-consumer
