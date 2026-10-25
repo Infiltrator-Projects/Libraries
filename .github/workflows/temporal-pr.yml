@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 # Validate independent Calendar/clock providers on their oldest supported ABI.
 # The broader main-branch pipeline retains self-hosted jobs.
 name: Temporal providers PR
