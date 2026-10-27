@@ -37,15 +37,6 @@ static int64_t floor_div(int64_t value, int64_t divisor)
     return value % divisor < 0 ? quotient - 1 : quotient;
 }
 
-/* Gregorian 400-year arithmetic avoids time_t, localtime and locale drift. */
-/* Origin and calendar traditions differ; the solar model is shared. */
-static bool solar_terms(int64_t instant, double *equation_minutes,
-                        double *declination_radians)
-{
-    return temporal_solar_compact_terms(
-        instant, equation_minutes, declination_radians);
-}
-
 static bool origin_on_day(int64_t day, double lat, double lon, int64_t *event)
 {
     const int64_t safe_day = INT64_MAX/US_DAY-2;
@@ -54,14 +45,11 @@ static bool origin_on_day(int64_t day, double lat, double lon, int64_t *event)
         !isfinite(lon) || lon < -180.0 || lon > 180.0) return false;
     int64_t noon = day*US_DAY + US_DAY/2;
     double eq, decl;
-    if (!solar_terms(noon, &eq, &decl)) return false;
-    double latrad = lat * (double)PI / 180.0;
-    double zenith = 90.833 * (double)PI / 180.0;
-    double divisor = cos(latrad)*cos(decl);
-    if (fabs(divisor) < 1.0e-12) return false;
-    double cos_ha = cos(zenith)/divisor-tan(latrad)*tan(decl);
-    if (cos_ha < -1.0 || cos_ha > 1.0) return false;
-    long double ha_minutes = acosl((long double)cos_ha)*180.0L/PI*4.0L;
+    long double hour_angle;
+    if (!temporal_solar_compact_terms(noon, &eq, &decl) ||
+        !temporal_solar_hour_angle(lat, decl, 0.833, &hour_angle))
+        return false;
+    long double ha_minutes = hour_angle * 180.0L / PI * 4.0L;
     long double noon_minutes = 720.0L-4.0L*lon-eq;
 #if defined(CLOCK_SUNRISE) || defined(CLOCK_GHATI)
     long double event_minutes = noon_minutes-ha_minutes;
