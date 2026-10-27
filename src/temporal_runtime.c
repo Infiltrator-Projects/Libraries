@@ -8,6 +8,8 @@
 #include "infiltratr/dynlib.h"
 #include "infiltratr/temporal_calendar.h"
 #include "infiltratr/temporal_clock_resource.h"
+#include "string_internal.h"
+#include "temporal_module_internal.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -23,6 +25,7 @@ typedef struct RuntimeScanContext {
     InfiltratrTemporalRuntimeVisitor visitor;
     void *user_data;
     size_t emitted;
+    bool require_executable_provider;
 } RuntimeScanContext;
 
 typedef struct RuntimeCalendarEntry {
@@ -123,52 +126,36 @@ static bool catalogue_wait_until_ready(void)
     return true;
 }
 
-static char *copy_text(const char *text)
-{
-    size_t length;
-    char *copy;
-
-    if (text == NULL) return NULL;
-    length = strlen(text);
-    if (length == SIZE_MAX) return NULL;
-    copy = malloc(length + 1U);
-    if (copy == NULL) return NULL;
-    memcpy(copy, text, length + 1U);
-    return copy;
-}
-
-static bool resource_id_valid(const char *id)
-{
-    size_t length = 0U;
-
-    if (id == NULL || id[0] == '\0') return false;
-    while (id[length] != '\0') {
-        const unsigned char value = (unsigned char)id[length];
-        const bool valid =
-            (value >= (unsigned char)'a' && value <= (unsigned char)'z') ||
-            (value >= (unsigned char)'0' && value <= (unsigned char)'9') ||
-            (value == (unsigned char)'-' && length != 0U);
-        if (!valid || length + 1U >= INFILTRATR_TEMPORAL_ID_CAPACITY) {
-            return false;
-        }
-        length++;
-    }
-    return length != 0U && id[length - 1U] != '-';
-}
-
 static bool metadata_valid(
     const InfiltratrTemporalResourceMetadata *metadata,
     InfiltratrTemporalResourceKind expected_kind)
 {
-    if (metadata == NULL ||
-        metadata->struct_size < sizeof(*metadata) ||
-        metadata->abi_version != INFILTRATR_TEMPORAL_RESOURCE_METADATA_ABI ||
-        metadata->kind != expected_kind ||
-        !resource_id_valid(metadata->id) ||
-        metadata->name == NULL || metadata->name[0] == '\0') {
-        return false;
+    return temporal_module_metadata_valid(metadata, expected_kind) &&
+        strlen(metadata->name) <= 255U;
+}
+
+/* Catalogue construction validates the typed provider while the metadata
+ * library is already open, avoiding a second dlopen per accepted resource.
+ * Public runtime scans remain metadata-only by their existing contract. */
+static bool executable_provider_valid(
+    InfiltratrDynlib *library,
+    const InfiltratrTemporalResourceMetadata *metadata)
+{
+    if (metadata->kind == INFILTRATR_TEMPORAL_RESOURCE_CALENDAR) {
+        InfiltratrTemporalCalendarProviderEntry entry = NULL;
+        return infiltratr_dynlib_symbol(
+                   library, INFILTRATR_TEMPORAL_CALENDAR_PROVIDER_SYMBOL,
+                   &entry, sizeof(entry)) &&
+            entry != NULL && temporal_calendar_provider_valid(metadata, entry());
     }
-    return strlen(metadata->name) <= 255U;
+    if (metadata->kind == INFILTRATR_TEMPORAL_RESOURCE_CLOCK) {
+        InfiltratrTemporalClockProviderEntry entry = NULL;
+        return infiltratr_dynlib_symbol(
+                   library, INFILTRATR_TEMPORAL_CLOCK_PROVIDER_SYMBOL,
+                   &entry, sizeof(entry)) &&
+            entry != NULL && temporal_clock_provider_valid(metadata, entry());
+    }
+    return false;
 }
 
 static bool inspect_candidate(
@@ -199,7 +186,9 @@ static bool inspect_candidate(
     }
 
     metadata = entry();
-    if (metadata_valid(metadata, context->kind)) {
+    if (metadata_valid(metadata, context->kind) &&
+        (!context->require_executable_provider ||
+         executable_provider_valid(&library, metadata))) {
         if (context->visitor != NULL) {
             keep_scanning = context->visitor(
                 metadata, resource->path, context->user_data);
@@ -211,12 +200,13 @@ static bool inspect_candidate(
     return keep_scanning;
 }
 
-bool infiltratr_temporal_runtime_scan_directory(
+static bool scan_directory_impl(
     const char *directory,
     InfiltratrTemporalResourceKind kind,
     InfiltratrTemporalRuntimeVisitor visitor,
     void *user_data,
-    size_t *visited)
+    size_t *visited,
+    bool require_executable_provider)
 {
     RuntimeScanContext context;
     size_t candidates = 0U;
@@ -230,6 +220,7 @@ bool infiltratr_temporal_runtime_scan_directory(
     context.visitor = visitor;
     context.user_data = user_data;
     context.emitted = 0U;
+    context.require_executable_provider = require_executable_provider;
     if (!infiltratr_temporal_resource_scan_directory(
             directory, kind, inspect_candidate, &context, &candidates)) {
         return false;
@@ -239,11 +230,23 @@ bool infiltratr_temporal_runtime_scan_directory(
     return true;
 }
 
-bool infiltratr_temporal_runtime_scan_native(
+bool infiltratr_temporal_runtime_scan_directory(
+    const char *directory,
     InfiltratrTemporalResourceKind kind,
     InfiltratrTemporalRuntimeVisitor visitor,
     void *user_data,
     size_t *visited)
+{
+    return scan_directory_impl(directory, kind, visitor, user_data, visited,
+                               false);
+}
+
+static bool scan_native_impl(
+    InfiltratrTemporalResourceKind kind,
+    InfiltratrTemporalRuntimeVisitor visitor,
+    void *user_data,
+    size_t *visited,
+    bool require_executable_provider)
 {
     const char *directory;
 
@@ -254,8 +257,17 @@ bool infiltratr_temporal_runtime_scan_native(
     } else {
         return false;
     }
-    return infiltratr_temporal_runtime_scan_directory(
-        directory, kind, visitor, user_data, visited);
+    return scan_directory_impl(directory, kind, visitor, user_data, visited,
+                               require_executable_provider);
+}
+
+bool infiltratr_temporal_runtime_scan_native(
+    InfiltratrTemporalResourceKind kind,
+    InfiltratrTemporalRuntimeVisitor visitor,
+    void *user_data,
+    size_t *visited)
+{
+    return scan_native_impl(kind, visitor, user_data, visited, false);
 }
 
 static bool calendar_duplicate(const char *id)
@@ -293,15 +305,6 @@ static bool append_calendar(
     (void)module_path;
     (void)user_data;
     if (calendar_duplicate(metadata->id)) return true;
-    InfiltratrTemporalCalendarModule *module =
-        infiltratr_temporal_calendar_module_open(module_path);
-    if (module == NULL) return true;
-    const InfiltratrTemporalResourceMetadata *loaded =
-        infiltratr_temporal_calendar_module_metadata(module);
-    const bool valid = loaded != NULL && strcmp(loaded->id, metadata->id) == 0;
-    infiltratr_temporal_calendar_module_free(module);
-    if (!valid) return true;
-
 
     if (runtime_calendar_count == runtime_calendar_capacity) {
         capacity = runtime_calendar_capacity == 0U
@@ -316,8 +319,8 @@ static bool append_calendar(
         runtime_calendar_capacity = capacity;
     }
 
-    id = copy_text(metadata->id);
-    name = copy_text(metadata->name);
+    id = infiltratr_private_copy_text(metadata->id);
+    name = infiltratr_private_copy_text(metadata->name);
     if (id == NULL || name == NULL) {
         free(id);
         free(name);
@@ -345,15 +348,6 @@ static bool append_clock(
     (void)module_path;
     (void)user_data;
     if (clock_duplicate(metadata->id)) return true;
-    InfiltratrTemporalClockModule *module =
-        infiltratr_temporal_clock_module_open(module_path);
-    if (module == NULL) return true;
-    const InfiltratrTemporalResourceMetadata *loaded =
-        infiltratr_temporal_clock_module_metadata(module);
-    const bool valid = loaded != NULL && strcmp(loaded->id, metadata->id) == 0;
-    infiltratr_temporal_clock_module_free(module);
-    if (!valid) return true;
-
 
     if (runtime_clock_count == runtime_clock_capacity) {
         capacity = runtime_clock_capacity == 0U
@@ -368,8 +362,8 @@ static bool append_clock(
         runtime_clock_capacity = capacity;
     }
 
-    id = copy_text(metadata->id);
-    name = copy_text(metadata->name);
+    id = infiltratr_private_copy_text(metadata->id);
+    name = infiltratr_private_copy_text(metadata->name);
     if (id == NULL || name == NULL) {
         free(id);
         free(name);
@@ -421,14 +415,14 @@ static bool catalogue_initialise(void)
         return catalogue_wait_until_ready();
     catalogue_initialising_here = true;
 
-    if (!infiltratr_temporal_runtime_scan_native(
+    if (!scan_native_impl(
             INFILTRATR_TEMPORAL_RESOURCE_CALENDAR,
-            append_calendar, NULL, &ignored)) {
+            append_calendar, NULL, &ignored, true)) {
         clear_runtime_calendars();
     }
-    if (!infiltratr_temporal_runtime_scan_native(
+    if (!scan_native_impl(
             INFILTRATR_TEMPORAL_RESOURCE_CLOCK,
-            append_clock, NULL, &ignored)) {
+            append_clock, NULL, &ignored, true)) {
         clear_runtime_clocks();
     }
     catalogue_mark_ready();

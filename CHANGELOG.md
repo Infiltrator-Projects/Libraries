@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.19.77 — 2026-10-27
+
+- Validate installed calendar and clock executable ABIs on the original
+  metadata-scan library handle, eliminating redundant provider reopens during
+  catalogue construction while preserving public metadata-only scans and
+  live directory lookup semantics.
+- Unify private typed-provider validation with direct module loading and reuse
+  the existing temporal-ID validator. Replace identical owning text-copy
+  implementations with one internal helper; leave public ABI unchanged.
+- Regress metadata-only fixtures, invalid provider identities and missing
+  callbacks. Exercise native temporal runtime and fixture changes on PR CI
+  as well as the existing 54-resource and cross-platform main qualification.
+- Keep standalone 3-face and 23-face font bootstraps independent for
+  consumers that package only one helper.
+
+
 ## 1.19.76 — 2026-10-25
 
 - Apply compiler-probed ELF call/symbol-visibility optimisations

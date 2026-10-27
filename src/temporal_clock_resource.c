@@ -5,6 +5,7 @@
 #include "infiltratr/dynlib.h"
 #include "infiltratr/temporal_id.h"
 #include "infiltratr/utf8.h"
+#include "temporal_module_internal.h"
 
 #include <math.h>
 #include <stdlib.h>
@@ -15,22 +16,6 @@ struct InfiltratrTemporalClockModule {
     const InfiltratrTemporalResourceMetadata *metadata;
     const InfiltratrTemporalClockProvider *provider;
 };
-
-static bool provider_valid(const InfiltratrTemporalResourceMetadata *metadata,
-                           const InfiltratrTemporalClockProvider *provider)
-{
-    return metadata != NULL && provider != NULL &&
-        metadata->struct_size >= sizeof(*metadata) &&
-        metadata->abi_version == INFILTRATR_TEMPORAL_RESOURCE_METADATA_ABI &&
-        metadata->kind == INFILTRATR_TEMPORAL_RESOURCE_CLOCK &&
-        infiltratr_temporal_id_valid(metadata->id) &&
-        metadata->name != NULL && metadata->name[0] != '\0' &&
-        provider->struct_size >= sizeof(*provider) &&
-        provider->abi_version == INFILTRATR_TEMPORAL_CLOCK_PROVIDER_ABI &&
-        provider->clock_id != NULL &&
-        strcmp(provider->clock_id, metadata->id) == 0 &&
-        provider->format != NULL && provider->next_tick != NULL;
-}
 
 void infiltratr_temporal_clock_module_free(InfiltratrTemporalClockModule *module)
 {
@@ -72,7 +57,7 @@ infiltratr_temporal_clock_module_open(const char *module_path)
     }
     module->metadata = metadata_entry();
     module->provider = provider_entry();
-    if (!provider_valid(module->metadata, module->provider)) {
+    if (!temporal_clock_provider_valid(module->metadata, module->provider)) {
         infiltratr_temporal_clock_module_free(module);
         return NULL;
     }

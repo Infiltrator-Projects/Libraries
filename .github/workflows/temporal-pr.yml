@@ -7,6 +7,9 @@ on:
   pull_request:
     paths:
       - 'resources/temporal/**'
+      - 'src/temporal*'
+      - 'src/string_internal.h'
+      - 'tests/temporal*'
       - 'include/infiltratr/core.h'
       - 'VERSION'
       - '.github/workflows/temporal-pr.yml'

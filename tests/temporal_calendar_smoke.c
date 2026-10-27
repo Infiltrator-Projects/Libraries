@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "infiltratr/temporal_calendar.h"
+#include "../src/temporal_module_internal.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -37,6 +38,16 @@ int main(void)
     CHECK(metadata != NULL && provider != NULL);
     CHECK(strcmp(metadata->id, "fixture-calendar") == 0);
     CHECK(strcmp(provider->calendar_id, "fixture-calendar") == 0);
+    /* Direct module loading and catalogue scanning share one ABI validator. */
+    CHECK(temporal_calendar_provider_valid(metadata, provider));
+    {
+        InfiltratrTemporalResourceMetadata wrong_metadata = *metadata;
+        InfiltratrTemporalCalendarProvider incomplete = *provider;
+        wrong_metadata.id = "not-fixture-calendar";
+        CHECK(!temporal_calendar_provider_valid(&wrong_metadata, provider));
+        incomplete.add_years = NULL;
+        CHECK(!temporal_calendar_provider_valid(metadata, &incomplete));
+    }
 
     CHECK(infiltratr_temporal_calendar_fields_from_jdn(
         module, INT64_C(2461331), &fields));
