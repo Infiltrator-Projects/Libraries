@@ -9,6 +9,7 @@
 #include "infiltratr/temporal_id.h"
 #include "infiltratr/utf8.h"
 #include "temporal_system_calendar.h"
+#include "temporal_module_internal.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -34,27 +35,6 @@ infiltratr_temporal_calendar_module_open_system(void)
         module->provider = infiltratr_temporal_system_calendar_provider();
     }
     return module;
-}
-
-static bool provider_valid(
-    const InfiltratrTemporalResourceMetadata *metadata,
-    const InfiltratrTemporalCalendarProvider *provider)
-{
-    return metadata != NULL && provider != NULL &&
-        metadata->struct_size >= sizeof(*metadata) &&
-        metadata->abi_version == INFILTRATR_TEMPORAL_RESOURCE_METADATA_ABI &&
-        metadata->kind == INFILTRATR_TEMPORAL_RESOURCE_CALENDAR &&
-        infiltratr_temporal_id_valid(metadata->id) &&
-        metadata->name != NULL && metadata->name[0] != '\0' &&
-        provider->struct_size >= sizeof(*provider) &&
-        provider->abi_version == INFILTRATR_TEMPORAL_CALENDAR_PROVIDER_ABI &&
-        provider->calendar_id != NULL &&
-        strcmp(provider->calendar_id, metadata->id) == 0 &&
-        provider->fields_from_jdn != NULL &&
-        provider->format != NULL &&
-        provider->period_start != NULL &&
-        provider->add_periods != NULL &&
-        provider->add_years != NULL;
 }
 
 InfiltratrTemporalCalendarModule *
@@ -102,7 +82,7 @@ infiltratr_temporal_calendar_module_open(const char *module_path)
 
     metadata = metadata_entry();
     provider = provider_entry();
-    if (!provider_valid(metadata, provider)) {
+    if (!temporal_calendar_provider_valid(metadata, provider)) {
         infiltratr_temporal_calendar_module_free(module);
         return NULL;
     }

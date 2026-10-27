@@ -7,6 +7,7 @@
  * @brief Cross-platform temporal resource directory discovery.
  */
 #include "infiltratr/temporal_resource.h"
+#include "string_internal.h"
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -36,20 +37,6 @@ static bool resource_kind_valid(InfiltratrTemporalResourceKind kind)
 {
     return kind == INFILTRATR_TEMPORAL_RESOURCE_CALENDAR ||
            kind == INFILTRATR_TEMPORAL_RESOURCE_CLOCK;
-}
-
-static char *copy_text(const char *text)
-{
-    size_t length;
-    char *copy;
-
-    if (text == NULL) return NULL;
-    length = strlen(text);
-    if (length == SIZE_MAX) return NULL;
-    copy = malloc(length + 1U);
-    if (copy == NULL) return NULL;
-    memcpy(copy, text, length + 1U);
-    return copy;
 }
 
 static char *join_path(const char *directory, const char *name)
@@ -118,7 +105,7 @@ static bool candidate_list_add(TemporalCandidateList *list,
         list->capacity = next_capacity;
     }
 
-    owned_name = copy_text(name);
+    owned_name = infiltratr_private_copy_text(name);
     if (owned_name == NULL) return false;
     list->items[list->count].name = owned_name;
     list->items[list->count].form = form;
