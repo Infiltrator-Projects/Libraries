@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "infiltratr/temporal_runtime.h"
+#include "infiltratr/temporal_calendar.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -60,6 +61,10 @@ int main(void)
         &visited));
     assert(seen == 1U);
     assert(visited == 1U);
+    /* Metadata-only fixtures remain visible to the public scan, but are not
+     * executable calendar modules without the separately validated ABI. */
+    assert(infiltratr_temporal_calendar_module_open(
+        TEMPORAL_RUNTIME_FIXTURE_PATH) == NULL);
 
     visited = 99U;
     assert(infiltratr_temporal_runtime_scan_directory(

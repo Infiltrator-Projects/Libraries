@@ -24,6 +24,21 @@ CI is expected to reject warnings, portability regressions, ABI/installation mis
 
 A lower evidence level must not be described as proving a higher one.
 
+## Temporal catalogue validation and load cost
+
+Generic runtime scanning is intentionally metadata-only; it retains the stable
+visitor contract even for a module without an executable provider. During
+process-lifetime installed-catalogue construction, Common validates the typed
+calendar/clock provider from the same open library handle as its metadata.
+Invalid executable providers are skipped before their ID can claim a slot.
+This removes the former second open for accepted catalogue modules without
+changing public ABI, deterministic duplicate handling or the snapshot policy.
+
+Direct `*_module_open_id` calls still rescan the live directory and independently
+validate providers. They deliberately do not reuse a stale catalogue path after
+installation or replacement of system modules. Run the temporal fixture tests,
+full strict platform CI, and 54-module resource package/installed-ABI tests.
+
 ## Manual validation
 
 Manual testing remains appropriate where a result depends on a real graphical environment, platform integration or a downstream consumer that CI cannot reproduce. Such evidence supplements rather than replaces automated contract tests.

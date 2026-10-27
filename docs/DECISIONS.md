@@ -81,3 +81,22 @@ its `.deb` through the existing APT distribution. Calendar release versions and
 publication no longer control shared system capabilities. This supersedes the
 earlier provisional ownership and empty-base-catalogue statements for temporal
 resources in ADR-001 and ADR-007.
+
+## ADR-009 — Internal validation may share an open module handle
+
+**Decision.** Installed catalogue construction validates module metadata and its
+calendar/clock executable ABI during one directory-scan load. Public generic
+runtime scans continue to validate metadata only. Typed direct module lookup
+continues to rescan the live directory, rather than trusting a potentially
+stale path from the process-lifetime metadata catalogue.
+
+**Rationale.** Re-opening every accepted catalogue provider duplicates dynamic
+loader work, but caching module paths changes the established live lookup
+semantics. A single private provider-validity contract avoids validator drift.
+
+**Consequence.** The first executable ABI-valid provider still wins in
+filesystem order, public APIs and resource/module identities are unchanged, and
+no cross-module runtime dependency is introduced. Standalone legacy and
+extended font bootstrap scripts remain self-contained for downstream consumers
+that package only one of them; merging those scripts without migrating their
+installers would break existing bootstrap contracts.
