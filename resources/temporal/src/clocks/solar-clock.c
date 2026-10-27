@@ -26,8 +26,7 @@ static bool apparent_seconds(int64_t instant, double longitude,
         (long double)temporal_solar_mod(instant, DAY_US);
     double equation_minutes = 0.0;
     long double seconds;
-    if (result == NULL || !isfinite(longitude) ||
-        longitude < -180.0 || longitude > 180.0 ||
+    if (result == NULL || !temporal_solar_valid_longitude(longitude) ||
         !temporal_solar_compact_terms(instant, &equation_minutes, NULL))
         return false;
 
