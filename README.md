@@ -12,7 +12,7 @@ Common is the shared first-party foundation for portable arithmetic, parsing, en
 
 ## Ownership
 
-Common owns product-neutral contracts that are genuinely shared and at least as strong as the implementations they replace. Common owns the shared system clock and calendar implementations; Calendar owns its application UI and event behaviour; filesystem projects own filesystem meaning and mutation policy; Link owns shared automotive diagnostics; manufacturer products own vehicle knowledge. Application composition and product identity remain local.
+Common owns product-neutral contracts that are genuinely shared and at least as strong as the implementations they replace. The independent `Calendar-*` and `Clock-*` repositories own clock and calendar implementations; Common owns their public interfaces and validated discovery/loading. Calendar owns its application UI and event behaviour; filesystem projects own filesystem meaning and mutation policy; Link owns shared automotive diagnostics; manufacturer products own vehicle knowledge. Application composition and product identity remain local.
 
 The portable core has no operating-system or toolkit dependency. POSIX and Windows adapters isolate native mechanisms. Consumers select an exact reviewed Git revision; a normal build never advances a dependency to a mutable branch. [Usage and consumer boundaries](USAGE.md) identify the public mechanisms and their owners.
 
@@ -64,9 +64,9 @@ their own `Calendar-*` and `Clock-*` repositories. InfiltratorOS installs their
 published source installers with aggressive local CPU tuning, LTO and PGO.
 Common keeps its neutral coordinate, metadata, discovery and loading APIs.
 
-Original implementation source under [`resources/temporal`](resources/temporal/README.md)
-is retained as a hash-checked reference. Common has no production provider
-Makefile, combined resource package builder or calendar/clock binary release.
+Provider implementation source, private helpers, translations and model tests
+live only in their owning repositories. Common contains no reference copies or
+production provider build, combined package builder or calendar/clock binary release.
 `make temporal-provider-check` compiles only consumer ABI probes against
 already installed independent provider packages; it never builds those modules.
 

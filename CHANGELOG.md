@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.19.80 — 2026-10-28
+
+- Remove the retained calendar/clock implementation, helper, translation and model-test archive from Common. The 54 independent repositories exclusively own that code.
+- Keep the public interfaces, validated discovery/loading, host adapters and synthetic ABI fixtures; relocate the installed-provider test launcher outside the removed tree.
+- Enforce exclusive provider source ownership in CI and correct current ownership documentation. SDK source releases contain no provider implementation copies.
+
 ## 1.19.79 — 2026-10-27
 
 - Retire Common’s production calendar/clock Makefile, combined resource package builder and resource-binary release assets.

@@ -22,19 +22,17 @@ Do not silently substitute a Gregorian-derived year label for a pre-reform
 lunisolar calendar, extrapolate a bounded official table, or present an
 approximation as an observational record.
 
-## Established reference anchors now tested
+## Evidence ownership
 
-`resources/temporal/tests/test-calendars.c` compares installed provider
-output against **independent historical date anchors**, not merely against a
-provider's own inverse calculation. Checked anchors include the original
-French Republican epoch and year XII, 1 Tishrei 5784, the Maya GMT Long Count
-completion, the Swedish 30 February 1712, Indian National Saka New Year,
-modern Persian Nowruz, and the 1940-1941 Thai Buddhist civil-year transition.
+Chronology and clock-model implementations, historical anchor tests, astronomical
+vectors and translation tests are maintained in each independent `Calendar-*`
+or `Clock-*` repository. Common contains no copied implementation or model-test
+archive. Its installed-provider smoke test checks the public consumer ABI;
+passing that test does not establish historical or astronomical accuracy.
 
-These are sparse anchors, not exhaustive verification. `test-clocks.c`
-currently focuses chiefly on formatting/timing contracts, epoch samples and
-internal consistency; independent historical clock observations remain to be
-developed.
+The catalogue below records consumer-facing model distinctions and the original
+audit boundaries. Current supported periods, evidence and limitations are
+defined by each provider's exact release and its own tests and documentation.
 
 ## Calendar catalogue: 31 separate capabilities
 

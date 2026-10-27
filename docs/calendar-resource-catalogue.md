@@ -8,8 +8,9 @@ module is missing. The default clock likewise follows normal system time.
 The thirty-one optional calendars and twenty-three clocks are built and released
 by their independent repositories. Each package owns one executable module and
 its passive resources. Common keeps metadata, discovery, loading and host/base
-APIs; its original implementation source is preserved without a production
-provider build. InfiltratorOS compiles their published source installers locally.
+APIs. Implementation source, translations, private helpers and model tests live
+only in the independent repositories. InfiltratorOS compiles their published
+source installers locally.
 
 Use `infiltratr_temporal_installed_calendar_*` to enumerate normal and installed
 capabilities. Both metadata and provider ABI validate before a native module is

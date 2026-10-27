@@ -6,21 +6,22 @@ This roadmap describes direction rather than a promise of dates. The exact relea
 
 - maintain the published portable ABI with exact pinned consumer revisions;
 - keep Common's shared primitives at least as strong as the best consumer;
-- qualify Linux, Windows and Apple and the installed resource package;
-- publish 31 independent calendar and 23 independent explicit clock modules
-  through Common, with no app-owned calendar/time algorithm fallback;
+- qualify Linux, Windows and Apple and Common's interfaces to independently
+  published provider packages;
+- keep implementation source, model tests, translations and releases in the
+  31 calendar and 23 clock repositories, with no copies in Common;
 - enumerate optional capabilities through validated executable provider ABIs
   installed in the two native system resource directories.
 
 ## Remaining work
 
-- extend independent historical and astronomical regression evidence for
-  the periods and approximations recorded in
+- consume independently qualified provider releases; historical and astronomical
+  regression evidence belongs in the provider repositories described by
   [Historical Fidelity](TEMPORAL_HISTORICAL_FIDELITY.md);
 - add adversarial duplicate, malformed and concurrent discovery fixtures
   across supported platforms, retaining deterministic fail-closed behavior;
-- implement further calendar or time systems only when their historical
-  contracts, evidence and distinct stable IDs are justified;
+- admit further provider identities only when their owning repositories define
+  justified historical contracts, evidence and distinct stable IDs;
 - keep calendar/time domain rules owned by their individual resources and
   resist extra runtime abstraction without demonstrated value.
 

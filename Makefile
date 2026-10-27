@@ -32,7 +32,7 @@ DYNLIB_LIBS := -ldl
 $(BUILD_DIR)/temporal-published-providers-smoke: tests/temporal_published_providers_smoke.c $(ARCHIVE)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $< $(ARCHIVE) -lm $(DYNLIB_LIBS) -o "$@"
 temporal-provider-check: $(BUILD_DIR)/temporal-published-providers-smoke
-	CC="$(CC)" COMMON_BUILD_DIR="$(abspath $(BUILD_DIR))" resources/temporal/tools/check-installed.sh
+	CC="$(CC)" COMMON_BUILD_DIR="$(abspath $(BUILD_DIR))" tools/check-temporal-providers.sh
 version-check:
 	@grep -qx '#define INFILTRATR_COMMON_VERSION "$(COMMON_VERSION)"' include/infiltratr/core.h || { echo "VERSION and INFILTRATR_COMMON_VERSION disagree" >&2; exit 1; }
 all: version-check $(ARCHIVE)

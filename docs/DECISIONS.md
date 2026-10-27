@@ -101,8 +101,21 @@ extended font bootstrap scripts remain self-contained for downstream consumers
 that package only one of them; merging those scripts without migrating their
 installers would break existing bootstrap contracts.
 
-## ADR-010 — Independent calendar and clock build ownership
+## ADR-010 — Independent calendar and clock build ownership (source retention superseded by ADR-011)
 
 **Decision.** Each `Calendar-*` and `Clock-*` repository owns its production implementation, private supporting copies, translations, tests, Debian package, aggressive native source installer and source ZIP. Common retains its neutral APIs and the original source as a hash-checked reference.
 
 **Consequence.** Common’s production provider Makefile, combined package builder and resource-binary release assets are removed. Common tests its public ABI using independently published packages and keeps synthetic interface fixtures. InfiltratorOS installs all 54 via their native source installers. The central repository publishes their separate Debian packages and retires the combined package from current APT indexes. Existing Common release tags/assets and original implementation source remain intact. This supersedes ADR-008’s production-build and release ownership.
+
+## ADR-011 — Provider repositories exclusively own their source
+
+**Decision.** The 31 `Calendar-*` and 23 `Clock-*` repositories exclusively own
+their implementation source, private helpers, translations and model tests.
+Remove Common's original implementation/reference archive and its obsolete
+model tests and tooling. Common retains the public ABI, discovery/loading,
+normal host adapters, neutral mechanisms and synthetic interface fixtures.
+
+**Consequence.** `resources/temporal` is removed from the current source tree
+and subsequent SDK source archives. The installed-provider consumer probe lives
+under `tools/`; CI checks that no provider source archive or production build
+pipeline is reintroduced. This supersedes ADR-010's source-retention decision.

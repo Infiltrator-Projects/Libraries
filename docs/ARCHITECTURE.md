@@ -20,9 +20,10 @@ Common owns product-neutral behaviour only. Filesystem semantics remain in Infil
 
 Common owns generic discovery and validated executable loading. Each of the
 31 calendars and 23 explicit clocks is built and released in its own repository,
-with its own Debian package, native source installer and source ZIP. Common’s
-original `resources/temporal` source is retained as a frozen reference, with no
-provider build/package pipeline. The independent packages install modules under
+with its own Debian package, native source installer and source ZIP. Implementation
+source, private helpers, translations and model tests live exclusively in those
+repositories; Common keeps no reference copies or provider build/package pipeline.
+The independent packages install modules under
 `/System/Resources/Calendars/` and `/System/Resources/Clocks/`. Calendar, Files and
 System Settings consume those modules through the public Common ABI.
 

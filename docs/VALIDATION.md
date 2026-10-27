@@ -38,8 +38,9 @@ Direct `*_module_open_id` calls still rescan the live directory and independentl
 validate providers. They deliberately do not reuse a stale catalogue path after
 installation or replacement of system modules. Run the temporal fixture tests,
 full strict platform CI, and installed-provider ABI probes against all 54
-independent published packages. `tests/check-temporal-ownership.py` verifies
-preserved source hashes and rejects a restored Common provider build pipeline.
+independent published packages. `tests/check-temporal-ownership.py` rejects
+provider reference copies and a restored Common provider build pipeline.
+Chronology, clock-face and translation tests run in their owning provider repositories.
 
 ## Manual validation
 
