@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "infiltratr/temporal.h"
+#include "../src/temporal_solar_compact.h"
 
 #include <math.h>
 #include <stdint.h>
@@ -460,8 +461,33 @@ static void test_clock_mode_formats(void)
     }
 }
 
+static void test_shared_solar_geometry(void)
+{
+    const long double pi = 3.141592653589793238462643383279502884L;
+    const long double sentinel = 19.0L;
+    long double angle = sentinel;
+    CHECK(temporal_solar_hour_angle(0.0, 0.0, 0.0, &angle));
+    CHECK(fabsl(angle - pi / 2.0L) < 1.0e-12L);
+    angle = sentinel;
+    CHECK(!temporal_solar_hour_angle(90.0, 0.4, 0.833, &angle));
+    CHECK(angle == sentinel);
+    CHECK(!temporal_solar_hour_angle(0.0, 0.0, 90.0, &angle));
+    CHECK(angle == sentinel);
+    CHECK(!temporal_solar_hour_angle(0.0, 0.0, NAN, &angle));
+    CHECK(angle == sentinel);
+    CHECK(!temporal_solar_hour_angle(0.0, 0.0, 0.833, NULL));
+    CHECK(temporal_solar_valid_longitude(-180.0));
+    CHECK(temporal_solar_valid_longitude(180.0));
+    CHECK(!temporal_solar_valid_longitude(INFINITY));
+    CHECK(!temporal_solar_valid_longitude(180.0001));
+    CHECK(temporal_solar_clamp_latitude(INFINITY) == 0.0);
+    CHECK(temporal_solar_clamp_latitude(-91.0) == -90.0);
+    CHECK(temporal_solar_clamp_longitude(181.0) == 180.0);
+}
+
 int main(void)
 {
+    test_shared_solar_geometry();
     test_catalogue();
     test_policy_round_trip();
     test_policy_v3();
