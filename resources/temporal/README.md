@@ -1,46 +1,30 @@
-# Shared system temporal resources
+# Preserved temporal implementation source
 
-Common owns the source, build, tests, Debian package and releases of these
-31 calendar and 23 clock implementations. Every module is independently
-compiled, directly named using its canonical human-readable filename, and
-identified by stable metadata. No aliases or post-build renames are needed.
-Calendar, Files and System Settings load these installed capabilities rather
-than building or embedding private implementations.
-Neutral coordinate and formatting helpers remain shared Common APIs.
-One private fixed-day helper owns signed modulo and UTC-offset arithmetic,
-compiled into each using clock without coupling the installed resource files.
-The compact NOAA/GML solar mathematics is maintained in a single private
-Common header, compiled separately into the relevant `.so` providers
-without linking their lifetimes together. Distinct historic rules remain
-implemented and qualified in each owning clock.
+The original Common 1.19.78 provider sources and translations remain here as a
+reference copy. `ARCHIVED-SOURCE.json` verifies their original hashes. Production
+modules, tests, translations, Debian packages and native installers now belong
+to the 31 `Calendar-*` and 23 `Clock-*` repositories.
 
-From the Common repository, run `make temporal-resource-check` or
-`make temporal-resource-package`. The Debian package retains its existing
-`infiltrator-calendar-resources` identity for ordinary APT upgrades. It installs
-modules under `/System/Resources/Calendars` and `/System/Resources/Clocks`.
-Its version and release belong to Common, independently of every application.
+Common no longer has a provider Makefile or a combined resource package builder.
+Its releases contain the Common SDK source; they do not publish
+`infiltrator-calendar-resources` or any production calendar/clock `.so` files.
+Existing historical releases remain unchanged.
 
-Normal system date/time capabilities work without this optional module pack.
-Applications discover additional capabilities through Common. Missing custom
-implementations remain unavailable rather than using an embedded custom copy.
+Common retains public metadata/discovery/loading APIs, the host Gregorian
+adapter, neutral coordinate/duration operations and synthetic ABI test fixtures.
+`make temporal-provider-check` compiles only API consumer probes and loads
+already installed independent modules. Main CI fetches their published generic
+Debian packages with `tools/temporal-packages.py` and exercises the public ABI on
+Debian 12, Ubuntu 24.04 and Debian 13. No provider source is rebuilt by Common.
 
-`ORIGIN` records the preserved source import. The build has no dependency on
-the Calendar repository, its private headers, its application library or its
-release pipeline.
+Canonical installed paths remain `/System/Resources/Calendars/` and
+`/System/Resources/Clocks/`. Provider metadata IDs and executable ABI version 1
+remain unchanged. Removing a consumer does not remove these provider packages.
+Custom-calendar translations use per-provider gettext domains and are included
+in their owning calendar packages.
 
-The Gregorian, Coptic, Persian, and Hebrew native adapters share one private
-ICU text-and-buffer helper compiled into each separate module. Their chronology,
-era/year semantics and navigation remain distinct, with no shared runtime
-resource dependency.
-
-Neutral civil/JDN coordinate arithmetic also lives in Common. Provider and
-application ABI adapters delegate to it rather than retaining arithmetic copies.
-
-Release modules are built on Debian 12 (glibc 2.36 / GLib 2.74 / ICU 72).
-Common CI installs and executes those exact package bytes on Debian 12, Debian 13
-and Ubuntu 24.04. Newer build-host headers must not raise the shipped GLib ABI.
-`tools/check-installed.sh` tests every installed provider through the public ABI
-without rebuilding any implementation.
+The notes below describe the retained original implementation. Current model
+and historical-accuracy contracts are maintained by each independent provider.
 
 ## Compiled resource isolation
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.19.79 — 2026-10-27
+
+- Retire Common’s production calendar/clock Makefile, combined resource package builder and resource-binary release assets.
+- Preserve the original provider source and translations as a hash-checked reference archive; retain Common’s neutral APIs and synthetic ABI fixtures.
+- Qualify the public consumer ABI against prebuilt modules from all 54 independent repositories on Debian 12, Debian 13 and Ubuntu 24.04.
+- Publish Common’s qualified SDK source only; independent providers own their Debian packages, native installers and source ZIPs.
+
 ## 1.19.78 — 2026-10-27
 
 - Centralize shared solar hour-angle geometry across portable elapsed-duration

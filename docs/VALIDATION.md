@@ -37,7 +37,9 @@ changing public ABI, deterministic duplicate handling or the snapshot policy.
 Direct `*_module_open_id` calls still rescan the live directory and independently
 validate providers. They deliberately do not reuse a stale catalogue path after
 installation or replacement of system modules. Run the temporal fixture tests,
-full strict platform CI, and 54-module resource package/installed-ABI tests.
+full strict platform CI, and installed-provider ABI probes against all 54
+independent published packages. `tests/check-temporal-ownership.py` verifies
+preserved source hashes and rejects a restored Common provider build pipeline.
 
 ## Manual validation
 

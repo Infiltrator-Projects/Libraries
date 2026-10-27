@@ -2,9 +2,10 @@
 
 ## Status
 
-Common owns the source, build, tests, packaging and releases of the independently
-installed calendar and explicit clock resources in `resources/temporal`. It also
-owns their ABI, validation, discovery, loading and policy bridge. Normal host
+The independent `Calendar-*` and `Clock-*` repositories own provider source,
+builds, tests, localized catalogues, packaging and releases. Common preserves
+its original source as a reference and owns the public ABI, validation,
+discovery, loading and policy bridge. Normal host
 Gregorian date/locale services remain available without optional modules.
 The compiled clock table describes persisted modes and duration projections; it
 is never evidence that an executable clock is installed.
@@ -57,9 +58,9 @@ it does not render an absolute clock face or replace a missing resource.
 
 The private `src/temporal_solar_compact.h` owns the compact solar terms,
 geographic clamping and solar hour-angle mathematics. Elapsed seasonal
-durations, unequal-hour clock faces and sunrise/sunset-origin resource
-providers compile these identical primitives from the same header, with
-no runtime dependency between independently installed `.so` files.
+durations use this header. Independent clock repositories own their copied
+solar helpers and corrections, with no runtime dependency between installed
+provider `.so` files.
 Their distinct event timing, origin conventions, historical units and
 next-tick rules remain provider-specific.
 
@@ -96,8 +97,8 @@ The runtime contract now provides the installation/discovery boundary for those 
 
 ## Compiled resource filenames
 
-The single canonical-name mapping in `resources/temporal/Makefile` determines
-both the compiler output pathname and the string embedded in provider metadata.
+Each provider’s `SOURCE-MANIFEST.json` and one-provider Makefile determine
+its canonical compiler output pathname and embedded metadata name.
 For example, the stable clock ID `decimal` is compiled directly as
 `French Revolutionary Decimal Clock.so`. Discoveries validate executable
 ABIs and resolve by stable metadata ID, not by filename. Tests reject any

@@ -18,13 +18,13 @@ Common owns product-neutral behaviour only. Filesystem semantics remain in Infil
 
 ## Temporal resource discovery
 
-Common owns generic discovery, validated executable loading and the entire
-source, build and release of the independently compiled system temporal pack.
-The 31 calendars and 23 explicit clocks live in
-[`resources/temporal`](../resources/temporal/README.md), are published by
-Common through APT, and are installed under `/System/Resources/Calendars/`
-and `/System/Resources/Clocks/`. Calendar, Files and System Settings do
-not embed these algorithms or supply private copies.
+Common owns generic discovery and validated executable loading. Each of the
+31 calendars and 23 explicit clocks is built and released in its own repository,
+with its own Debian package, native source installer and source ZIP. Common’s
+original `resources/temporal` source is retained as a frozen reference, with no
+provider build/package pipeline. The independent packages install modules under
+`/System/Resources/Calendars/` and `/System/Resources/Clocks/`. Calendar, Files and
+System Settings consume those modules through the public Common ABI.
 
 Discovery is deterministic, validates executable provider ABI and ignores
 metadata-only or malformed files. If several candidates claim the same ID,
@@ -34,9 +34,9 @@ waits on a condition rather than busy-spinning, and recursive initialization
 exposes only the base catalogue, not partially constructed optional entries.
 
 A clock resource owns both rendering and its next-visible-tick calculation.
-Common's neutral compact solar model is maintained once as private source
-and compiled independently into each relevant resource; solar-event rules,
-historical conventions and labels remain provider-owned. The host Gregorian
+Common retains neutral compact solar calculations for elapsed-duration APIs.
+Independent providers own their copied solar helpers, solar-event rules,
+historical conventions and localized labels. The host Gregorian
 calendar and OS-following clock selector remain available without the pack.
 
 See [Temporal Providers](TEMPORAL_PROVIDERS.md) for the executable/trust

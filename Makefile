@@ -26,13 +26,13 @@ DYNLIB_LIBS := -ldl
 .DEFAULT_GOAL := all
 
 .PHONY: all check clean portable portable-check shared version-check
-.PHONY: temporal-resources temporal-resource-check temporal-resource-package
-temporal-resources:
-	$(MAKE) -C resources/temporal all
-temporal-resource-check:
-	$(MAKE) -C resources/temporal check
-temporal-resource-package:
-	$(MAKE) -C resources/temporal package
+.PHONY: temporal-provider-check
+# ABI consumer probes use already installed independent provider packages.
+# Production calendar/clock binaries are never compiled by Common.
+$(BUILD_DIR)/temporal-published-providers-smoke: tests/temporal_published_providers_smoke.c $(ARCHIVE)
+	$(CC) $(CPPFLAGS) $(CFLAGS) $< $(ARCHIVE) -lm $(DYNLIB_LIBS) -o "$@"
+temporal-provider-check: $(BUILD_DIR)/temporal-published-providers-smoke
+	CC="$(CC)" COMMON_BUILD_DIR="$(abspath $(BUILD_DIR))" resources/temporal/tools/check-installed.sh
 version-check:
 	@grep -qx '#define INFILTRATR_COMMON_VERSION "$(COMMON_VERSION)"' include/infiltratr/core.h || { echo "VERSION and INFILTRATR_COMMON_VERSION disagree" >&2; exit 1; }
 all: version-check $(ARCHIVE)

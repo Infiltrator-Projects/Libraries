@@ -59,12 +59,16 @@ Copyright © 1993-2026 Shannon Smith. Common is licensed under GNU GPL-3.0-or-la
 
 ## System clock and calendar resources
 
-Common owns the implementation source, independent module build, tests, Debian
-package and releases for the shared system resources in
-[`resources/temporal`](resources/temporal/README.md). `make temporal-resource-package`
-produces `infiltrator-calendar-resources_<Common-version>_amd64.deb`. Common's
-qualified GitHub release publishes that package for the central APT repository.
-No Calendar application source, build, version or release is required.
+The 31 calendars and 23 clocks are now built, tested, packaged and released by
+their own `Calendar-*` and `Clock-*` repositories. InfiltratorOS installs their
+published source installers with aggressive local CPU tuning, LTO and PGO.
+Common keeps its neutral coordinate, metadata, discovery and loading APIs.
+
+Original implementation source under [`resources/temporal`](resources/temporal/README.md)
+is retained as a hash-checked reference. Common has no production provider
+Makefile, combined resource package builder or calendar/clock binary release.
+`make temporal-provider-check` compiles only consumer ABI probes against
+already installed independent provider packages; it never builds those modules.
 
 Calendar, Files and System Settings use normal platform date/time services when
 no additional modules are installed. Validated modules in `/System/Resources/Calendars`

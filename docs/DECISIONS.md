@@ -67,7 +67,7 @@ OS-following time selectors remain base capabilities. Any future bundle
 format requires a justified ABI revision. This replaces the original
 provisional discovery migration.
 
-## ADR-008 — Common owns shared system temporal implementations
+## ADR-008 — Common owns shared system temporal implementations (superseded by ADR-010)
 
 **Decision.** The complete calendar/clock resource implementation source, tests,
 standalone build, Debian packaging and releases belong to Common. Calendar, Files
@@ -100,3 +100,9 @@ no cross-module runtime dependency is introduced. Standalone legacy and
 extended font bootstrap scripts remain self-contained for downstream consumers
 that package only one of them; merging those scripts without migrating their
 installers would break existing bootstrap contracts.
+
+## ADR-010 — Independent calendar and clock build ownership
+
+**Decision.** Each `Calendar-*` and `Clock-*` repository owns its production implementation, private supporting copies, translations, tests, Debian package, aggressive native source installer and source ZIP. Common retains its neutral APIs and the original source as a hash-checked reference.
+
+**Consequence.** Common’s production provider Makefile, combined package builder and resource-binary release assets are removed. Common tests its public ABI using independently published packages and keeps synthetic interface fixtures. InfiltratorOS installs all 54 via their native source installers. The central repository publishes their separate Debian packages and retires the combined package from current APT indexes. Existing Common release tags/assets and original implementation source remain intact. This supersedes ADR-008’s production-build and release ownership.
