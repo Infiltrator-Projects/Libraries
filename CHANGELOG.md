@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.19.78 — 2026-10-27
+
+- Centralize shared solar hour-angle geometry across portable elapsed-duration
+  calculations and the independent seasonal and solar-origin clock modules.
+  Remove duplicate wrappers and coordinate clamping/validity routines.
+- Retain all 23 executable clock resources and 31 calendar resources, their
+  distinctive historical rules, tick scheduling and native ABI contracts.
+- Exercise equatorial and polar geometry, invalid coordinates and failed
+  hour-angle outputs with portable regression tests.
+- Validate every persisted optional clock-mode ID against its independently
+  installed executable provider; offline policy metadata remains intentional.
+- Preserve cross-platform release and standalone .so installation contracts.
+
+
 ## 1.19.77 — 2026-10-27
 
 - Validate installed calendar and clock executable ABIs on the original
