@@ -4,6 +4,7 @@
  * timezone or DST. Owns notation and the next visible display boundary.
  */
 #include <infiltratr/temporal_clock_resource.h>
+#include "temporal_solar_compact.h"
 #include "clock-civil.h"
 #include <math.h>
 #include <stdint.h>
@@ -12,12 +13,6 @@
 
 #define DAY_US INT64_C(86400000000)
 #define SECOND_US INT64_C(1000000)
-
-static bool valid_longitude(double longitude)
-{
-    return isfinite(longitude) && longitude >= -180.0 &&
-           longitude <= 180.0;
-}
 
 static long double solar_seconds(int64_t instant, double longitude)
 {
@@ -42,7 +37,7 @@ static bool render(const InfiltratrTemporalClockProvider *provider,
     unsigned hour, minute, second;
     int written;
     (void)provider; (void)language; (void)offset; (void)latitude;
-    if (!valid_longitude(longitude)) return false;
+    if (!temporal_solar_valid_longitude(longitude)) return false;
     whole = (int64_t)floorl(solar_seconds(instant, longitude));
     hour = (unsigned)(whole / INT64_C(3600));
     minute = (unsigned)((whole / INT64_C(60)) % INT64_C(60));
@@ -67,7 +62,7 @@ static bool next_tick(const InfiltratrTemporalClockProvider *provider,
     const long double unit = show_seconds ? 1.0L : 60.0L;
     long double phase, remaining, milliseconds;
     (void)provider; (void)offset; (void)latitude;
-    if (millis == NULL || !valid_longitude(longitude)) return false;
+    if (millis == NULL || !temporal_solar_valid_longitude(longitude)) return false;
     phase = fmodl(solar_seconds(instant, longitude), unit);
     if (phase < 0.0L) phase += unit;
     remaining = unit - phase;
