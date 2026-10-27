@@ -92,27 +92,6 @@ static int64_t floor_divide(int64_t value, int64_t divisor)
     return quotient;
 }
 
-/* All clock duration representations and independent solar resources now
- * share this equation; a resource still owns its historical notation. */
-static bool solar_terms(int64_t instant, double *equation_minutes,
-                        double *declination_radians)
-{
-    return temporal_solar_compact_terms(
-        instant, equation_minutes, declination_radians);
-}
-
-static double clamp_longitude(double longitude)
-{
-    return isfinite(longitude)
-        ? infiltratr_clamp_double(longitude, -180.0, 180.0) : 0.0;
-}
-
-static double clamp_latitude(double latitude)
-{
-    return isfinite(latitude)
-        ? infiltratr_clamp_double(latitude, -90.0, 90.0) : 0.0;
-}
-
 static bool solar_boundary_instants(int64_t unix_microseconds,
                                     double latitude,
                                     double longitude,
@@ -121,16 +100,12 @@ static bool solar_boundary_instants(int64_t unix_microseconds,
                                     int64_t *dusk_microseconds)
 {
     const int64_t safety_margin = INT64_C(2) * MICROSECONDS_PER_DAY;
-    const double safe_latitude = clamp_latitude(latitude);
-    const double safe_longitude = clamp_longitude(longitude);
+    const double safe_longitude = temporal_solar_clamp_longitude(longitude);
     int64_t day_index;
     int64_t day_start;
     int64_t noon;
     double equation_minutes = 0.0;
     double declination = 0.0;
-    double latitude_radians;
-    double zenith_radians;
-    double cosine_hour_angle;
     long double hour_angle;
     long double solar_noon_minutes;
     long double hour_angle_minutes;
@@ -151,27 +126,14 @@ static bool solar_boundary_instants(int64_t unix_microseconds,
             day_index, MICROSECONDS_PER_DAY, &day_start) ||
         !infiltratr_i64_add_checked(
             day_start, MICROSECONDS_PER_DAY / 2, &noon) ||
-        !solar_terms(noon, &equation_minutes, &declination)) {
+        !temporal_solar_compact_terms(noon, &equation_minutes, &declination)) {
         return false;
     }
 
-    latitude_radians = safe_latitude * (double)INFILTRATR_PI / 180.0;
-    zenith_radians =
-        (90.0 + solar_depression_degrees) * (double)INFILTRATR_PI / 180.0;
-    if (fabs(cos(latitude_radians) * cos(declination)) < 1.0e-12) {
+    if (!temporal_solar_hour_angle(latitude, declination,
+                                   solar_depression_degrees, &hour_angle)) {
         return false;
     }
-
-    cosine_hour_angle =
-        cos(zenith_radians) /
-            (cos(latitude_radians) * cos(declination)) -
-        tan(latitude_radians) * tan(declination);
-    if (cosine_hour_angle < -1.0 || cosine_hour_angle > 1.0) {
-        return false;
-    }
-
-    hour_angle = acosl((long double)infiltratr_clamp_double(
-        cosine_hour_angle, -1.0, 1.0));
     solar_noon_minutes =
         720.0L - 4.0L * safe_longitude - equation_minutes;
     hour_angle_minutes =
@@ -1004,9 +966,9 @@ static bool format_duration_apparent_solar(uint64_t elapsed_microseconds,
 
     start_unix_microseconds =
         end_unix_microseconds - (int64_t)elapsed_microseconds;
-    if (!solar_terms(start_unix_microseconds,
+    if (!temporal_solar_compact_terms(start_unix_microseconds,
                      &start_equation_minutes, NULL) ||
-        !solar_terms(end_unix_microseconds,
+        !temporal_solar_compact_terms(end_unix_microseconds,
                      &end_equation_minutes, NULL)) {
         return false;
     }
