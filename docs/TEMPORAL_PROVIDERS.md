@@ -53,6 +53,23 @@ The legacy absolute clock formatting symbols remain ABI stubs that return false
 without changing caller output. Elapsed-duration projection is a separate API;
 it does not render an absolute clock face or replace a missing resource.
 
+## Canonical solar geometry and offline clock identities
+
+The private `src/temporal_solar_compact.h` owns the compact solar terms,
+geographic clamping and solar hour-angle mathematics. Elapsed seasonal
+durations, unequal-hour clock faces and sunrise/sunset-origin resource
+providers compile these identical primitives from the same header, with
+no runtime dependency between independently installed `.so` files.
+Their distinct event timing, origin conventions, historical units and
+next-tick rules remain provider-specific.
+
+The portable clock-mode catalogue is still required to parse persisted
+preferences and project elapsed durations without requiring system-installed
+modules. It is **not** a second executable clock implementation. Resource
+tests verify that every optional persisted mode ID resolves to its own
+matching executable provider (23 modules); the OS-following `standard`
+selector is deliberately not an optional module.
+
 ## Trust boundary
 
 These directories are system resource namespaces. Native module code runs with the host process's authority, so this contract is for trusted packaged/system-installed resources. It is not a user-plugin security model. Any future untrusted or per-user native resource mechanism requires an explicit isolation and trust design rather than silently reusing in-process loading.
