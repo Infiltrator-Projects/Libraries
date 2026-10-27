@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "infiltratr/temporal_clock_resource.h"
+#include "infiltratr/dynlib.h"
+#include "../src/temporal_module_internal.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -81,6 +83,27 @@ int main(void)
     CHECK(module != NULL);
     metadata = infiltratr_temporal_clock_module_metadata(module);
     CHECK(metadata != NULL && strcmp(metadata->id, "fixture-clock") == 0);
+    /* The catalogue checks the same executable ABI as the typed loader. */
+    {
+        InfiltratrDynlib library = INFILTRATR_DYNLIB_INIT;
+        InfiltratrTemporalClockProviderEntry provider_entry = NULL;
+        const InfiltratrTemporalClockProvider *provider;
+        InfiltratrTemporalResourceMetadata wrong_metadata = *metadata;
+        InfiltratrTemporalClockProvider incomplete;
+        CHECK(infiltratr_dynlib_open(&library, TEMPORAL_CLOCK_FIXTURE_PATH));
+        CHECK(infiltratr_dynlib_symbol(&library,
+            INFILTRATR_TEMPORAL_CLOCK_PROVIDER_SYMBOL,
+            &provider_entry, sizeof(provider_entry)));
+        CHECK(provider_entry != NULL);
+        provider = provider_entry();
+        CHECK(temporal_clock_provider_valid(metadata, provider));
+        wrong_metadata.id = "wrong-clock-id";
+        CHECK(!temporal_clock_provider_valid(&wrong_metadata, provider));
+        incomplete = *provider;
+        incomplete.next_tick = NULL;
+        CHECK(!temporal_clock_provider_valid(metadata, &incomplete));
+        infiltratr_dynlib_close(&library);
+    }
     CHECK(infiltratr_temporal_clock_format(module, "en", INT64_C(1234567),
         0, true, false, 0.0, 0.0, buffer, sizeof(buffer), &length));
     CHECK(strcmp(buffer, "42:99") == 0 && length == 5U);
