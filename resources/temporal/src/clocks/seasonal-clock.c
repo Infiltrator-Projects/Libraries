@@ -80,27 +80,6 @@ static int64_t positive_modulo(int64_t value, int64_t modulus)
     return remainder;
 }
 
-/* Common's compact model is linked into each standalone historical clock;
- * local mode code retains its distinct event and equal-hour rules. */
-static bool solar_terms(int64_t instant, double *equation_minutes,
-                        double *declination_radians)
-{
-    return temporal_solar_compact_terms(
-        instant, equation_minutes, declination_radians);
-}
-
-static double clamp_longitude(double longitude)
-{
-    return isfinite(longitude)
-        ? infiltratr_clamp_double(longitude, -180.0, 180.0) : 0.0;
-}
-
-static double clamp_latitude(double latitude)
-{
-    return isfinite(latitude)
-        ? infiltratr_clamp_double(latitude, -90.0, 90.0) : 0.0;
-}
-
 static long double mean_solar_seconds(int64_t unix_microseconds,
                                       double longitude)
 {
@@ -108,7 +87,7 @@ static long double mean_solar_seconds(int64_t unix_microseconds,
         positive_modulo(unix_microseconds, MICROSECONDS_PER_DAY);
     long double seconds =
         (long double)utc_microseconds / MICROSECONDS_PER_SECOND +
-        (long double)clamp_longitude(longitude) * 240.0L;
+        (long double)temporal_solar_clamp_longitude(longitude) * 240.0L;
 
     seconds = fmodl(seconds, (long double)SECONDS_PER_DAY);
     if (seconds < 0.0L) {
@@ -123,7 +102,7 @@ static long double apparent_solar_seconds(int64_t unix_microseconds,
     double equation_minutes = 0.0;
     long double seconds;
 
-    if (!solar_terms(unix_microseconds, &equation_minutes, NULL)) {
+    if (!temporal_solar_compact_terms(unix_microseconds, &equation_minutes, NULL)) {
         return mean_solar_seconds(unix_microseconds, longitude);
     }
     seconds = mean_solar_seconds(unix_microseconds, longitude) +
@@ -141,11 +120,7 @@ static bool solar_day_boundaries(int64_t unix_microseconds,
                                  long double *dawn_seconds,
                                  long double *dusk_seconds)
 {
-    const double safe_latitude = clamp_latitude(latitude);
     double declination = 0.0;
-    double latitude_radians;
-    double zenith_radians;
-    double cosine_hour_angle;
     long double hour_angle;
     long double half_day_seconds;
 
@@ -153,27 +128,14 @@ static bool solar_day_boundaries(int64_t unix_microseconds,
         !isfinite(solar_depression_degrees) ||
         solar_depression_degrees < 0.0 ||
         solar_depression_degrees >= 90.0 ||
-        !solar_terms(unix_microseconds, NULL, &declination)) {
+        !temporal_solar_compact_terms(unix_microseconds, NULL, &declination)) {
         return false;
     }
 
-    latitude_radians = safe_latitude * (double)INFILTRATR_PI / 180.0;
-    zenith_radians =
-        (90.0 + solar_depression_degrees) * (double)INFILTRATR_PI / 180.0;
-    if (fabs(cos(latitude_radians) * cos(declination)) < 1.0e-12) {
+    if (!temporal_solar_hour_angle(latitude, declination,
+                                   solar_depression_degrees, &hour_angle)) {
         return false;
     }
-
-    cosine_hour_angle =
-        cos(zenith_radians) /
-            (cos(latitude_radians) * cos(declination)) -
-        tan(latitude_radians) * tan(declination);
-    if (cosine_hour_angle < -1.0 || cosine_hour_angle > 1.0) {
-        return false;
-    }
-
-    hour_angle = acosl((long double)infiltratr_clamp_double(
-        cosine_hour_angle, -1.0, 1.0));
     half_day_seconds =
         hour_angle * (long double)SECONDS_PER_DAY / (2.0L * INFILTRATR_PI);
     *dawn_seconds = (long double)SECONDS_PER_DAY / 2.0L - half_day_seconds;

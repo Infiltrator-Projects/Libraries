@@ -689,9 +689,37 @@ static void test_localized_edo_clock(void)
     }
 }
 
+
+/* Offline persistence IDs may remain available when the resource pack is
+ * absent; when building the pack, verify that each known mode has precisely
+ * its corresponding native executable provider. */
+static void test_compiled_clock_ids_match_resources(void)
+{
+    size_t resource_count = 0U;
+    for (size_t i = 0U; i < infiltratr_temporal_clock_mode_count(); ++i) {
+        const InfiltratrTemporalClockModeInfo *info =
+            infiltratr_temporal_clock_mode_at(i);
+        g_assert_nonnull(info);
+        if (strcmp(info->id, "standard") == 0) continue;
+        g_autofree gchar *path = test_clock_path(info->id);
+        InfiltratrTemporalClockModule *module =
+            infiltratr_temporal_clock_module_open(path);
+        g_assert_nonnull(module);
+        const InfiltratrTemporalResourceMetadata *metadata =
+            infiltratr_temporal_clock_module_metadata(module);
+        g_assert_nonnull(metadata);
+        g_assert_cmpstr(metadata->id, ==, info->id);
+        infiltratr_temporal_clock_module_free(module);
+        ++resource_count;
+    }
+    g_assert_cmpuint(resource_count, ==, 23U);
+}
+
 int main(int argc, char **argv)
 {
     g_test_init(&argc, &argv, NULL);
+    g_test_add_func("/clock-resource/catalogue-id-consistency",
+                    test_compiled_clock_ids_match_resources);
     g_test_add_func("/clock-resource/solar-origin-extremes", test_solar_origin_extremes);
     g_test_add_func("/clock-resource/civil-phase-extremes", test_civil_phase_extremes);
     g_test_add_func("/clock-resource/five-executable-modes",
