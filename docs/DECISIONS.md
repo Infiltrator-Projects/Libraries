@@ -1,5 +1,7 @@
 # Decisions
 
+**Filesystem-module boundary:** [Common owns reusable contracts, not filesystem implementations](FILESYSTEM_MODULE_ABI_RESPONSIBILITIES.md). The final per-format deliverable is one independently managed `.so`; BOOT and kernel implement generic environment adapters. Their current separate EFI/kernel compatibility remains transitional and does not imply a working universal loader.
+
 This file records durable architectural decisions for Libraries.
 
 ## ADR-001 — Common owns only product-neutral contracts

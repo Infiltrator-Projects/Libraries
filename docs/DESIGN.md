@@ -1,5 +1,7 @@
 # Design
 
+**Filesystem-module boundary:** [Common owns reusable contracts, not filesystem implementations](FILESYSTEM_MODULE_ABI_RESPONSIBILITIES.md). The final per-format deliverable is one independently managed `.so`; BOOT and kernel implement generic environment adapters. Their current separate EFI/kernel compatibility remains transitional and does not imply a working universal loader.
+
 ## First-principles position
 
 Common exists to reduce duplicated engineering without turning the project family into a dependency on opaque or externally controlled behaviour. The design starts with contracts: what a reusable operation means, how it fails, what it owns and what callers may rely on.
