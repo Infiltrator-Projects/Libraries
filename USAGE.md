@@ -2,6 +2,8 @@
 
 # Libraries usage ledger
 
+**Filesystem ABI scope:** [single `.so` per filesystem, reusable ABI rather than shared format implementations](docs/FILESYSTEM_MODULE_ABI_RESPONSIBILITIES.md). The BOOT/kernel universal execution capability is not yet implemented.
+
 This ledger records why public Common operations exist and where ownership belongs. Tests alone do not justify public API.
 
 Status meanings: **ACTIVE** is consumed by production code, **FOUNDATION** is the canonical implementation beneath active API, and **READY** completes an already-active capability or directly replaces production-private mechanics when the consumer next advances its Common pin.

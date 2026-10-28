@@ -1,5 +1,7 @@
 # Architecture
 
+**Filesystem-module boundary:** [Common owns reusable contracts, not filesystem implementations](FILESYSTEM_MODULE_ABI_RESPONSIBILITIES.md). The final per-format deliverable is one independently managed `.so`; BOOT and kernel implement generic environment adapters. Their current separate EFI/kernel compatibility remains transitional and does not imply a working universal loader.
+
 ## Purpose
 
 Common is the canonical first-party shared library for portable mechanics, algorithms, design tokens, localisation, durable I/O and other behaviour that has proved genuinely reusable across the Infiltrator project family.
