@@ -2,6 +2,8 @@
 
 # Libraries
 
+**Filesystem architecture:** [one independently owned `.so` filesystem driver used by BOOT, kernel and applications](docs/FILESYSTEM_MODULE_ABI_RESPONSIBILITIES.md). Common/Libraries supplies portable ABI and host-service contracts, **not** duplicated filesystem engines. The universal loader remains a target.
+
 **Project copyright:** © 1993-2026 Shannon Smith  
 **Release identity:** [`VERSION`](VERSION)  
 **Language:** C11 · **Licence:** GPL-3.0-or-later
