@@ -51,7 +51,7 @@ if ! command -v jq >/dev/null 2>&1; then
     "${apt[@]}" update; "${apt[@]}" install -y --no-install-recommends jq
   else echo "Missing jq build prerequisite" >&2; exit 1; fi
 fi
-source_revision=$(<SOURCE-REVISION 2>/dev/null || git rev-parse HEAD)
+source_revision=$(bash common/clock-tools/source-revision.sh)
 # Only these tools are build-time requirements. The installed .so/PDF need none of them.
 prereqs=(gcc make pkg-config dpkg dpkg-deb readelf strip jq ps2pdf tar sha256sum awk sed)
 if [[ $command == release ]]; then prereqs+=(zip gzip); fi

@@ -11,6 +11,9 @@ version=$(<VERSION)
 [[ $profile == portable ]] || version+='+native1'
 [[ $(dpkg-deb -f "$package_file" Package) == "$expected" ]] || exit 1
 [[ $(dpkg-deb -f "$package_file" Version) == "$version" ]] || exit 1
+# Expected published clock source revision: verify actual DEB control
+source_revision=$(bash common/clock-tools/source-revision.sh)
+[[ $(dpkg-deb -f "$package_file" X-Infiltrator-Source-Revision) == "$source_revision" ]] || { echo "Missing or mismatched clock source revision in native package" >&2; exit 1; }
 [[ $(dpkg-deb -f "$package_file" X-Infiltrator-Native-Profile) == "$profile" ]] || exit 1
 [[ $(dpkg-deb -f "$package_file" X-Infiltrator-LTO) == enabled ]] || exit 1
 if [[ $profile == aggressive ]]; then
