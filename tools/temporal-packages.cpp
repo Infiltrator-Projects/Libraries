@@ -279,7 +279,7 @@ void verify(const fs::path& root, const fs::path& directory, json_object*& recor
         require(static_cast<int64_t>(payload.size()) == integer(record, "size") &&
                 sha256(payload) == str(record, "sha256"), "Provider snapshot checksum mismatch: " + filename);
         for (const auto& [field, expected] : std::array<std::pair<string,string>,3>{{
-            {"Package", package}, {"Version", version}, {"Architecture", "amd64"}}) {
+            {"Package", package}, {"Version", version}, {"Architecture", "amd64"}}}) {
             string output;
             require(execute({"/usr/bin/dpkg-deb", "-f", (directory / filename).string(),
                              field}, &output) == 0 && trim(output) == expected,
