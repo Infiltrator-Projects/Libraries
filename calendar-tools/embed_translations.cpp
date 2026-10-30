@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Shared C++20 translation catalogue compiler for independently built calendars.
-// msgfmt is used only as a build-time validator/compiler; all translations live in the .so.
+// Convert validated GNU gettext catalogues into a self-contained C translation table.
+// C++17 is used for safe byte-buffer ownership; the resulting provider retains its C ABI.
+#include <algorithm>
 #include <cstdint>
 #include <cstdlib>
-#include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -11,105 +11,101 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
-#include <algorithm>
-namespace fs=std::filesystem;
-struct Translation { std::string lang, original, translated; };
-[[noreturn]] static void fail(const std::string& msg){throw std::runtime_error(msg);}
-static std::string read_file(const fs::path& f){
- std::ifstream in(f,std::ios::binary);
- if(!in) fail("Cannot read "+f.string());
- return std::string(std::istreambuf_iterator<char>(in),{});
+#include <utility>
+using std::string;
+struct Translation {string lang,key,value;};
+static std::vector<unsigned char> read_bytes(const string& filename) {
+  std::ifstream f(filename,std::ios::binary);
+  if(!f)throw std::runtime_error("Cannot open translation catalogue: "+filename);
+  return {std::istreambuf_iterator<char>(f),std::istreambuf_iterator<char>()};
 }
-static std::uint32_t u32(const std::string& x,std::size_t p,bool flip){
- if(p+4>x.size())fail("Truncated .mo table");
- const unsigned char* y=reinterpret_cast<const unsigned char*>(x.data()+p);
- if(!flip)return std::uint32_t(y[0])|(std::uint32_t(y[1])<<8)|(std::uint32_t(y[2])<<16)|(std::uint32_t(y[3])<<24);
- return std::uint32_t(y[3])|(std::uint32_t(y[2])<<8)|(std::uint32_t(y[1])<<16)|(std::uint32_t(y[0])<<24);
+static uint32_t u32(const std::vector<unsigned char>& d,size_t at,bool big) {
+  if(at>d.size() || d.size()-at<4)throw std::runtime_error("Truncated MO header");
+  if(big)return (uint32_t(d[at])<<24)|(uint32_t(d[at+1])<<16)|(uint32_t(d[at+2])<<8)|d[at+3];
+  return uint32_t(d[at])|(uint32_t(d[at+1])<<8)|(uint32_t(d[at+2])<<16)|(uint32_t(d[at+3])<<24);
 }
-static std::string entry(const std::string& x,std::uint32_t table,std::uint32_t index,bool flip){
- const auto len=u32(x,std::size_t(table)+std::size_t(index)*8,flip);
- const auto off=u32(x,std::size_t(table)+std::size_t(index)*8+4,flip);
- if(std::size_t(off)>x.size()||std::size_t(len)>x.size()-off) fail("Out-of-bounds .mo string");
- return x.substr(off,len);
+static string slice(const std::vector<unsigned char>& data,uint32_t start,uint32_t length){
+  if(start>data.size() || length>data.size()-start)throw std::runtime_error("Invalid MO entry offset");
+  return string(reinterpret_cast<const char*>(data.data()+start),length);
 }
-static std::vector<Translation> parse_mo(const std::string& language,const fs::path& path){
- const auto bytes=read_file(path);
- if(bytes.size()<28)fail("Invalid gettext catalogue");
- const auto magic=u32(bytes,0,false);
- const bool flipped=magic==0xde120495u;
- if(magic!=0x950412deu && !flipped)fail("Invalid gettext magic");
- const auto count=u32(bytes,8,flipped),orig=u32(bytes,12,flipped),trans=u32(bytes,16,flipped);
- if(count>1000000u || std::uint64_t(orig)+std::uint64_t(count)*8>bytes.size() ||
-    std::uint64_t(trans)+std::uint64_t(count)*8>bytes.size())fail("Invalid .mo index");
- std::vector<Translation> result;
- for(std::uint32_t i=0;i<count;++i){
-  const auto key=entry(bytes,orig,i,flipped);
-  const auto value=entry(bytes,trans,i,flipped);
-  if(!key.empty()&&!value.empty()&&key!=value&&key.find('\0')==std::string::npos
-     &&value.find('\0')==std::string::npos)result.push_back({language,key,value});
- }
- return result;
-}
-static std::string literal(const std::string& source){
- std::ostringstream out;out<<'"';
- for(const unsigned char c:source){
-  if(c=='\\')out<<"\\\\";
-  else if(c=='"')out<<"\\\"";
-  else if(c>=32 && c<=126)out<<static_cast<char>(c);
-  else{out<<'\\'<<std::oct<<std::setw(3)<<std::setfill('0')<<static_cast<unsigned>(c)<<std::dec;}
- }
- out<<'"';return out.str();
-}
-int main(int argc,char**argv){
- try{
-  if(argc!=3)fail("Usage: embed_translations i18n/LINGUAS build/embedded-translations.cpp");
-  const fs::path names=argv[1],target=argv[2];
-  std::ifstream ls(names);if(!ls)fail("Missing LINGUAS");
-  fs::create_directories(target.parent_path());
-  std::vector<Translation> all;
-  std::string language;
-  while(std::getline(ls,language)){
-   while(!language.empty()&&(language.back()=='\r'||language.back()==' '))language.pop_back();
-   if(language.empty()||language.front()=='#')continue;
-   if(!std::all_of(language.begin(),language.end(),[](char c){
-    return (c>='a'&&c<='z')||(c>='A'&&c<='Z')||(c>='0'&&c<='9')||c=='_'||c=='-'||c=='@'||c=='.';
-   })) fail("Invalid language name: "+language);
-   const fs::path mo=target.parent_path()/(".translations-"+language+".mo");
-   const fs::path po=names.parent_path()/(language+".po");
-   const std::string command="msgfmt --check -o '"+mo.string()+"' '"+po.string()+"'";
-   if(std::system(command.c_str())!=0)fail("msgfmt rejected "+language);
-   auto records=parse_mo(language,mo);
-   fs::remove(mo);
-   all.insert(all.end(),records.begin(),records.end());
+static void load_mo(const string& file,const string& lang,std::vector<Translation>& result) {
+  auto d=read_bytes(file);
+  if(d.size()<28)throw std::runtime_error("Truncated MO file");
+  bool big=false;
+  if(u32(d,0,false)==0x950412de)big=false;
+  else if(u32(d,0,true)==0x950412de)big=true;
+  else throw std::runtime_error("Invalid GNU MO magic");
+  const uint32_t count=u32(d,8,big),ids=u32(d,12,big),texts=u32(d,16,big);
+  if(count>100000 || ids>d.size() || texts>d.size() ||
+    uint64_t(ids)+uint64_t(count)*8>d.size() ||
+    uint64_t(texts)+uint64_t(count)*8>d.size())throw std::runtime_error("Invalid GNU MO index");
+  for(uint32_t i=0;i<count;++i) {
+    auto key=slice(d,u32(d,ids+8*i+4,big),u32(d,ids+8*i,big));
+    auto value=slice(d,u32(d,texts+8*i+4,big),u32(d,texts+8*i,big));
+    if(key.empty()||value.empty()||key.find('\0')!=string::npos || value.find('\0')!=string::npos || key==value)continue;
+    result.push_back({lang,std::move(key),std::move(value)});
   }
-  std::ofstream out(target);if(!out)fail("Cannot write "+target.string());
-  out<<"// Generated by native C++20 Common translation compiler.\n";
-  out<<"#include <glib.h>\n#include <cstdlib>\n#include <cstring>\n";
-  out<<"struct Translation {const char *lang,*key,*value;};\n";
-  out<<"static const Translation translations[] = {\n";
-  for(const auto& rec:all) out<<" {"<<literal(rec.lang)<<","<<literal(rec.original)<<","<<literal(rec.translated)<<"},\n";
-  out<<" {nullptr,nullptr,nullptr}\n};\n";
-  out<<R"CPP(
-extern "C" const gchar *infiltratr_embedded_dgettext(const gchar *domain,const gchar *msgid){
- if(!msgid||!domain||std::strcmp(domain,GETTEXT_PACKAGE)) return msgid;
- const char *env=std::getenv("LANGUAGE");
- if(!env||!*env)env=std::getenv("LC_ALL");
- if(!env||!*env)env=std::getenv("LC_MESSAGES");
- if(!env||!*env)env=std::getenv("LANG");
- if(!env)return msgid;
- char lang[64];std::size_t n=0;
- while(env[n]&&env[n]!=':'&&env[n]!='.'&&env[n]!='@'&&n<sizeof(lang)-1){
-   lang[n]=env[n];++n;
- }
- lang[n]='\0';
- for(std::size_t i=0;translations[i].lang;++i)
-   if(!std::strcmp(translations[i].key,msgid)&&
-       (!std::strcmp(translations[i].lang,lang)||
-        (std::strlen(lang)==2&&!std::strncmp(translations[i].lang,lang,2))))
-      return translations[i].value;
- return msgid;
 }
-)CPP";
-  std::cout<<"Embedded "<<all.size()<<" distinct provider-owned translation records (native C++)\n";
- }catch(const std::exception& e){std::cerr<<"Translation compiler: "<<e.what()<<'\n';return 1;}
+static string c_string(const string& in){
+  static const char hex[]="01234567";
+  string result="\"";
+  for(unsigned char c:in) {
+    if(c=='\\')result+="\\\\";
+    else if(c=='"')result+="\\\"";
+    else if(c=='\n')result+="\\n";
+    else if(c=='\r')result+="\\r";
+    else if(c=='\t')result+="\\t";
+    else if(c>=32 && c<=126)result+=char(c);
+    else {result+='\\';result+=hex[(c>>6)&7];result+=hex[(c>>3)&7];result+=hex[c&7];}
+  }
+  return result+"\"";
+}
+int main(int argc,char** argv) {
+  if(argc!=4){std::cerr<<"usage: embed-translations LINGUAS MO_DIR OUTPUT_C\n";return 2;}
+  try {
+    std::ifstream languages(argv[1]);if(!languages)throw std::runtime_error("No LINGUAS file");
+    std::vector<Translation> translations;
+    string lang;
+    while(std::getline(languages,lang)){
+      const auto first=lang.find_first_not_of(" \t");
+      if(first==string::npos||lang[first]=='#')continue;
+      const auto last=lang.find_last_not_of(" \t\r");
+      lang=lang.substr(first,last-first+1);
+      if(lang.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_0123456789@-")!=string::npos)
+        throw std::runtime_error("Unsafe locale name");
+      load_mo(string(argv[2])+"/"+lang+".mo",lang,translations);
+    }
+    std::sort(translations.begin(),translations.end(),[](const auto& a,const auto& b) {
+      if(a.lang!=b.lang)return a.lang<b.lang;
+      return a.key<b.key;
+    });
+    std::ofstream out(argv[3]);if(!out)throw std::runtime_error("Cannot write generated source");
+    out<<"// Generated from validated gettext catalogues by native C++17 utility.\n"
+          "#include <glib.h>\n#include <stdlib.h>\n#include <string.h>\n"
+          "typedef struct {const char *lang,*key,*value;} Translation;\n"
+          "static const Translation translations[] = {\n";
+    for(const auto& t:translations)out<<"  {"<<c_string(t.lang)<<","<<c_string(t.key)<<","<<c_string(t.value)<<"},\n";
+    out<<"  {NULL,NULL,NULL}\n};\n"
+          "const gchar *infiltratr_embedded_dgettext(const gchar *domain, const gchar *msgid) {\n"
+          "  if (!msgid || !domain || strcmp(domain,GETTEXT_PACKAGE)) return msgid;\n"
+          "  const char *env=getenv(\"LANGUAGE\");\n"
+          "  if (!env || !*env) env=getenv(\"LC_ALL\");\n"
+          "  if (!env || !*env) env=getenv(\"LC_MESSAGES\");\n"
+          "  if (!env || !*env) env=getenv(\"LANG\");\n"
+          "  if (!env) return msgid;\n"
+          "  char lang[64]; size_t n=0;\n"
+          "  while (env[n] && env[n]!=':' && env[n]!='.' && env[n]!='@' && n<sizeof(lang)-1) {\n"
+          "    lang[n]=env[n]; ++n;\n"
+          "  }\n"
+          "  lang[n]='\\0';\n"
+          "  for (size_t i=0;translations[i].lang;i++)\n"
+          "    if (!strcmp(translations[i].key,msgid) &&\n"
+          "        (!strcmp(translations[i].lang,lang) ||\n"
+          "         (strlen(lang)==2 && !strncmp(translations[i].lang,lang,2))))\n"
+          "      return translations[i].value;\n"
+          "  return msgid;\n}\n";
+    if(!out)throw std::runtime_error("Error writing translation table");
+    std::cout<<"Embedded "<<translations.size()<<" translated strings from provider MO catalogues\n";
+    return 0;
+  }catch(const std::exception& e){std::cerr<<"Native C++ translation embedding failed: "<<e.what()<<"\n";return 1;}
 }

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Native packaging for Infiltrator C++ calendar modules. No Python is used.
+# Native shell/GCC packaging for Infiltrator calendar modules. No Python is used.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 root=$PWD
@@ -36,12 +36,6 @@ fi
 if [[ $command == install && $build_only == 1 && $output == dist ]]; then
   echo 'Build-only must specify --output DIRECTORY' >&2;exit 2
 fi
-if ! command -v jq >/dev/null 2>&1; then
-  if [[ $command == install && $build_only == 0 ]]; then
-    apt=(apt-get -o DPkg::Lock::Timeout=300); ((EUID!=0)) && apt=(sudo "${apt[@]}")
-    "${apt[@]}" update; "${apt[@]}" install -y --no-install-recommends jq
-  else echo 'Missing jq build prerequisite' >&2; exit 1; fi
-fi
 name=$(jq -r '.name' SOURCE-MANIFEST.json)
 repository=$(jq -r '.repository' SOURCE-MANIFEST.json)
 id=$(jq -r '.id' SOURCE-MANIFEST.json)
@@ -57,11 +51,10 @@ if ! command -v jq >/dev/null 2>&1; then
     "${apt[@]}" update; "${apt[@]}" install -y --no-install-recommends jq
   else echo "Missing jq build prerequisite" >&2; exit 1; fi
 fi
-source_revision=$(cat SOURCE-REVISION 2>/dev/null || git rev-parse HEAD)
+source_revision=$(bash common/calendar-tools/source-revision.sh)
 # Only these tools are build-time requirements. The installed .so/PDF need none of them.
-prereqs=(g++ gcc make pkg-config dpkg dpkg-deb readelf strip jq ps2pdf tar sha256sum awk sed)
+prereqs=(gcc g++ msgfmt make pkg-config dpkg dpkg-deb readelf strip jq ps2pdf tar sha256sum awk sed)
 if [[ $command == release ]]; then prereqs+=(zip gzip); fi
-if [[ -f i18n/LINGUAS ]]; then prereqs+=(msgfmt); fi
 missing=()
 for bin in "${prereqs[@]}"; do command -v "$bin" >/dev/null || missing+=("$bin"); done
 for pc in $(jq -r '.build_dependencies[]' SOURCE-MANIFEST.json); do
@@ -73,8 +66,7 @@ if ((${#missing[@]})); then
     apt=(apt-get -o DPkg::Lock::Timeout=300)
     if ((EUID!=0)); then apt=(sudo "${apt[@]}"); fi
     "${apt[@]}" update
-    packages=(build-essential binutils pkg-config jq ghostscript tar gzip zip)
-    if [[ -f i18n/LINGUAS ]]; then packages+=(gettext locales); fi
+    packages=(build-essential binutils pkg-config jq ghostscript tar gzip zip gettext locales)
     if jq -e '.build_dependencies | index("glib-2.0") != null' SOURCE-MANIFEST.json >/dev/null; then packages+=(libglib2.0-dev); fi
     if jq -e '.build_dependencies | index("icu-i18n") != null' SOURCE-MANIFEST.json >/dev/null; then packages+=(libicu-dev); fi
     "${apt[@]}" install -y --no-install-recommends "${packages[@]}"
@@ -94,12 +86,12 @@ build_package() {
   targetdir=$(realpath "$targetdir")
   local machine
   machine=$(uname -m)
-  flags='-g0 -pipe -flto -DNDEBUG -fPIC -O2'
+  flags='-g0 -pipe -flto -DNDEBUG -fPIC -std=c11 -O2'
   if [[ $tune == portable ]]; then
     [[ $machine == x86_64 ]] || { echo 'Portable package requires amd64' >&2;return 1; }
     flags+=' -march=x86-64 -mtune=generic'
   else
-    flags='-g0 -pipe -flto -DNDEBUG -fPIC -O3'
+    flags='-g0 -pipe -flto -DNDEBUG -fPIC -std=c11 -O3'
     if [[ $machine == x86_64 ]]; then flags+=' -march=native -mtune=native'; else flags+=' -mcpu=native'; fi
   fi
   local pgo=disabled
@@ -109,7 +101,6 @@ build_package() {
     pgo=trained-two-pass
     mkdir -p build/pgo
     CFLAGS="$flags -fprofile-generate=$root/build/pgo -fprofile-update=atomic" \
-     CXXFLAGS="$flags -fprofile-generate=$root/build/pgo -fprofile-update=atomic" \
       LDFLAGS="-flto -fprofile-generate=$root/build/pgo -Wl,-z,relro,-z,now" \
       make --no-print-directory -j"$jobs" BUILD_DIR=build/package check
     build/provider-check "$(realpath "build/package/$name.so")" "$id" "$name" train
@@ -117,11 +108,10 @@ build_package() {
     rm -rf build/package
     mkdir -p build/package
     CFLAGS="$flags -fprofile-use=$root/build/pgo -fprofile-correction -fprofile-partial-training" \
-     CXXFLAGS="$flags -fprofile-use=$root/build/pgo -fprofile-correction -fprofile-partial-training" \
       LDFLAGS="-flto -fprofile-use=$root/build/pgo -Wl,-z,relro,-z,now" \
       make --no-print-directory -j"$jobs" BUILD_DIR=build/package check
   else
-    CFLAGS="$flags" CXXFLAGS="$flags" LDFLAGS='-flto -Wl,-z,relro,-z,now' \
+    CFLAGS="$flags" LDFLAGS='-flto -Wl,-z,relro,-z,now' \
       make --no-print-directory -j"$jobs" BUILD_DIR=build/package check
   fi
   local library="build/package/$name.so"
@@ -161,7 +151,7 @@ X-Infiltrator-PGO: $pgo
 X-Infiltrator-Cflags: $flags
 X-Infiltrator-Resource-SHA256: $checksum
 Description: $name temporal calendar resource
- Native standalone clock provider with passive illustrated PDF documentation.
+ Native standalone calendar provider with passive illustrated PDF documentation.
 CONTROL
   local destination="$targetdir/${package}_${ver}_${arch}.deb"
   dpkg-deb --root-owner-group -Zxz --build "$stage" "$destination"
@@ -195,5 +185,5 @@ case $command in
     cat "$temp/payload.tar.gz" >> "$output/${prefix}-native-installer.run"
     chmod 0755 "$output/${prefix}-native-installer.run"
     [[ $(find "$output" -maxdepth 1 -type f | wc -l) == 3 ]] || { echo 'Expected exactly 3 release assets' >&2;exit 1; }
-    printf 'Native C++, Python-free release generated: %s\n' "$prefix";;
+    printf 'Native, Python-free release generated: %s\n' "$prefix";;
 esac

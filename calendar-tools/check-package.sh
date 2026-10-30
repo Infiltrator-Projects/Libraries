@@ -11,6 +11,9 @@ version=$(<VERSION)
 [[ $profile == portable ]] || version+='+native1'
 [[ $(dpkg-deb -f "$package_file" Package) == "$expected" ]] || exit 1
 [[ $(dpkg-deb -f "$package_file" Version) == "$version" ]] || exit 1
+# Expected published calendar source revision: verify actual DEB control
+source_revision=$(bash common/calendar-tools/source-revision.sh)
+[[ $(dpkg-deb -f "$package_file" X-Infiltrator-Source-Revision) == "$source_revision" ]] || { echo "Missing or mismatched calendar source revision in native package" >&2; exit 1; }
 [[ $(dpkg-deb -f "$package_file" X-Infiltrator-Native-Profile) == "$profile" ]] || exit 1
 [[ $(dpkg-deb -f "$package_file" X-Infiltrator-LTO) == enabled ]] || exit 1
 if [[ $profile == aggressive ]]; then
@@ -30,4 +33,4 @@ pdf="$work/System/Resources/Documentation/$repository/$name.pdf"
 [[ $(sha256sum "$lib" | cut -d' ' -f1) == "$(dpkg-deb -f "$package_file" X-Infiltrator-Resource-SHA256)" ]] || exit 1
 ! readelf --dyn-syms --wide "$lib" | grep -q __gcov || exit 1
 bash common/calendar-tools/check.sh "$lib"
-echo "$expected: verified exactly one native .so, one illustrated PDF, no installed build dependencies"
+echo "$expected: verified exactly one native calendar .so, one illustrated PDF, no installed build dependencies"
