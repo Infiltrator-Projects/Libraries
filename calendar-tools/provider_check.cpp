@@ -15,7 +15,7 @@
 using std::string;
 [[noreturn]] static void fail(const char* what) { std::fprintf(stderr,"calendar native check: %s\n",what);std::exit(1); }
 static int64_t as_i64(const char* value){
-  errno=0; char* end=nullptr; auto n=std::strtoimax(value,&end,10);
+  errno=0; char* end=nullptr; auto n=::strtoimax(value,&end,10);
   if(errno || !end || *end || n<std::numeric_limits<int64_t>::min() || n>std::numeric_limits<int64_t>::max()) fail("invalid fixture int64");
   return static_cast<int64_t>(n);
 }
