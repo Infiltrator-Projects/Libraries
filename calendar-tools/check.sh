@@ -16,7 +16,7 @@ for file in "${files[@]}"; do
     [[ -f $file ]] || continue
     while IFS= read -r encoded; do
         mapfile -d '' -t fields < <(printf '%s' "$encoded" | base64 -d | jq -j '([.op] + .args + .expected)[] | (if . == null then "__NULL__" else tostring end), "\u0000"')
-        "$testbin" "$lib" "$id" "$name" "${fields[@]}"
+        LANGUAGE=en_US LC_ALL=C.UTF-8 "$testbin" "$lib" "$id" "$name" "${fields[@]}"
         ((count+=1))
     done < <(jq -r '.[] | @base64' "$file")
 done

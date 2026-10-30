@@ -106,18 +106,18 @@ build_package() {
   if [[ $tune == aggressive ]]; then
     pgo=trained-two-pass
     mkdir -p build/pgo
-    CXXFLAGS="$flags -fprofile-generate=$root/build/pgo -fprofile-update=atomic" \
+    CFLAGS="$flags -fprofile-generate=CXXFLAGS="$flags -fprofile-generate=$root/build/pgo -fprofile-update=atomic" \
       LDFLAGS="-flto -fprofile-generate=$root/build/pgo -Wl,-z,relro,-z,now" \
       make --no-print-directory -j"$jobs" BUILD_DIR=build/package check
     build/provider-check "$(realpath "build/package/$name.so")" "$id" "$name" train
     find build/pgo -name '*.gcda' -print -quit | grep -q . || { echo 'PGO produced no measurements' >&2;return 1; }
     rm -rf build/package
     mkdir -p build/package
-    CXXFLAGS="$flags -fprofile-use=$root/build/pgo -fprofile-correction -fprofile-partial-training" \
+    CFLAGS="$flags -fprofile-use=CXXFLAGS="$flags -fprofile-use=$root/build/pgo -fprofile-correction -fprofile-partial-training" \
       LDFLAGS="-flto -fprofile-use=$root/build/pgo -Wl,-z,relro,-z,now" \
       make --no-print-directory -j"$jobs" BUILD_DIR=build/package check
   else
-    CXXFLAGS="$flags" LDFLAGS='-flto -Wl,-z,relro,-z,now' \
+    CFLAGS="$flags" CXXFLAGS="$flags" LDFLAGS='-flto -Wl,-z,relro,-z,now' \
       make --no-print-directory -j"$jobs" BUILD_DIR=build/package check
   fi
   local library="build/package/$name.so"
