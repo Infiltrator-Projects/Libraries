@@ -53,7 +53,7 @@ void run(const fs::path& probe, const fs::path& root) {
         const std::string id = field(entry, "id");
         const std::string name = field(entry, "name");
         require(kind == "calendar" || kind == "clock", "Invalid temporal provider kind");
-        require(!id.empty() && seen.insert(id).second, "Duplicate or empty provider id");
+        require(!id.empty() && seen.insert(kind + ":" + id).second, "Duplicate or empty provider id");
         require(!name.empty() && name.find('/') == std::string::npos,
                 "Invalid temporal provider resource name");
         const fs::path directory = kind == "calendar" ? calendar_root : clock_root;
