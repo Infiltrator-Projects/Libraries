@@ -7,4 +7,8 @@ common_build=${COMMON_BUILD_DIR:-"$ROOT/build"}
 if [ ! -x "$common_build/temporal-published-providers-smoke" ]; then
     make -C "$ROOT" "BUILD_DIR=$common_build" CC="${CC:-cc}" "$common_build/temporal-published-providers-smoke"
 fi
-python3 "$ROOT/tests/check-published-temporal.py" "$common_build/temporal-published-providers-smoke"
+if [ ! -x "$common_build/temporal-published-providers-driver" ]; then
+    make -C "$ROOT" "BUILD_DIR=$common_build" "$common_build/temporal-published-providers-driver"
+fi
+"$common_build/temporal-published-providers-driver" \
+    "$common_build/temporal-published-providers-smoke" "$ROOT"
