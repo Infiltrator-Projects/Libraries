@@ -61,6 +61,7 @@ source_revision=$(cat SOURCE-REVISION 2>/dev/null || git rev-parse HEAD)
 # Only these tools are build-time requirements. The installed .so/PDF need none of them.
 prereqs=(g++ gcc make pkg-config dpkg dpkg-deb readelf strip jq ps2pdf tar sha256sum awk sed)
 if [[ $command == release ]]; then prereqs+=(zip gzip); fi
+if [[ -f i18n/LINGUAS ]]; then prereqs+=(msgfmt); fi
 missing=()
 for bin in "${prereqs[@]}"; do command -v "$bin" >/dev/null || missing+=("$bin"); done
 for pc in $(jq -r '.build_dependencies[]' SOURCE-MANIFEST.json); do
@@ -73,6 +74,7 @@ if ((${#missing[@]})); then
     if ((EUID!=0)); then apt=(sudo "${apt[@]}"); fi
     "${apt[@]}" update
     packages=(build-essential binutils pkg-config jq ghostscript tar gzip zip)
+    if [[ -f i18n/LINGUAS ]]; then packages+=(gettext locales); fi
     if jq -e '.build_dependencies | index("glib-2.0") != null' SOURCE-MANIFEST.json >/dev/null; then packages+=(libglib2.0-dev); fi
     if jq -e '.build_dependencies | index("icu-i18n") != null' SOURCE-MANIFEST.json >/dev/null; then packages+=(libicu-dev); fi
     "${apt[@]}" install -y --no-install-recommends "${packages[@]}"

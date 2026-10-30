@@ -69,6 +69,15 @@ int main(int argc,char**argv) {
                      p->add_years(p,jd,static_cast<int32_t>(num(argv[6])),&out);
     const int e=unary?6:7;
     match(ok==tf(argv[e]) && out==num(argv[e+1]),"Navigation mismatch");
+  } else if(op=="format_contains") {
+    match(argc==8,"Expected format_contains JDN PART SUBSTRING");
+    std::array<char,512> out{};
+    std::size_t length=0;
+    const bool ok=p->format(p,num(argv[5]),
+        static_cast<InfiltratrTemporalCalendarDatePart>(num(argv[6])),
+        out.data(),out.size(),&length);
+    match(ok && std::string(out.data()).find(argv[7])!=std::string::npos,
+          "Native translated display output did not contain expected text");
   } else if(op=="calendar_format") {
     match(argc==11,"Wrong formatting fixture width");
     std::array<char,512> out;out.fill('U');
