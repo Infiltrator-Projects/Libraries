@@ -58,6 +58,12 @@ cat > "$ps" <<'PS'
   } for
   315 310 5 0 360 arc fill
 } bind def
+/sections {
+  0.13 0.20 0.29 setrgbcolor 52 388 120 49 rectfill
+  0.72 0.36 0.22 setrgbcolor 175 388 120 49 rectfill
+  0.13 0.20 0.29 setrgbcolor 298 388 120 49 rectfill
+  0.72 0.36 0.22 setrgbcolor 421 388 120 49 rectfill
+} bind def
 /timeline {
   0.13 0.20 0.29 setrgbcolor 5 setlinewidth 80 390 moveto 514 390 lineto stroke
   0.72 0.36 0.22 setrgbcolor 7 setlinewidth 310 390 moveto 514 390 lineto stroke
@@ -99,7 +105,14 @@ PS
   line "$diagram" 52 651 12
   echo '0.13 0.20 0.29 setrgbcolor'
   paragraph "$structure" 607 11
-  echo timeline
+  echo sections
+  echo '0.13 0.20 0.29 setrgbcolor'
+  mapfile -t sections_label < <(jq -r '.sections[:4][]?.name // empty' docs/GUIDE.json)
+  for index in "${!sections_label[@]}"; do
+    x=$((54 + index*123))
+    line "${sections_label[$index]}" "$x" 364 8
+  done
+  line "$(jq -r '.diagram_caption // empty' docs/GUIDE.json)" 52 454 10
   echo '0.72 0.36 0.22 setrgbcolor'
   line 'A PRACTICAL EXAMPLE' 52 299 13
   echo '0.13 0.20 0.29 setrgbcolor'
