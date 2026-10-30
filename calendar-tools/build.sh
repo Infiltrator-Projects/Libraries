@@ -92,12 +92,12 @@ build_package() {
   targetdir=$(realpath "$targetdir")
   local machine
   machine=$(uname -m)
-  flags='-g0 -pipe -flto -DNDEBUG -fPIC -std=c11 -O2'
+  flags='-g0 -pipe -flto -DNDEBUG -fPIC -O2'
   if [[ $tune == portable ]]; then
     [[ $machine == x86_64 ]] || { echo 'Portable package requires amd64' >&2;return 1; }
     flags+=' -march=x86-64 -mtune=generic'
   else
-    flags='-g0 -pipe -flto -DNDEBUG -fPIC -std=c11 -O3'
+    flags='-g0 -pipe -flto -DNDEBUG -fPIC -O3'
     if [[ $machine == x86_64 ]]; then flags+=' -march=native -mtune=native'; else flags+=' -mcpu=native'; fi
   fi
   local pgo=disabled
