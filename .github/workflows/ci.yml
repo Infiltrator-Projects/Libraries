@@ -47,7 +47,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 tests/check-temporal-ownership.py
+          c++ -std=c++17 -O2 -Wall -Wextra -Wpedantic -Werror \
+            tests/check-temporal-ownership.cpp -o "$RUNNER_TEMP/check-temporal-ownership"
+          "$RUNNER_TEMP/check-temporal-ownership" .
           release=.github/workflows/release.yml
           grep -Fq '  workflow_run:' "$release"
           grep -Fq 'workflows: ["Libraries CI"]' "$release"
