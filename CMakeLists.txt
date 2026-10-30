@@ -48,6 +48,7 @@ infiltratr_common_configure_target(infiltratr-common-portable Portable)
 set(INFILTRATR_COMMON_FULL_SOURCES
     ${INFILTRATR_COMMON_PORTABLE_SOURCES}
     src/dynlib.c
+    src/filesystem_module_loader.c
     src/temporal_resource.c
     src/temporal_runtime.c
     src/temporal_calendar.c
@@ -120,6 +121,16 @@ if(INFILTRATR_COMMON_BUILD_TESTS)
     infiltratr_common_add_test(infiltratr-format-smoke tests/format_smoke.c InfiltratrCommon::Common)
     infiltratr_common_add_test(infiltratr-dynlib-smoke tests/dynlib_smoke.c InfiltratrCommon::Common)
     infiltratr_common_add_test(infiltratr-filesystem-module-smoke tests/filesystem_module_smoke.c InfiltratrCommon::Portable)
+    add_library(infiltratr-fs-common-fixture MODULE tests/filesystem_module_loader_fixture.c)
+    target_include_directories(infiltratr-fs-common-fixture PRIVATE include)
+    target_compile_definitions(infiltratr-fs-common-fixture PRIVATE IFS_FIXTURE_COMMON=1)
+    add_library(infiltratr-fs-legacy-fixture MODULE tests/filesystem_module_loader_fixture.c)
+    target_include_directories(infiltratr-fs-legacy-fixture PRIVATE include)
+    infiltratr_common_add_test(infiltratr-filesystem-module-loader-smoke tests/filesystem_module_loader_smoke.c InfiltratrCommon::Common)
+    target_compile_definitions(infiltratr-filesystem-module-loader-smoke PRIVATE
+        FILESYSTEM_MODULE_COMMON_FIXTURE="$<TARGET_FILE:infiltratr-fs-common-fixture>"
+        FILESYSTEM_MODULE_LEGACY_FIXTURE="$<TARGET_FILE:infiltratr-fs-legacy-fixture>")
+    add_dependencies(infiltratr-filesystem-module-loader-smoke infiltratr-fs-common-fixture infiltratr-fs-legacy-fixture)
     infiltratr_common_add_test(infiltratr-temporal-resource-smoke tests/temporal_resource_smoke.c InfiltratrCommon::Common)
     add_library(infiltratr-temporal-runtime-fixture MODULE tests/temporal_runtime_fixture.c)
     target_include_directories(infiltratr-temporal-runtime-fixture PRIVATE include)
