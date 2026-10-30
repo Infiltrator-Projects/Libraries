@@ -7,7 +7,7 @@ on:
   pull_request:
     paths:
       - 'tools/check-temporal-providers.sh'
-      - 'tools/temporal-packages.py'
+      - 'tools/temporal-packages.cpp'
       - 'tools/temporal-providers.json'
       - 'tests/check-temporal-ownership.cpp'
       - 'tests/check-published-temporal.cpp'

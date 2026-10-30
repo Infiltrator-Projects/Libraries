@@ -26,7 +26,7 @@ jobs:
       - name: Install consumer-test dependencies
         run: |
           apt-get update
-          apt-get install -y build-essential git ca-certificates python3
+          apt-get install -y build-essential git ca-certificates pkg-config libcurl4-openssl-dev libjson-c-dev libssl-dev
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - name: Trust checked-out workspace
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
@@ -34,8 +34,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          python3 tools/temporal-packages.py fetch "$RUNNER_TEMP/independent-providers"
-          python3 tools/temporal-packages.py install "$RUNNER_TEMP/independent-providers"
+          c++ -std=c++17 -O2 -Wall -Wextra -Wpedantic \
+            tools/temporal-packages.cpp $(pkg-config --cflags --libs libcurl json-c openssl) \
+            -pthread -o "$RUNNER_TEMP/temporal-packages"
+          "$RUNNER_TEMP/temporal-packages" fetch "$RUNNER_TEMP/independent-providers" "$GITHUB_WORKSPACE"
+          "$RUNNER_TEMP/temporal-packages" install "$RUNNER_TEMP/independent-providers" "$GITHUB_WORKSPACE"
       - name: Exercise Common's public API against the prebuilt providers
         run: make temporal-provider-check
 
