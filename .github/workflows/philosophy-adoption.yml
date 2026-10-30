@@ -6,7 +6,7 @@ on:
     branches: [main]
     paths:
       - docs/PHILOSOPHY.md
-      - tools/check-philosophy-adoption.py
+      - tools/check-philosophy-adoption.cpp
       - .github/workflows/philosophy-adoption.yml
   schedule:
     - cron: '17 3 * * 1'
@@ -23,4 +23,11 @@ jobs:
       - name: Verify philosophy adoption across Infiltrator Projects
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python3 tools/check-philosophy-adoption.py
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libcurl4-openssl-dev libjson-c-dev
+          c++ -std=c++17 -O2 -Wall -Wextra -Wpedantic \
+            tools/check-philosophy-adoption.cpp \
+            $(pkg-config --cflags --libs libcurl json-c) \
+            -o "$RUNNER_TEMP/check-philosophy-adoption"
+          "$RUNNER_TEMP/check-philosophy-adoption"
