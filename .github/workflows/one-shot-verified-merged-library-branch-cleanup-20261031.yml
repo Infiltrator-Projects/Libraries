@@ -1,0 +1,67 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: One-shot verified Libraries merged PR branch cleanup
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - .github/workflows/one-shot-verified-merged-library-branch-cleanup-20261031.yml
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  prune:
+    if: github.head_ref == 'maintenance/verified-merged-branch-cleanup-20261031' && github.event.pull_request.head.repo.full_name == 'Infiltrator-Projects/Libraries'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Verify exact merged PR heads and delete only those refs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          CLEANUP_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GH_REPO" = 'Infiltrator-Projects/Libraries'
+          mapfile -t candidates <<'CANDIDATES'
+          18|fix/temporal-provider-elf-optimization-20261025|54388ecc667566092d3180f830c89267fb4a53c8|4825efcae76d5135d405dc4a4357067a687a8ddf
+          19|fix/ci-hosted-sanitizer-20261025|b7da60014ea7004db132650feff762bd1699b4a6|c0e990c04836334e75118ec0013415d76f2ae1c3
+          20|fix/ci-hosted-strict-clang-20261025|ad681a600ecf4382e794a8a1fc7d9b5fb455974a|80cdfffff266dc6a874b4594d29086e8704148e4
+          21|fix/temporal-resource-single-pass-20261027|e637a55e331e2ee178c8c0f761166811abd0a700|e4b40d8a4504cb1c36944b535995c4003be436d0
+          22|fix/deduplicate-temporal-solar-math-20261027|a8f3ecdba56ed9c0df4e6e0d0edba14e23252fee|8d60662114e3052380f6f88ad3cacd9732ae7131
+          CANDIDATES
+
+          open_heads="$(gh api --paginate "/repos/${GH_REPO}/pulls?state=open&per_page=100" --jq '.[].head.ref')"
+          echo "Checking exactly ${#candidates[@]} merged PR branch heads."
+          # Preflight every branch first; do not delete a partial set on a preflight failure.
+          for item in "${candidates[@]}"; do
+            IFS='|' read -r pr branch expected_sha expected_merge <<< "$item"
+            verified="$(gh api "/repos/${GH_REPO}/pulls/${pr}" --jq "if (.merged == true and .state == \"closed\" and .base.ref == \"main\" and .head.ref == \"${branch}\" and .head.sha == \"${expected_sha}\" and .merge_commit_sha == \"${expected_merge}\") then \"verified\" else \"INVALID\" end")"
+            test "$verified" = verified || { echo "PR ${pr} does not exactly match approved merged tip"; exit 1; }
+            head_sha="$(gh api "/repos/${GH_REPO}/git/ref/heads/${branch}" --jq '.object.sha')"
+            test "$head_sha" = "$expected_sha" || { echo "Branch ${branch} advanced; refusing deletion"; exit 1; }
+            behind="$(gh api "/repos/${GH_REPO}/compare/${expected_merge}...main" --jq '.behind_by')"
+            test "$behind" = "0" || { echo "Merged PR ${pr} commit is not an ancestor of main"; exit 1; }
+            if grep -Fxq "$branch" <<< "$open_heads"; then
+              echo "Branch ${branch} is an active open PR head; refusing deletion"; exit 1
+            fi
+            echo "Validated PR #${pr}: ${branch}"
+          done
+
+          # No history is rewritten, and main is never moved.
+          for item in "${candidates[@]}"; do
+            IFS='|' read -r pr branch expected_sha expected_merge <<< "$item"
+            head_sha="$(gh api "/repos/${GH_REPO}/git/ref/heads/${branch}" --jq '.object.sha')"
+            test "$head_sha" = "$expected_sha" || { echo "Branch ${branch} changed during cleanup"; exit 1; }
+            gh api --method DELETE "/repos/${GH_REPO}/git/refs/heads/${branch}"
+            echo "Deleted merged PR #${pr} branch: ${branch}"
+          done
+
+          # Remove the disposable workflow branch; this workflow never enters main.
+          current_cleanup_sha="$(gh api "/repos/${GH_REPO}/git/ref/heads/maintenance/verified-merged-branch-cleanup-20261031" --jq '.object.sha')"
+          test "$current_cleanup_sha" = "$CLEANUP_HEAD_SHA" || { echo "Cleanup branch moved; preserving it"; exit 1; }
+          gh api --method DELETE "/repos/${GH_REPO}/git/refs/heads/maintenance/verified-merged-branch-cleanup-20261031"
+          echo "Removed self; only main should remain."
