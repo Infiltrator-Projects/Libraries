@@ -26,8 +26,9 @@ dpkg-deb --extract "$package_file" "$work"
 mapfile -d '' -t files < <(find "$work" -type f -print0)
 ((${#files[@]}==2)) || { echo "Expected exactly two installed files; found ${#files[@]}" >&2;exit 1; }
 lib="$work/System/Resources/Calendars/$name.so"
-pdf="$work/System/Resources/Documentation/$repository/$name.pdf"
+pdf="$work/System/Resources/Documentation/$repository.pdf"
 [[ -f "$lib" && -f "$pdf" && ! -L "$lib" && ! -L "$pdf" ]] || exit 1
+[[ -z $(find "$work/System/Resources/Documentation" -mindepth 1 -type d -print -quit) ]] || { echo "Documentation must contain files directly, without component folders" >&2; exit 1; }
 [[ $(head -c 5 "$pdf") == '%PDF-' ]] || exit 1
 [[ $(stat -c '%a' "$lib") == 644 && $(stat -c '%a' "$pdf") == 644 ]] || exit 1
 [[ $(sha256sum "$lib" | cut -d' ' -f1) == "$(dpkg-deb -f "$package_file" X-Infiltrator-Resource-SHA256)" ]] || exit 1

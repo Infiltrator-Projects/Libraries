@@ -33,3 +33,29 @@ owner=$(dpkg-query --admindir "$work/system/var/lib/dpkg" --search "/$resource")
 "${dpkg[@]}" --remove infiltrator-calendar-resources
 [[ -e "$work/system/$resource" && ! -e "$work/system/System/Resources/Clocks/Other Provider.so" ]] || exit 1
 echo "$package: legacy ownership transfer and independent removal passed"
+
+# Upgrade the same independent package from its old nested manual location.
+# A real dpkg transaction must remove that package-owned directory while
+# preserving unrelated documentation already present at the shared root.
+layout="$work/layout-legacy"
+legacy_guide="System/Resources/Documentation/$repository/$name.pdf"
+guide="System/Resources/Documentation/$repository.pdf"
+mkdir -p "$layout/DEBIAN" "$layout/$(dirname "$resource")" "$layout/$(dirname "$legacy_guide")"
+cat > "$layout/DEBIAN/control" <<CONTROL
+Package: $package
+Version: 0.0.0
+Architecture: $(dpkg --print-architecture)
+Maintainer: Infiltrator Projects <noreply@infiltrator-projects.invalid>
+Description: isolated old documentation layout fixture
+CONTROL
+printf 'old module' > "$layout/$resource"
+printf '%%PDF-1.4 old manual' > "$layout/$legacy_guide"
+dpkg-deb --root-owner-group --build "$layout" "$work/layout-legacy.deb"
+dpkg --root "$work/layout-system" --unpack "$work/layout-legacy.deb"
+printf 'unrelated personal document' > "$work/layout-system/System/Resources/Documentation/Personal.pdf"
+dpkg --root "$work/layout-system" --unpack "$package_file"
+[[ -f "$work/layout-system/$guide" && ! -e "$work/layout-system/$(dirname "$legacy_guide")" ]] || exit 1
+[[ $(cat "$work/layout-system/System/Resources/Documentation/Personal.pdf") == 'unrelated personal document' ]] || exit 1
+owner=$(dpkg-query --admindir "$work/layout-system/var/lib/dpkg" --search "/$guide")
+[[ $owner == "$package: /$guide" ]] || exit 1
+echo "$package: flat manual ownership and old folder removal passed"

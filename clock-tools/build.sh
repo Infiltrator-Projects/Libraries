@@ -44,7 +44,7 @@ version=$(<VERSION)
 slug=${repository,,}
 package="infiltrator-$slug"
 resource="System/Resources/Clocks/$name.so"
-guide="System/Resources/Documentation/$repository/$name.pdf"
+guide="System/Resources/Documentation/$repository.pdf"
 if ! command -v jq >/dev/null 2>&1; then
   if [[ $command == install && $build_only == 0 ]]; then
     apt=(apt-get -o DPkg::Lock::Timeout=300); ((EUID!=0)) && apt=(sudo "${apt[@]}")
