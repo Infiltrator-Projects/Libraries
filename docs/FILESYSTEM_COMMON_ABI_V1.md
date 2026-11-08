@@ -11,3 +11,9 @@ A new provider may export `infiltrator_filesystem_api_v1()` returning a pointer 
 These are real compile-time/runtime discovery primitives, but they do not yet make the existing provider operations universal. Per-format canonical-engine adapters and independent media qualification remain required before advertising universal create/write/format/repair/defrag. BOOT/kernel loading of a Linux userspace .so is not implied.
 
 See the [full module audit](https://github.com/Infiltrator-Projects/Filesystems/blob/main/docs/FILESYSTEM_SO_ABI_AUDIT_2026-10-30.md).
+
+## First adopter: FAT12 (9 November 2026)
+
+`Filesystem-FAT12` now exports `infiltrator_filesystem_api_v1` with the stable Common V1 prefix, capability validation and only two admitted operations: `probe` and `format`. The format adapter delegates to its already-existing V4 FatFs formatter; it is **not** a second FAT12 formatting engine. Only a validated existing FAT12 partition, an empty label and independently verified exclusive host access are admitted. The caller must not offer blank-disk formatting through this Common V1 adapter, because `IfsFsHostIoV1` currently has no logical-sector-size field. Common V1 mount/read/write, check/recover and native kernel execution have not been implemented in this FAT12 pilot. The FAT12 repository currently carries an exact, provenance-recorded snapshot of this freestanding header; plan promotion to the pinned Common dependency before broad adoption.
+
+An ABI evolution for blank target formatting must carry explicit logical sector size and physical-device/topology constraints without breaking callers of V1, and must have independently verified destructive image tests. The kernel will provide a format-neutral loader/VFS adapter rather than duplicate FAT12 logic.
