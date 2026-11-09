@@ -41,6 +41,16 @@ int main(void)
         legacy.structure_bytes = sizeof(IfsFsLegacyPrefix) - 1u;
         assert(!ifs_fs_legacy_prefix_valid(&legacy, 1u, ids[i]));
     }
+    /* Additive host I/O extension cannot alter the published V1 prefix. */
+    {
+        IfsFsHostFormatIoV1 host = {0};
+        host.host.structure_bytes = sizeof(host);
+        host.logical_sector_bytes = 512u;
+        assert(offsetof(IfsFsHostFormatIoV1, logical_sector_bytes) ==
+               sizeof(IfsFsHostIoV1));
+        assert(host.host.structure_bytes >= sizeof(IfsFsHostIoV1) &&
+               host.logical_sector_bytes == 512u && !host.reserved);
+    }
     assert(!ifs_fs_format_id_valid("FAT16"));
     assert(!ifs_fs_format_id_valid("../fat12"));
     assert(!ifs_fs_format_id_valid(""));
