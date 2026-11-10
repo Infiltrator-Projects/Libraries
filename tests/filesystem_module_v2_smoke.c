@@ -47,6 +47,13 @@ static const IfsFsGroupHeaderV2 *query(
     if(id==IFS_FS_GROUP_VOLUME)return &volume.header;
     return NULL;
 }
+static int mounted_volume_query(void *mount_context, IfsFsVolumeInfoV2 *info)
+{
+    (void)mount_context;
+    if (!info || info->structure_bytes < sizeof(*info)) return IFS_FS_INVALID;
+    return IFS_FS_OK;
+}
+
 /* A descriptor must not hide live callbacks behind absent capability bits.
  * In particular, mount/open/dir/plan callback groups are indivisible. */
 static int orphan_unmount(void *volume_context) {
@@ -131,6 +138,12 @@ int main(void) {
     assert(!ifs_fs_api_v2_valid(&api,"fat12")); /* fake repair */
     volume.header.capabilities=IFS_FS_VOLUME_FORMAT;
     assert(ifs_fs_api_v2_valid(&api,"fat12"));
+    volume.query=mounted_volume_query;
+    volume.header.capabilities|=IFS_FS_VOLUME_QUERY;
+    assert(!ifs_fs_api_v2_valid(&api,"fat12")); /* no CORE mount lifecycle */
+    volume.query=NULL;
+    volume.header.capabilities=IFS_FS_VOLUME_FORMAT;
+    assert(ifs_fs_api_v2_valid(&api,"fat12")); /* standalone format is valid */
     api.runtime_profiles=UINT64_C(1)<<17;
     assert(!ifs_fs_api_v2_valid(&api,"fat12"));
     api.runtime_profiles=IFS_FS_PROFILE_HOSTED;
