@@ -98,3 +98,23 @@ bool infiltratr_filesystem_module_inspect_loaded_v2(
     out->legacy_version = v1.legacy_version;
     return true;
 }
+
+/* There is deliberately no legacy search path for new V2 consumers. */
+bool infiltratr_filesystem_module_inspect_loaded_v2_native(
+    const InfiltratrDynlib *library,
+    const char *expected_format_id,
+    InfiltratrFilesystemModuleDiscoveryV2 *out)
+{
+    InfiltratrFilesystemModuleDiscoveryV2 found = {0};
+    if (!out) return false;
+    out->v2 = NULL;
+    out->v1 = NULL;
+    out->legacy_table = NULL;
+    out->legacy_version = 0u;
+    if (!infiltratr_filesystem_module_inspect_loaded_v2(
+            library, expected_format_id, &found) ||
+        !ifs_fs_api_v2_native_valid(found.v2, expected_format_id))
+        return false;
+    *out = found;
+    return true;
+}
