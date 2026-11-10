@@ -86,7 +86,8 @@ static inline int ifs_fs_host_v2_valid(const IfsFsHostRuntimeV2 *h)
     l = h->logical_sector_bytes;
     p = h->physical_sector_bytes;
     if (l < 512u || l > 65536u || (l & (l - 1u)) ||
-        p < l || p > 65536u || (p & (p - 1u)) || p % l)
+        p < l || p > 65536u || (p & (p - 1u)) || p % l ||
+        h->maximum_transfer_bytes < l)
         return 0;
     if ((h->capabilities & IFS_FS_HOST_READ_ONLY) && h->write_at)
         return 0;
@@ -118,11 +119,12 @@ typedef struct {
 /* Persistent open handles, cursors, fsync and handle-oriented VFS operations.
  * Handles are opaque and valid only for their owning volume and generation. */
 #define IFS_FS_HANDLE_OPEN     (UINT64_C(1) << 0)
-#define IFS_FS_HANDLE_IO       (UINT64_C(1) << 1)
-#define IFS_FS_HANDLE_RESIZE   (UINT64_C(1) << 2)
-#define IFS_FS_HANDLE_SYNC     (UINT64_C(1) << 3)
-#define IFS_FS_HANDLE_DIR      (UINT64_C(1) << 4)
-#define IFS_FS_HANDLE_ALL      ((UINT64_C(1) << 5) - 1u)
+#define IFS_FS_HANDLE_READ     (UINT64_C(1) << 1)
+#define IFS_FS_HANDLE_WRITE    (UINT64_C(1) << 2)
+#define IFS_FS_HANDLE_RESIZE   (UINT64_C(1) << 3)
+#define IFS_FS_HANDLE_SYNC     (UINT64_C(1) << 4)
+#define IFS_FS_HANDLE_DIR      (UINT64_C(1) << 5)
+#define IFS_FS_HANDLE_ALL      ((UINT64_C(1) << 6) - 1u)
 typedef struct {
     IfsFsGroupHeaderV2 header;
     int (*open)(void *volume, const char *path, uint32_t flags, void **file);
@@ -138,12 +140,18 @@ typedef struct {
     int (*close_dir)(void *volume, void *cursor);
 } IfsFsHandlesV1;
 
-#define IFS_FS_META_TIMES      (UINT64_C(1) << 0)
-#define IFS_FS_META_MODE       (UINT64_C(1) << 1)
-#define IFS_FS_META_LINK       (UINT64_C(1) << 2)
-#define IFS_FS_META_XATTR      (UINT64_C(1) << 3)
-#define IFS_FS_META_ACL        (UINT64_C(1) << 4)
-#define IFS_FS_META_ALL        ((UINT64_C(1) << 5) - 1u)
+#define IFS_FS_META_GET_TIMES    (UINT64_C(1) << 0)
+#define IFS_FS_META_SET_TIMES    (UINT64_C(1) << 1)
+#define IFS_FS_META_GET_MODE     (UINT64_C(1) << 2)
+#define IFS_FS_META_SET_MODE     (UINT64_C(1) << 3)
+#define IFS_FS_META_SYMLINK      (UINT64_C(1) << 4)
+#define IFS_FS_META_READLINK     (UINT64_C(1) << 5)
+#define IFS_FS_META_HARDLINK     (UINT64_C(1) << 6)
+#define IFS_FS_META_GET_XATTR    (UINT64_C(1) << 7)
+#define IFS_FS_META_SET_XATTR    (UINT64_C(1) << 8)
+#define IFS_FS_META_GET_ACL      (UINT64_C(1) << 9)
+#define IFS_FS_META_SET_ACL      (UINT64_C(1) << 10)
+#define IFS_FS_META_ALL          ((UINT64_C(1) << 11) - 1u)
 /* Host-to-provider times use signed Unix epoch nanoseconds, never native
  * OS timespec or EFI_TIME layouts; unsupported fields remain absent. */
 typedef struct {
@@ -171,15 +179,16 @@ typedef struct {
 /* Destructive operations are NEVER automatic during discovery; safe format
  * requires an independently verified host lease and complete geometry. */
 #define IFS_FS_VOLUME_QUERY    (UINT64_C(1) << 0)
-#define IFS_FS_VOLUME_LABEL    (UINT64_C(1) << 1)
-#define IFS_FS_VOLUME_SYNC     (UINT64_C(1) << 2)
-#define IFS_FS_VOLUME_RESIZE   (UINT64_C(1) << 3)
-#define IFS_FS_VOLUME_CHECK    (UINT64_C(1) << 4)
-#define IFS_FS_VOLUME_REPAIR   (UINT64_C(1) << 5)
-#define IFS_FS_VOLUME_SCRUB    (UINT64_C(1) << 6)
-#define IFS_FS_VOLUME_TRIM     (UINT64_C(1) << 7)
-#define IFS_FS_VOLUME_FORMAT   (UINT64_C(1) << 8)
-#define IFS_FS_VOLUME_ALL      ((UINT64_C(1) << 9) - 1u)
+#define IFS_FS_VOLUME_LABEL_GET (UINT64_C(1) << 1)
+#define IFS_FS_VOLUME_LABEL_SET (UINT64_C(1) << 2)
+#define IFS_FS_VOLUME_SYNC     (UINT64_C(1) << 3)
+#define IFS_FS_VOLUME_RESIZE   (UINT64_C(1) << 4)
+#define IFS_FS_VOLUME_CHECK    (UINT64_C(1) << 5)
+#define IFS_FS_VOLUME_REPAIR   (UINT64_C(1) << 6)
+#define IFS_FS_VOLUME_SCRUB    (UINT64_C(1) << 7)
+#define IFS_FS_VOLUME_TRIM     (UINT64_C(1) << 8)
+#define IFS_FS_VOLUME_FORMAT   (UINT64_C(1) << 9)
+#define IFS_FS_VOLUME_ALL      ((UINT64_C(1) << 10) - 1u)
 typedef struct {
     IfsFsGroupHeaderV2 header;
     int (*query)(void *volume, IfsFsVolumeInfoV1 *);
@@ -323,23 +332,34 @@ static inline int ifs_fs_group_v2_callbacks_valid(
     case IFS_FS_GROUP_HANDLES: {
         const IfsFsHandlesV1 *p=(const IfsFsHandlesV1 *)g;
         return IFS_MATCH(IFS_FS_HANDLE_OPEN,p->open && p->close) &&
-            IFS_MATCH(IFS_FS_HANDLE_IO,p->pread && p->pwrite) &&
+            IFS_MATCH(IFS_FS_HANDLE_READ,p->pread) &&
+            IFS_MATCH(IFS_FS_HANDLE_WRITE,p->pwrite) &&
             IFS_MATCH(IFS_FS_HANDLE_RESIZE,p->resize) &&
             IFS_MATCH(IFS_FS_HANDLE_SYNC,p->sync) &&
-            IFS_MATCH(IFS_FS_HANDLE_DIR,p->open_dir && p->next_dir && p->close_dir);
+            IFS_MATCH(IFS_FS_HANDLE_DIR,p->open_dir && p->next_dir && p->close_dir) &&
+            (!(g->capabilities & (IFS_FS_HANDLE_READ|IFS_FS_HANDLE_WRITE|
+              IFS_FS_HANDLE_RESIZE|IFS_FS_HANDLE_SYNC)) ||
+              (g->capabilities & IFS_FS_HANDLE_OPEN));
     }
     case IFS_FS_GROUP_METADATA: {
         const IfsFsMetadataOpsV1 *p=(const IfsFsMetadataOpsV1 *)g;
-        return IFS_MATCH(IFS_FS_META_TIMES,p->get && p->set) &&
-            IFS_MATCH(IFS_FS_META_MODE,p->get && p->set) &&
-            IFS_MATCH(IFS_FS_META_LINK,p->symlink && p->readlink && p->hardlink) &&
-            IFS_MATCH(IFS_FS_META_XATTR,p->get_xattr && p->set_xattr) &&
-            IFS_MATCH(IFS_FS_META_ACL,p->get_acl && p->set_acl);
+        return (((g->capabilities & (IFS_FS_META_GET_TIMES |
+               IFS_FS_META_GET_MODE)) != 0u) == (p->get != NULL)) &&
+            (((g->capabilities & (IFS_FS_META_SET_TIMES |
+               IFS_FS_META_SET_MODE)) != 0u) == (p->set != NULL)) &&
+            IFS_MATCH(IFS_FS_META_SYMLINK,p->symlink) &&
+            IFS_MATCH(IFS_FS_META_READLINK,p->readlink) &&
+            IFS_MATCH(IFS_FS_META_HARDLINK,p->hardlink) &&
+            IFS_MATCH(IFS_FS_META_GET_XATTR,p->get_xattr) &&
+            IFS_MATCH(IFS_FS_META_SET_XATTR,p->set_xattr) &&
+            IFS_MATCH(IFS_FS_META_GET_ACL,p->get_acl) &&
+            IFS_MATCH(IFS_FS_META_SET_ACL,p->set_acl);
     }
     case IFS_FS_GROUP_VOLUME: {
         const IfsFsVolumeOpsV1 *p=(const IfsFsVolumeOpsV1 *)g;
         return IFS_MATCH(IFS_FS_VOLUME_QUERY,p->query) &&
-            IFS_MATCH(IFS_FS_VOLUME_LABEL,p->label && p->set_label) &&
+            IFS_MATCH(IFS_FS_VOLUME_LABEL_GET,p->label) &&
+            IFS_MATCH(IFS_FS_VOLUME_LABEL_SET,p->set_label) &&
             IFS_MATCH(IFS_FS_VOLUME_SYNC,p->sync) &&
             IFS_MATCH(IFS_FS_VOLUME_RESIZE,p->resize) &&
             IFS_MATCH(IFS_FS_VOLUME_CHECK,p->check) &&
