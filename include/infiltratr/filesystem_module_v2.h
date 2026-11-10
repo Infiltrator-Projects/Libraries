@@ -111,6 +111,42 @@ static inline int ifs_fs_host_v2_valid(const IfsFsHostRuntimeV2 *h)
     return 1;
 }
 
+/* Safe cross-version host adaptation for canonical engines that still use
+ * V1 callbacks. The host descriptor is copied; it never proves a lease on
+ * its own. Its caller must keep the host context alive through unmount.
+ * A read-only host never exposes a write or flush mutation callback.
+ * No allocations, device access or format-specific logic occur here. */
+static inline int ifs_fs_host_v2_as_v1(
+    const IfsFsHostRuntimeV2 *host, IfsFsHostIoV1 *out)
+{
+    if (!out || !ifs_fs_host_v2_valid(host)) return IFS_FS_INVALID;
+    out->structure_bytes = sizeof(*out);
+    out->flags = (host->capabilities & IFS_FS_HOST_READ_ONLY)
+        ? IFS_FS_IO_READ_ONLY : IFS_FS_IO_EXCLUSIVE;
+    out->context = host->context;
+    out->volume_bytes = host->volume_bytes;
+    out->read_at = host->read_at;
+    out->write_at = (host->capabilities & IFS_FS_HOST_READ_ONLY)
+        ? NULL : host->write_at;
+    out->flush = (host->capabilities & IFS_FS_HOST_READ_ONLY)
+        ? NULL : host->flush;
+    out->allocate = host->allocate;
+    out->release = host->release;
+    return IFS_FS_OK;
+}
+static inline int ifs_fs_host_v2_as_format_v1(
+    const IfsFsHostRuntimeV2 *host, IfsFsHostFormatIoV1 *out)
+{
+    int result;
+    if (!out) return IFS_FS_INVALID;
+    result = ifs_fs_host_v2_as_v1(host, &out->host);
+    if (result != IFS_FS_OK) return result;
+    out->host.structure_bytes = sizeof(*out);
+    out->logical_sector_bytes = host->logical_sector_bytes;
+    out->reserved = 0u;
+    return IFS_FS_OK;
+}
+
 typedef struct {
     uint32_t abi_version, structure_bytes, group_id, reserved;
     uint64_t capabilities;

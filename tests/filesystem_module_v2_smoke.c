@@ -82,5 +82,25 @@ int main(void) {
     assert(!ifs_fs_host_v2_valid(&h)); /* untrusted sector geometry */
     h.logical_sector_bytes=512u;h.reserved=1u;
     assert(!ifs_fs_host_v2_valid(&h));
+    h.reserved=0u;
+    {
+        IfsFsHostIoV1 old={0};
+        IfsFsHostFormatIoV1 formatting={0};
+        assert(ifs_fs_host_v2_as_v1(&h,&old)==IFS_FS_OK);
+        assert(old.structure_bytes==sizeof(old));
+        assert(old.flags==IFS_FS_IO_READ_ONLY);
+        assert(old.read_at==host_read && old.write_at==NULL && old.flush==NULL);
+        assert(ifs_fs_host_v2_as_format_v1(&h,&formatting)==IFS_FS_OK);
+        assert(formatting.host.structure_bytes==sizeof(formatting));
+        assert(formatting.logical_sector_bytes==512u && formatting.reserved==0u);
+        h.capabilities=IFS_FS_HOST_EXCLUSIVE|IFS_FS_HOST_DURABLE;
+        h.write_at=host_write; h.flush=flush;
+        assert(ifs_fs_host_v2_as_format_v1(&h,&formatting)==IFS_FS_OK);
+        assert(formatting.host.flags==IFS_FS_IO_EXCLUSIVE);
+        assert(formatting.host.write_at==host_write && formatting.host.flush==flush);
+        h.capabilities=IFS_FS_HOST_EXCLUSIVE;
+        assert(ifs_fs_host_v2_as_v1(&h,&old)==IFS_FS_INVALID);
+        h.capabilities=IFS_FS_HOST_EXCLUSIVE|IFS_FS_HOST_DURABLE;
+    }
     return 0;
 }
