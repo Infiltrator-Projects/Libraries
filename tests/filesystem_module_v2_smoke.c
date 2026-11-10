@@ -49,29 +49,29 @@ static const IfsFsGroupHeaderV2 *query(
 }
 /* A descriptor must not hide live callbacks behind absent capability bits.
  * In particular, mount/open/dir/plan callback groups are indivisible. */
-static int orphan_unmount(void *volume) {
-    (void)volume;
+static int orphan_unmount(void *volume_context) {
+    (void)volume_context;
     return IFS_FS_OK;
 }
-static int mock_open(void *volume,const char *path,uint32_t flags,void **file) {
-    (void)volume;(void)path;(void)flags;(void)file;
+static int mock_open(void *volume_context,const char *path,uint32_t flags,void **file) {
+    (void)volume_context;(void)path;(void)flags;(void)file;
     return IFS_FS_UNSUPPORTED;
 }
-static int mock_close(void *volume,void *file) {
-    (void)volume;(void)file;
+static int mock_close(void *volume_context,void *file) {
+    (void)volume_context;(void)file;
     return IFS_FS_OK;
 }
-static int mock_open_dir(void *volume,const char *path,void **cursor) {
-    (void)volume;(void)path;(void)cursor;
+static int mock_open_dir(void *volume_context,const char *path,void **cursor) {
+    (void)volume_context;(void)path;(void)cursor;
     return IFS_FS_UNSUPPORTED;
 }
-static int mock_map(void *volume,const char *path,uint64_t first,
+static int mock_map(void *volume_context,const char *path,uint64_t first,
                     IfsFsExtentV2 *extents,uint32_t cap,uint32_t *written) {
-    (void)volume;(void)path;(void)first;(void)extents;(void)cap;(void)written;
+    (void)volume_context;(void)path;(void)first;(void)extents;(void)cap;(void)written;
     return IFS_FS_UNSUPPORTED;
 }
-static void mock_release_plan(void *volume,void *plan) {
-    (void)volume;(void)plan;
+static void mock_release_plan(void *volume_context,void *plan) {
+    (void)volume_context;(void)plan;
 }
 
 int main(void) {
