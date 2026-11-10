@@ -76,3 +76,6 @@ Calendar, Files and System Settings use normal platform date/time services when
 no additional modules are installed. Validated modules in `/System/Resources/Calendars`
 and `/System/Resources/Clocks` add capabilities. Custom implementations are built
 only as those modules; applications never contain substitute custom algorithms.
+
+
+Filesystem integration now has a [V2 universal extension and host ABI](docs/FILESYSTEM_COMMON_ABI_V2.md) in addition to the immutable V1 API. Kernel and BOOT execution require independent loader qualification.
