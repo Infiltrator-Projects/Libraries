@@ -24,6 +24,22 @@ jobs:
         compiler: [gcc, clang]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Reject retired filesystem APIs and compatibility paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -e include/infiltratr/filesystem_module.h
+          test ! -e docs/FILESYSTEM_COMMON_ABI_V1.md
+          if grep -EnR 'IfsFs[A-Za-z0-9_]*V1|IFS_FS_[A-Z0-9_]*V1|base_v1|infiltrator_filesystem_api_v1|IFS_FS_COMMON_EXPORT_V1|filesystem_module\.h' \
+              include/infiltratr/filesystem_module_v2.h \
+              include/infiltratr/filesystem_module_loader.h \
+              src/filesystem_module_loader.c \
+              tests/filesystem_module_v2_smoke.c \
+              tests/filesystem_module_v2_loader_smoke.c \
+              tests/filesystem_module_v2_native_fixture.c; then
+            echo "Retired filesystem ABI detected" >&2
+            exit 1
+          fi
       - name: Compile freestanding ABI and loadable native-V2 fixtures
         run: |
           cmake -S . -B build-abi -DCMAKE_C_COMPILER=${{ matrix.compiler }} \
