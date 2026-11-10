@@ -317,7 +317,7 @@ static inline const IfsFsGroupHeaderV2 *ifs_fs_group_v2(
 static inline int ifs_fs_group_v2_callbacks_valid(
     const IfsFsGroupHeaderV2 *g)
 {
-#define IFS_MATCH(mask, op) (((g->capabilities & (mask)) != 0u) == ((op) != NULL))
+#define IFS_MATCH(mask, op) (((g->capabilities & (mask)) != 0u) == ((op) != 0))
     if (!g) return 0;
     switch (g->group_id) {
     case IFS_FS_GROUP_HANDLES: {
