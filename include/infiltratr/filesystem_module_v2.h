@@ -566,6 +566,25 @@ static inline int ifs_fs_api_v2_valid(
         if ((api->group_mask & IFS_FS_GROUP_BIT(id)) &&
             !ifs_fs_group_v2_callbacks_valid(ifs_fs_group_v2(api,id)))
             return 0;
+
+    /* All mounted-volume groups require the CORE lifecycle. VOLUME_FORMAT
+     * alone operates on an exclusive host and needs no mounted namespace. */
+    if (api->group_mask &
+        (IFS_FS_GROUP_BIT(IFS_FS_GROUP_HANDLES) |
+         IFS_FS_GROUP_BIT(IFS_FS_GROUP_METADATA) |
+         IFS_FS_GROUP_BIT(IFS_FS_GROUP_DEFRAG) |
+         IFS_FS_GROUP_BIT(IFS_FS_GROUP_STREAMS) |
+         IFS_FS_GROUP_BIT(IFS_FS_GROUP_SNAPSHOTS))) {
+        if (!(core->header.capabilities & IFS_FS_CORE_MOUNT))
+            return 0;
+    }
+    if (api->group_mask & IFS_FS_GROUP_BIT(IFS_FS_GROUP_VOLUME)) {
+        const IfsFsVolumeOpsV2 *volume_ops =
+            (const IfsFsVolumeOpsV2 *)ifs_fs_group_v2(api, IFS_FS_GROUP_VOLUME);
+        if ((volume_ops->header.capabilities & ~IFS_FS_VOLUME_FORMAT) &&
+            !(core->header.capabilities & IFS_FS_CORE_MOUNT))
+            return 0;
+    }
     return 1;
 }
 #ifdef __cplusplus
