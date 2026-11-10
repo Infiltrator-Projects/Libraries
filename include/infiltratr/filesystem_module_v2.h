@@ -1,19 +1,57 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later
- * Infiltratr Common V2: universal, freestanding filesystem contracts.
- * V1 remains binary-immutable during migration, but is OPTIONAL for new
- * standalone V2 providers. This header contains NO disk format engine,
- * Linux kernel types, EFI imports, libc function calls or loader code.
+ * Infiltratr Common V2: independent, freestanding filesystem contract.
+ * No previous-ABI descriptor, compatibility fallback, or OS-specific import.
  */
 #ifndef INFILTRATR_FILESYSTEM_MODULE_V2_H
 #define INFILTRATR_FILESYSTEM_MODULE_V2_H
-#include "filesystem_module.h"
+#include <stddef.h>
+#include <stdint.h>
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+#define IFS_FS_MAX_FORMAT_ID 63u
+#define IFS_FS_ENTRY_FILE 1u
+#define IFS_FS_ENTRY_DIRECTORY 2u
+#define IFS_FS_ENTRY_LINK 3u
+#define IFS_FS_OK 0
+#define IFS_FS_END 1
+#define IFS_FS_NOT_FOUND 2
+#define IFS_FS_INVALID (-1)
+#define IFS_FS_IO_ERROR (-2)
+#define IFS_FS_CORRUPT (-3)
+#define IFS_FS_NO_SPACE (-4)
+#define IFS_FS_EXISTS (-5)
+#define IFS_FS_ACCESS (-6)
+#define IFS_FS_NO_MEMORY (-7)
+#define IFS_FS_UNSUPPORTED (-8)
+#define IFS_FS_BUSY (-9)
+static inline int ifs_fs_format_id_valid(const char *name)
+{
+    uint32_t i;
+    if (!name) return 0;
+    for (i = 0; i <= IFS_FS_MAX_FORMAT_ID; ++i) {
+        unsigned char c = (unsigned char)name[i];
+        if (!c) return i != 0;
+        if (!((c >= 'a' && c <= 'z') ||
+              (c >= '0' && c <= '9') || c == '-' || c == '_'))
+            return 0;
+    }
+    return 0;
+}
+static inline int ifs_fs_format_id_equal(const char *a, const char *b)
+{
+    uint32_t i;
+    if (!ifs_fs_format_id_valid(a) || !ifs_fs_format_id_valid(b)) return 0;
+    for (i = 0; i <= IFS_FS_MAX_FORMAT_ID; ++i) {
+        if (a[i] != b[i]) return 0;
+        if (!a[i]) return 1;
+    }
+    return 0;
+}
 #define IFS_FS_COMMON_ABI_V2 2u
 #define IFS_FS_COMMON_EXPORT_V2 "infiltrator_filesystem_api_v2"
-#define IFS_FS_GROUP_ABI_V1 1u
+#define IFS_FS_GROUP_ABI_V2 2u
 #define IFS_FS_HOST_ABI_V2 2u
 
 /* Profile bits describe ABI/execution contracts, NOT evidence that a host
@@ -113,50 +151,12 @@ static inline int ifs_fs_host_v2_valid(const IfsFsHostRuntimeV2 *h)
     return 1;
 }
 
-/* Safe cross-version host adaptation for canonical engines that still use
- * V1 callbacks. The host descriptor is copied; it never proves a lease on
- * its own. Its caller must keep the host context alive through unmount.
- * A read-only host never exposes a write or flush mutation callback.
- * No allocations, device access or format-specific logic occur here. */
-static inline int ifs_fs_host_v2_as_v1(
-    const IfsFsHostRuntimeV2 *host, IfsFsHostIoV1 *out)
-{
-    if (!out || !ifs_fs_host_v2_valid(host)) return IFS_FS_INVALID;
-    out->structure_bytes = sizeof(*out);
-    out->flags = (host->capabilities & IFS_FS_HOST_READ_ONLY)
-        ? IFS_FS_IO_READ_ONLY : IFS_FS_IO_EXCLUSIVE;
-    out->context = host->context;
-    out->volume_bytes = host->volume_bytes;
-    out->read_at = host->read_at;
-    out->write_at = (host->capabilities & IFS_FS_HOST_READ_ONLY)
-        ? NULL : host->write_at;
-    out->flush = (host->capabilities & IFS_FS_HOST_READ_ONLY)
-        ? NULL : host->flush;
-    out->allocate = host->allocate;
-    out->release = host->release;
-    return IFS_FS_OK;
-}
-static inline int ifs_fs_host_v2_as_format_v1(
-    const IfsFsHostRuntimeV2 *host, IfsFsHostFormatIoV1 *out)
-{
-    int result;
-    if (!out) return IFS_FS_INVALID;
-    result = ifs_fs_host_v2_as_v1(host, &out->host);
-    if (result != IFS_FS_OK) return result;
-    out->host.structure_bytes = sizeof(*out);
-    out->logical_sector_bytes = host->logical_sector_bytes;
-    out->reserved = 0u;
-    return IFS_FS_OK;
-}
-
 typedef struct {
     uint32_t abi_version, structure_bytes, group_id, reserved;
     uint64_t capabilities;
 } IfsFsGroupHeaderV2;
 
-/* Core operations no longer require a V1 function-table dependency.
- * Group revision 1 is NOT Common ABI version 1. Providers implement these
- * callbacks directly over the Common V2 host, with no V1 descriptor.
+/* Core callbacks operate directly over the Common V2 host.
  * The host authenticates the module before any callback invocation.
  * No provider may declare a capability without its actual implementation. */
 typedef struct {
@@ -200,7 +200,7 @@ typedef struct {
     int (*remove)(void *volume, const char *path);
     int (*rename)(void *volume, const char *old_path, const char *new_path);
     int (*truncate)(void *volume, const char *path, uint64_t bytes);
-} IfsFsCoreOpsV1;
+} IfsFsCoreOpsV2;
 
 /* Persistent open handles, cursors, fsync and handle-oriented VFS operations.
  * Handles are opaque and valid only for their owning volume and generation. */
@@ -212,7 +212,7 @@ typedef struct {
 #define IFS_FS_HANDLE_DIR      (UINT64_C(1) << 5)
 #define IFS_FS_HANDLE_ALL      ((UINT64_C(1) << 6) - 1u)
 
-/* Portable arguments to IfsFsHandlesV1.open(), never native O_* flags.
+/* Portable arguments to IfsFsHandlesV2.open(), never native O_* flags.
  * At least READ or WRITE is required. CREATE and TRUNCATE require WRITE;
  * EXCLUSIVE is meaningful only together with CREATE.
  *
@@ -240,7 +240,7 @@ static inline int ifs_fs_open_flags_valid(uint32_t flags)
          (flags & IFS_FS_OPEN_CREATE));
 }
 
-/* IfsFsHandlesV1.sync() accepts 0 for full durable data+metadata sync;
+/* IfsFsHandlesV2.sync() accepts 0 for full durable data+metadata sync;
  * DATA_ONLY may omit unrelated metadata, but not metadata required for data
  * retrieval. Unknown sync flag bits must be rejected with IFS_FS_INVALID. */
 #define IFS_FS_SYNC_DATA_ONLY  (UINT32_C(1) << 0)
@@ -261,9 +261,9 @@ typedef struct {
     int (*resize)(void *volume, void *file, uint64_t length);
     int (*sync)(void *volume, void *file, uint32_t flags);
     int (*open_dir)(void *volume, const char *path, void **cursor);
-    int (*next_dir)(void *volume, void *cursor, IfsFsEntryV1 *entry);
+    int (*next_dir)(void *volume, void *cursor, IfsFsEntryV2 *entry);
     int (*close_dir)(void *volume, void *cursor);
-} IfsFsHandlesV1;
+} IfsFsHandlesV2;
 
 #define IFS_FS_META_GET_TIMES    (UINT64_C(1) << 0)
 #define IFS_FS_META_SET_TIMES    (UINT64_C(1) << 1)
@@ -283,11 +283,11 @@ typedef struct {
     uint32_t structure_bytes, mask;
     int64_t created_ns, modified_ns, accessed_ns, changed_ns;
     uint32_t mode, owner, group, attributes;
-} IfsFsMetadataV1;
+} IfsFsMetadataV2;
 typedef struct {
     IfsFsGroupHeaderV2 header;
-    int (*get)(void *volume, const char *path, IfsFsMetadataV1 *);
-    int (*set)(void *volume, const char *path, const IfsFsMetadataV1 *);
+    int (*get)(void *volume, const char *path, IfsFsMetadataV2 *);
+    int (*set)(void *volume, const char *path, const IfsFsMetadataV2 *);
     int (*symlink)(void *volume, const char *path, const char *target);
     int (*readlink)(void *volume, const char *path, char *, uint32_t, uint32_t *);
     int (*hardlink)(void *volume, const char *existing, const char *new_path);
@@ -299,7 +299,7 @@ typedef struct {
                    void *data, uint32_t capacity, uint32_t *bytes);
     int (*set_acl)(void *volume, const char *path,
                    const void *data, uint32_t bytes);
-} IfsFsMetadataOpsV1;
+} IfsFsMetadataOpsV2;
 
 /* Destructive operations are NEVER automatic during discovery; safe format
  * requires an independently verified host lease and complete geometry. */
@@ -316,7 +316,7 @@ typedef struct {
 #define IFS_FS_VOLUME_ALL      ((UINT64_C(1) << 10) - 1u)
 typedef struct {
     IfsFsGroupHeaderV2 header;
-    int (*query)(void *volume, IfsFsVolumeInfoV1 *);
+    int (*query)(void *volume, IfsFsVolumeInfoV2 *);
     int (*label)(void *volume, char *, uint32_t capacity, uint32_t *bytes);
     int (*set_label)(void *volume, const char *);
     int (*sync)(void *volume);
@@ -327,7 +327,7 @@ typedef struct {
     int (*trim)(void *volume, uint64_t offset, uint64_t length);
     int (*format)(const IfsFsHostRuntimeV2 *, uint32_t variant,
                   const char *label, uint32_t flags);
-} IfsFsVolumeOpsV1;
+} IfsFsVolumeOpsV2;
 
 /* The filesystem owns extent mapping/relocation and durable recovery.
  * Defragmenter supplies intent and policy; it must NOT move raw clusters. */
@@ -340,18 +340,18 @@ typedef struct {
 typedef struct {
     uint64_t logical_offset, physical_offset, length;
     uint32_t flags, reserved;
-} IfsFsExtentV1;
+} IfsFsExtentV2;
 typedef struct {
     IfsFsGroupHeaderV2 header;
     int (*map)(void *volume, const char *path, uint64_t first_extent,
-               IfsFsExtentV1 *, uint32_t capacity, uint32_t *written);
+               IfsFsExtentV2 *, uint32_t capacity, uint32_t *written);
     int (*plan)(void *volume, const char *path, uint32_t policy,
                 void **plan);
     int (*execute)(void *volume, void *plan, uint64_t *moved_bytes);
     int (*verify)(void *volume, void *plan);
     int (*recover)(void *volume, uint32_t flags, uint64_t *repaired);
     void (*release_plan)(void *volume, void *plan);
-} IfsFsDefragOpsV1;
+} IfsFsDefragOpsV2;
 
 /* Filesystems with named streams can export them without consumers parsing
  * NTFS ADS, macOS resource forks or format-specific stream metadata. */
@@ -369,7 +369,7 @@ typedef struct {
     int (*write)(void *volume, const char *path, const char *stream,
                  uint64_t offset, const void *, uint32_t length, uint32_t *written);
     int (*remove)(void *volume, const char *path, const char *stream);
-} IfsFsStreamsOpsV1;
+} IfsFsStreamsOpsV2;
 
 #define IFS_FS_SNAPSHOT_LIST   (UINT64_C(1) << 0)
 #define IFS_FS_SNAPSHOT_CREATE (UINT64_C(1) << 1)
@@ -379,29 +379,25 @@ typedef struct {
 typedef struct {
     uint64_t id, created_ns;
     uint32_t flags, reserved;
-} IfsFsSnapshotV1;
+} IfsFsSnapshotV2;
 typedef struct {
     IfsFsGroupHeaderV2 header;
-    int (*list)(void *volume, uint32_t index, IfsFsSnapshotV1 *);
+    int (*list)(void *volume, uint32_t index, IfsFsSnapshotV2 *);
     int (*create)(void *volume, const char *label, uint64_t *id);
     int (*remove)(void *volume, uint64_t id);
     int (*revert)(void *volume, uint64_t id, uint32_t flags);
-} IfsFsSnapshotOpsV1;
+} IfsFsSnapshotOpsV2;
 
 typedef const IfsFsGroupHeaderV2 *(*IfsFsQueryGroupV2)(
     uint32_t group_id, uint32_t minimum_revision, uint32_t maximum_revision);
 
-/* A V1 table is optional, retained only for providers awaiting migration.
- * A V2-only descriptor has base_v1 == NULL and a genuine CORE group with
- * PROBE. Extension groups are negotiated separately. A valid V2
- * descriptor DOES NOT make a binary executable in arbitrary kernel/UEFI
- * context: that requires separately verified runtime profile and loader. */
+/* Direct Common V2 descriptor. No previous version's table or shims.
+ * Execution profiles are declarations requiring separate qualification. */
 typedef struct {
     uint32_t abi_version, structure_bytes;
     const char *format_id;
     uint64_t runtime_profiles;
     uint64_t group_mask;
-    const IfsFsModuleApiV1 *base_v1; /* NULL for a V2-only provider */
     IfsFsQueryGroupV2 query_group;
 } IfsFsModuleApiV2;
 typedef const IfsFsModuleApiV2 *(*IfsFsModuleApiEntryV2)(void);
@@ -410,7 +406,7 @@ static inline int ifs_fs_group_v2_header_valid(
     const IfsFsGroupHeaderV2 *g, uint32_t id, uint32_t minimum_bytes,
     uint64_t known_capabilities)
 {
-    return g && g->abi_version == IFS_FS_GROUP_ABI_V1 &&
+    return g && g->abi_version == IFS_FS_GROUP_ABI_V2 &&
         g->structure_bytes >= minimum_bytes && g->group_id == id &&
         g->reserved == 0u && g->capabilities != 0u &&
         !(g->capabilities & ~known_capabilities);
@@ -428,23 +424,23 @@ static inline const IfsFsGroupHeaderV2 *ifs_fs_group_v2(
         !(module->group_mask & IFS_FS_GROUP_BIT(id)) ||
         !module->query_group) return NULL;
     switch (id) {
-    case IFS_FS_GROUP_HANDLES: bytes=sizeof(IfsFsHandlesV1);
+    case IFS_FS_GROUP_HANDLES: bytes=sizeof(IfsFsHandlesV2);
         capabilities=IFS_FS_HANDLE_ALL; break;
-    case IFS_FS_GROUP_METADATA: bytes=sizeof(IfsFsMetadataOpsV1);
+    case IFS_FS_GROUP_METADATA: bytes=sizeof(IfsFsMetadataOpsV2);
         capabilities=IFS_FS_META_ALL; break;
-    case IFS_FS_GROUP_VOLUME: bytes=sizeof(IfsFsVolumeOpsV1);
+    case IFS_FS_GROUP_VOLUME: bytes=sizeof(IfsFsVolumeOpsV2);
         capabilities=IFS_FS_VOLUME_ALL; break;
-    case IFS_FS_GROUP_DEFRAG: bytes=sizeof(IfsFsDefragOpsV1);
+    case IFS_FS_GROUP_DEFRAG: bytes=sizeof(IfsFsDefragOpsV2);
         capabilities=IFS_FS_DEFRAG_ALL; break;
-    case IFS_FS_GROUP_STREAMS: bytes=sizeof(IfsFsStreamsOpsV1);
+    case IFS_FS_GROUP_STREAMS: bytes=sizeof(IfsFsStreamsOpsV2);
         capabilities=IFS_FS_STREAM_ALL; break;
-    case IFS_FS_GROUP_SNAPSHOTS: bytes=sizeof(IfsFsSnapshotOpsV1);
+    case IFS_FS_GROUP_SNAPSHOTS: bytes=sizeof(IfsFsSnapshotOpsV2);
         capabilities=IFS_FS_SNAPSHOT_ALL; break;
-    case IFS_FS_GROUP_CORE: bytes=sizeof(IfsFsCoreOpsV1);
+    case IFS_FS_GROUP_CORE: bytes=sizeof(IfsFsCoreOpsV2);
         capabilities=IFS_FS_CORE_ALL; break;
     default: return NULL;
     }
-    g = module->query_group(id, IFS_FS_GROUP_ABI_V1, IFS_FS_GROUP_ABI_V1);
+    g = module->query_group(id, IFS_FS_GROUP_ABI_V2, IFS_FS_GROUP_ABI_V2);
     return ifs_fs_group_v2_header_valid(g,id,bytes,capabilities) ? g : NULL;
 }
 
@@ -458,7 +454,7 @@ static inline int ifs_fs_group_v2_callbacks_valid(
     if (!g) return 0;
     switch (g->group_id) {
     case IFS_FS_GROUP_CORE: {
-        const IfsFsCoreOpsV1 *p=(const IfsFsCoreOpsV1 *)g;
+        const IfsFsCoreOpsV2 *p=(const IfsFsCoreOpsV2 *)g;
         return IFS_MATCH(IFS_FS_CORE_PROBE,p->probe) &&
             IFS_MATCH(IFS_FS_CORE_MOUNT,p->mount && p->unmount) &&
             IFS_MATCH(IFS_FS_CORE_STAT,p->stat) &&
@@ -478,7 +474,7 @@ static inline int ifs_fs_group_v2_callbacks_valid(
                     (IFS_FS_CORE_MOUNT|IFS_FS_CORE_STAT)));
     }
     case IFS_FS_GROUP_HANDLES: {
-        const IfsFsHandlesV1 *p=(const IfsFsHandlesV1 *)g;
+        const IfsFsHandlesV2 *p=(const IfsFsHandlesV2 *)g;
         return IFS_MATCH(IFS_FS_HANDLE_OPEN,p->open && p->close) &&
             IFS_MATCH(IFS_FS_HANDLE_READ,p->pread) &&
             IFS_MATCH(IFS_FS_HANDLE_WRITE,p->pwrite) &&
@@ -490,7 +486,7 @@ static inline int ifs_fs_group_v2_callbacks_valid(
               (g->capabilities & IFS_FS_HANDLE_OPEN));
     }
     case IFS_FS_GROUP_METADATA: {
-        const IfsFsMetadataOpsV1 *p=(const IfsFsMetadataOpsV1 *)g;
+        const IfsFsMetadataOpsV2 *p=(const IfsFsMetadataOpsV2 *)g;
         return (((g->capabilities & (IFS_FS_META_GET_TIMES |
                IFS_FS_META_GET_MODE)) != 0u) == (p->get != NULL)) &&
             (((g->capabilities & (IFS_FS_META_SET_TIMES |
@@ -504,7 +500,7 @@ static inline int ifs_fs_group_v2_callbacks_valid(
             IFS_MATCH(IFS_FS_META_SET_ACL,p->set_acl);
     }
     case IFS_FS_GROUP_VOLUME: {
-        const IfsFsVolumeOpsV1 *p=(const IfsFsVolumeOpsV1 *)g;
+        const IfsFsVolumeOpsV2 *p=(const IfsFsVolumeOpsV2 *)g;
         return IFS_MATCH(IFS_FS_VOLUME_QUERY,p->query) &&
             IFS_MATCH(IFS_FS_VOLUME_LABEL_GET,p->label) &&
             IFS_MATCH(IFS_FS_VOLUME_LABEL_SET,p->set_label) &&
@@ -517,7 +513,7 @@ static inline int ifs_fs_group_v2_callbacks_valid(
             IFS_MATCH(IFS_FS_VOLUME_FORMAT,p->format);
     }
     case IFS_FS_GROUP_DEFRAG: {
-        const IfsFsDefragOpsV1 *p=(const IfsFsDefragOpsV1 *)g;
+        const IfsFsDefragOpsV2 *p=(const IfsFsDefragOpsV2 *)g;
         return IFS_MATCH(IFS_FS_DEFRAG_MAP,p->map) &&
             IFS_MATCH(IFS_FS_DEFRAG_PLAN,p->plan && p->release_plan) &&
             IFS_MATCH(IFS_FS_DEFRAG_EXECUTE,p->execute) &&
@@ -527,14 +523,14 @@ static inline int ifs_fs_group_v2_callbacks_valid(
               (g->capabilities & IFS_FS_DEFRAG_PLAN));
     }
     case IFS_FS_GROUP_STREAMS: {
-        const IfsFsStreamsOpsV1 *p=(const IfsFsStreamsOpsV1 *)g;
+        const IfsFsStreamsOpsV2 *p=(const IfsFsStreamsOpsV2 *)g;
         return IFS_MATCH(IFS_FS_STREAM_LIST,p->list) &&
             IFS_MATCH(IFS_FS_STREAM_READ,p->read) &&
             IFS_MATCH(IFS_FS_STREAM_WRITE,p->write) &&
             IFS_MATCH(IFS_FS_STREAM_REMOVE,p->remove);
     }
     case IFS_FS_GROUP_SNAPSHOTS: {
-        const IfsFsSnapshotOpsV1 *p=(const IfsFsSnapshotOpsV1 *)g;
+        const IfsFsSnapshotOpsV2 *p=(const IfsFsSnapshotOpsV2 *)g;
         return IFS_MATCH(IFS_FS_SNAPSHOT_LIST,p->list) &&
             IFS_MATCH(IFS_FS_SNAPSHOT_CREATE,p->create) &&
             IFS_MATCH(IFS_FS_SNAPSHOT_DELETE,p->remove) &&
@@ -545,38 +541,27 @@ static inline int ifs_fs_group_v2_callbacks_valid(
 #undef IFS_MATCH
 }
 static inline int ifs_fs_api_v2_valid(
-    const IfsFsModuleApiV2 *a, const char *expected_id)
-{
-    uint32_t group;
-    if (!a || a->abi_version != IFS_FS_COMMON_ABI_V2 ||
-        a->structure_bytes < sizeof(*a) ||
-        !ifs_fs_format_id_equal(a->format_id, expected_id) ||
-        !a->runtime_profiles ||
-        (a->runtime_profiles & ~IFS_FS_PROFILE_ALL) ||
-        (a->group_mask & ~IFS_FS_GROUP_ALL) ||
-        ((a->group_mask != 0u) != (a->query_group != NULL)))
-        return 0;
-    if (a->base_v1) {
-        if (!ifs_fs_common_api_valid(a->base_v1, expected_id)) return 0;
-    } else {
-        const IfsFsCoreOpsV1 *core=(const IfsFsCoreOpsV1 *)
-            ifs_fs_group_v2(a,IFS_FS_GROUP_CORE);
-        if (!core || !(core->header.capabilities & IFS_FS_CORE_PROBE))
-            return 0; /* No V1 base: actual V2 probe is mandatory. */
-    }
-    for (group=1u;group<=IFS_FS_GROUP_MAX;++group)
-        if ((a->group_mask & IFS_FS_GROUP_BIT(group)) &&
-            !ifs_fs_group_v2_callbacks_valid(ifs_fs_group_v2(a,group)))
-            return 0;
-    return 1;
-}
-/* New consumers can enforce the final single-ABI rule, rather than silently
- * accepting V1 compatibility behind the V2 descriptor. */
-static inline int ifs_fs_api_v2_native_valid(
     const IfsFsModuleApiV2 *api, const char *expected_id)
 {
-    return api && api->base_v1 == NULL &&
-           ifs_fs_api_v2_valid(api, expected_id);
+    uint32_t id;
+    const IfsFsCoreOpsV2 *core;
+    if (!api || api->abi_version != IFS_FS_COMMON_ABI_V2 ||
+        api->structure_bytes < sizeof(*api) ||
+        !ifs_fs_format_id_equal(api->format_id, expected_id) ||
+        !api->runtime_profiles ||
+        (api->runtime_profiles & ~IFS_FS_PROFILE_ALL) ||
+        (api->group_mask & ~IFS_FS_GROUP_ALL) ||
+        !(api->group_mask & IFS_FS_GROUP_BIT(IFS_FS_GROUP_CORE)) ||
+        !api->query_group)
+        return 0;
+    core=(const IfsFsCoreOpsV2 *)ifs_fs_group_v2(api,IFS_FS_GROUP_CORE);
+    if (!core || !(core->header.capabilities & IFS_FS_CORE_PROBE))
+        return 0;
+    for (id=1u;id<=IFS_FS_GROUP_MAX;++id)
+        if ((api->group_mask & IFS_FS_GROUP_BIT(id)) &&
+            !ifs_fs_group_v2_callbacks_valid(ifs_fs_group_v2(api,id)))
+            return 0;
+    return 1;
 }
 #ifdef __cplusplus
 }
