@@ -15,32 +15,6 @@ jobs:
     if: ${{ github.event_name == 'push' || github.event.pull_request.merged == true }}
     runs-on: ubuntu-24.04
     steps:
-      - name: Retire superseded migration refs with exact historical tags
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          while IFS='|' read -r branch expected; do
-            [ -n "$branch" ] || continue
-            actual="$(gh api "repos/$REPO/git/ref/heads/$branch" --jq '.object.sha' 2>/dev/null || true)"
-            [ "$actual" = "$expected" ] || continue
-            tag="archive/v2-20261110/${branch//\//-}"
-            created="$(gh api --method POST "repos/$REPO/git/refs" -f ref="refs/tags/$tag" -f sha="$expected" --jq '.object.sha')"
-            if [ "$created" != "$expected" ]; then
-              echo "::error::Archive was not created at expected commit for $branch"; exit 1
-            fi
-            actual="$(gh api "repos/$REPO/git/ref/heads/$branch" --jq '.object.sha' 2>/dev/null || true)"
-            if [ "$actual" = "$expected" ]; then
-              gh api --method DELETE "repos/$REPO/git/refs/heads/$branch"
-              printf 'Archived and retired: %s\n' "$branch"
-            fi
-          done <<'RETIRED_BRANCHES'
-          hal/share-icu-calendar-bridge-20261110|3c2a392f515ae251443bfe4c23b7200a79a5d80a
-          work/common-v2-handle-contract-20261110|2f953cd4d41676290bedea977e9ea9e356300623
-          work/common-v2-independent-core-20261110|6a212fbf82eacb0c56adef5ccf09162c3b231354
-          RETIRED_BRANCHES
       - name: Delete only already-integrated branches
         env:
           GH_TOKEN: ${{ github.token }}
