@@ -161,6 +161,45 @@ typedef struct {
 #define IFS_FS_HANDLE_SYNC     (UINT64_C(1) << 4)
 #define IFS_FS_HANDLE_DIR      (UINT64_C(1) << 5)
 #define IFS_FS_HANDLE_ALL      ((UINT64_C(1) << 6) - 1u)
+
+/* Portable arguments to IfsFsHandlesV1.open(), never native O_* flags.
+ * At least READ or WRITE is required. CREATE and TRUNCATE require WRITE;
+ * EXCLUSIVE is meaningful only together with CREATE.
+ *
+ * CREATE: create a regular file if absent; do not truncate if present.
+ * EXCLUSIVE|CREATE: return IFS_FS_EXISTS when the path already exists.
+ * TRUNCATE: set an existing regular file's length to zero.
+ * NOFOLLOW: reject symbolic links in path resolution rather than following
+ * them; providers unable to guarantee that must return IFS_FS_UNSUPPORTED.
+ * Providers must reject an unknown bit with IFS_FS_INVALID.
+ */
+#define IFS_FS_OPEN_READ       (UINT32_C(1) << 0)
+#define IFS_FS_OPEN_WRITE      (UINT32_C(1) << 1)
+#define IFS_FS_OPEN_CREATE     (UINT32_C(1) << 2)
+#define IFS_FS_OPEN_EXCLUSIVE  (UINT32_C(1) << 3)
+#define IFS_FS_OPEN_TRUNCATE   (UINT32_C(1) << 4)
+#define IFS_FS_OPEN_NOFOLLOW   (UINT32_C(1) << 5)
+#define IFS_FS_OPEN_ALL        ((UINT32_C(1) << 6) - 1u)
+static inline int ifs_fs_open_flags_valid(uint32_t flags)
+{
+    return !(flags & ~IFS_FS_OPEN_ALL) &&
+        (flags & (IFS_FS_OPEN_READ | IFS_FS_OPEN_WRITE)) &&
+        (!(flags & (IFS_FS_OPEN_CREATE | IFS_FS_OPEN_TRUNCATE)) ||
+         (flags & IFS_FS_OPEN_WRITE)) &&
+        (!(flags & IFS_FS_OPEN_EXCLUSIVE) ||
+         (flags & IFS_FS_OPEN_CREATE));
+}
+
+/* IfsFsHandlesV1.sync() accepts 0 for full durable data+metadata sync;
+ * DATA_ONLY may omit unrelated metadata, but not metadata required for data
+ * retrieval. Unknown sync flag bits must be rejected with IFS_FS_INVALID. */
+#define IFS_FS_SYNC_DATA_ONLY  (UINT32_C(1) << 0)
+#define IFS_FS_SYNC_ALL        IFS_FS_SYNC_DATA_ONLY
+
+/* pread/pwrite return IFS_FS_OK with the number of bytes transferred in
+ * their output parameter (never more than requested). A zero-byte successful
+ * pread means EOF; directory next returns IFS_FS_END at exhaustion.
+ * File/cursor handles are bound to their volume and mount generation. */
 typedef struct {
     IfsFsGroupHeaderV2 header;
     int (*open)(void *volume, const char *path, uint32_t flags, void **file);

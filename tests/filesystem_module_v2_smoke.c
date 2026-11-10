@@ -102,5 +102,20 @@ int main(void) {
         assert(ifs_fs_host_v2_as_v1(&h,&old)==IFS_FS_INVALID);
         h.capabilities=IFS_FS_HOST_EXCLUSIVE|IFS_FS_HOST_DURABLE;
     }
+    /* File-open flags are protocol values, not Linux/POSIX O_* bits. */
+    assert(ifs_fs_open_flags_valid(IFS_FS_OPEN_READ));
+    assert(ifs_fs_open_flags_valid(IFS_FS_OPEN_WRITE));
+    assert(ifs_fs_open_flags_valid(IFS_FS_OPEN_READ | IFS_FS_OPEN_WRITE));
+    assert(ifs_fs_open_flags_valid(IFS_FS_OPEN_WRITE | IFS_FS_OPEN_CREATE));
+    assert(ifs_fs_open_flags_valid(IFS_FS_OPEN_WRITE | IFS_FS_OPEN_CREATE |
+                                   IFS_FS_OPEN_EXCLUSIVE));
+    assert(ifs_fs_open_flags_valid(IFS_FS_OPEN_WRITE | IFS_FS_OPEN_TRUNCATE));
+    assert(ifs_fs_open_flags_valid(IFS_FS_OPEN_READ | IFS_FS_OPEN_NOFOLLOW));
+    assert(!ifs_fs_open_flags_valid(0u));
+    assert(!ifs_fs_open_flags_valid(IFS_FS_OPEN_CREATE));
+    assert(!ifs_fs_open_flags_valid(IFS_FS_OPEN_TRUNCATE | IFS_FS_OPEN_READ));
+    assert(!ifs_fs_open_flags_valid(IFS_FS_OPEN_EXCLUSIVE | IFS_FS_OPEN_WRITE));
+    assert(!ifs_fs_open_flags_valid(IFS_FS_OPEN_READ | UINT32_C(0x80000000)));
+    assert(IFS_FS_SYNC_ALL == IFS_FS_SYNC_DATA_ONLY);
     return 0;
 }
