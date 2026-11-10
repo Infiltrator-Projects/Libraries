@@ -7,6 +7,9 @@
 #ifndef FILESYSTEM_MODULE_V2_BAD_FIXTURE
 #error "Missing V2 bad fixture"
 #endif
+#ifndef FILESYSTEM_MODULE_V2_NATIVE_FIXTURE
+#error "Missing V2-only fixture"
+#endif
 #ifndef FILESYSTEM_MODULE_COMMON_FIXTURE
 #error "Missing V1 fallback fixture"
 #endif
@@ -24,9 +27,32 @@ int main(void) {
     assert(!out.v2 && !out.v1 && !out.legacy_table);
     infiltratr_dynlib_close(&so);
 
+    assert(infiltratr_dynlib_open(&so,FILESYSTEM_MODULE_V2_NATIVE_FIXTURE));
+    assert(infiltratr_filesystem_module_inspect_loaded_v2_native(
+        &so,"fat12",&out));
+    assert(out.v2 && !out.v1 && !out.legacy_table);
+    assert(ifs_fs_api_v2_native_valid(out.v2,"fat12"));
+    assert(!infiltratr_filesystem_module_inspect_loaded_v2_native(
+        &so,"ntfs",&out));
+    assert(!out.v2 && !out.v1 && !out.legacy_table);
+    infiltratr_dynlib_close(&so);
+
+    assert(infiltratr_dynlib_open(&so,FILESYSTEM_MODULE_V2_GOOD_FIXTURE));
+    /* V2 plus a legacy base is NOT a completed V2-only provider. */
+    assert(!infiltratr_filesystem_module_inspect_loaded_v2_native(
+        &so,"fat12",&out));
+    assert(!out.v2 && !out.v1 && !out.legacy_table);
+    infiltratr_dynlib_close(&so);
+
     assert(infiltratr_dynlib_open(&so,FILESYSTEM_MODULE_V2_BAD_FIXTURE));
     /* The fixture also exports a fully valid V1: never downgrade. */
     assert(!infiltratr_filesystem_module_inspect_loaded_v2(&so,"fat12",&out));
+    assert(!out.v2 && !out.v1 && !out.legacy_table);
+    infiltratr_dynlib_close(&so);
+
+    assert(infiltratr_dynlib_open(&so,FILESYSTEM_MODULE_COMMON_FIXTURE));
+    assert(!infiltratr_filesystem_module_inspect_loaded_v2_native(
+        &so,"fat12",&out));
     assert(!out.v2 && !out.v1 && !out.legacy_table);
     infiltratr_dynlib_close(&so);
 

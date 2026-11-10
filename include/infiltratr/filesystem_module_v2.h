@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later
  * Infiltratr Common V2: universal, freestanding filesystem contracts.
- * V1 remains binary-immutable. This header contains NO disk format engine,
+ * V1 remains binary-immutable during migration, but is OPTIONAL for new
+ * standalone V2 providers. This header contains NO disk format engine,
  * Linux kernel types, EFI imports, libc function calls or loader code.
  */
 #ifndef INFILTRATR_FILESYSTEM_MODULE_V2_H
@@ -31,7 +32,8 @@ extern "C" {
 #define IFS_FS_GROUP_DEFRAG     4u
 #define IFS_FS_GROUP_STREAMS    5u
 #define IFS_FS_GROUP_SNAPSHOTS  6u
-#define IFS_FS_GROUP_MAX       6u
+#define IFS_FS_GROUP_CORE       7u
+#define IFS_FS_GROUP_MAX        7u
 #define IFS_FS_GROUP_BIT(id) (UINT64_C(1) << ((id) - 1u))
 #define IFS_FS_GROUP_ALL ((UINT64_C(1) << IFS_FS_GROUP_MAX) - 1u)
 
@@ -151,6 +153,54 @@ typedef struct {
     uint32_t abi_version, structure_bytes, group_id, reserved;
     uint64_t capabilities;
 } IfsFsGroupHeaderV2;
+
+/* Core operations no longer require a V1 function-table dependency.
+ * Group revision 1 is NOT Common ABI version 1. Providers implement these
+ * callbacks directly over the Common V2 host, with no V1 descriptor.
+ * The host authenticates the module before any callback invocation.
+ * No provider may declare a capability without its actual implementation. */
+typedef struct {
+    uint32_t structure_bytes, type;
+    uint64_t size_bytes;
+    uint32_t attributes, name_bytes;
+    char *name;
+    uint32_t name_capacity;
+} IfsFsEntryV2;
+
+typedef struct {
+    uint32_t structure_bytes, variant, max_name_bytes, block_bytes;
+    uint64_t total_bytes, free_bytes;
+} IfsFsVolumeInfoV2;
+
+#define IFS_FS_CORE_PROBE       (UINT64_C(1) << 0)
+#define IFS_FS_CORE_MOUNT       (UINT64_C(1) << 1)
+#define IFS_FS_CORE_STAT        (UINT64_C(1) << 2)
+#define IFS_FS_CORE_LIST        (UINT64_C(1) << 3)
+#define IFS_FS_CORE_READ        (UINT64_C(1) << 4)
+#define IFS_FS_CORE_WRITE       (UINT64_C(1) << 5)
+#define IFS_FS_CORE_CREATE      (UINT64_C(1) << 6)
+#define IFS_FS_CORE_REMOVE      (UINT64_C(1) << 7)
+#define IFS_FS_CORE_RENAME      (UINT64_C(1) << 8)
+#define IFS_FS_CORE_TRUNCATE    (UINT64_C(1) << 9)
+#define IFS_FS_CORE_ALL         ((UINT64_C(1) << 10) - 1u)
+typedef struct {
+    IfsFsGroupHeaderV2 header;
+    int (*probe)(const IfsFsHostRuntimeV2 *host, uint32_t *variant);
+    int (*mount)(const IfsFsHostRuntimeV2 *host, void **volume,
+                 IfsFsVolumeInfoV2 *info);
+    int (*unmount)(void *volume);
+    int (*stat)(void *volume, const char *path, IfsFsEntryV2 *entry);
+    int (*directory_entry)(void *volume, const char *path, uint32_t index,
+                           IfsFsEntryV2 *entry);
+    int (*read)(void *volume, const char *path, uint64_t offset,
+                void *destination, uint32_t length);
+    int (*write)(void *volume, const char *path, uint64_t offset,
+                 const void *source, uint32_t length);
+    int (*create)(void *volume, const char *path, uint32_t type);
+    int (*remove)(void *volume, const char *path);
+    int (*rename)(void *volume, const char *old_path, const char *new_path);
+    int (*truncate)(void *volume, const char *path, uint64_t bytes);
+} IfsFsCoreOpsV1;
 
 /* Persistent open handles, cursors, fsync and handle-oriented VFS operations.
  * Handles are opaque and valid only for their owning volume and generation. */
@@ -341,8 +391,9 @@ typedef struct {
 typedef const IfsFsGroupHeaderV2 *(*IfsFsQueryGroupV2)(
     uint32_t group_id, uint32_t minimum_revision, uint32_t maximum_revision);
 
-/* Always export a truthful V1 base table. Extension groups are separately
- * negotiated and describe only real implemented operations. A valid V2
+/* A V1 table is optional, retained only for providers awaiting migration.
+ * A V2-only descriptor has base_v1 == NULL and a genuine CORE group with
+ * PROBE. Extension groups are negotiated separately. A valid V2
  * descriptor DOES NOT make a binary executable in arbitrary kernel/UEFI
  * context: that requires separately verified runtime profile and loader. */
 typedef struct {
@@ -350,7 +401,7 @@ typedef struct {
     const char *format_id;
     uint64_t runtime_profiles;
     uint64_t group_mask;
-    const IfsFsModuleApiV1 *base_v1;
+    const IfsFsModuleApiV1 *base_v1; /* NULL for a V2-only provider */
     IfsFsQueryGroupV2 query_group;
 } IfsFsModuleApiV2;
 typedef const IfsFsModuleApiV2 *(*IfsFsModuleApiEntryV2)(void);
@@ -389,6 +440,8 @@ static inline const IfsFsGroupHeaderV2 *ifs_fs_group_v2(
         capabilities=IFS_FS_STREAM_ALL; break;
     case IFS_FS_GROUP_SNAPSHOTS: bytes=sizeof(IfsFsSnapshotOpsV1);
         capabilities=IFS_FS_SNAPSHOT_ALL; break;
+    case IFS_FS_GROUP_CORE: bytes=sizeof(IfsFsCoreOpsV1);
+        capabilities=IFS_FS_CORE_ALL; break;
     default: return NULL;
     }
     g = module->query_group(id, IFS_FS_GROUP_ABI_V1, IFS_FS_GROUP_ABI_V1);
@@ -404,6 +457,26 @@ static inline int ifs_fs_group_v2_callbacks_valid(
 #define IFS_MATCH(mask, op) (((g->capabilities & (mask)) != 0u) == ((op) != 0))
     if (!g) return 0;
     switch (g->group_id) {
+    case IFS_FS_GROUP_CORE: {
+        const IfsFsCoreOpsV1 *p=(const IfsFsCoreOpsV1 *)g;
+        return IFS_MATCH(IFS_FS_CORE_PROBE,p->probe) &&
+            IFS_MATCH(IFS_FS_CORE_MOUNT,p->mount && p->unmount) &&
+            IFS_MATCH(IFS_FS_CORE_STAT,p->stat) &&
+            IFS_MATCH(IFS_FS_CORE_LIST,p->directory_entry) &&
+            IFS_MATCH(IFS_FS_CORE_READ,p->read) &&
+            IFS_MATCH(IFS_FS_CORE_WRITE,p->write) &&
+            IFS_MATCH(IFS_FS_CORE_CREATE,p->create) &&
+            IFS_MATCH(IFS_FS_CORE_REMOVE,p->remove) &&
+            IFS_MATCH(IFS_FS_CORE_RENAME,p->rename) &&
+            IFS_MATCH(IFS_FS_CORE_TRUNCATE,p->truncate) &&
+            (!(g->capabilities & (IFS_FS_CORE_STAT|IFS_FS_CORE_LIST|
+                IFS_FS_CORE_READ|IFS_FS_CORE_WRITE|IFS_FS_CORE_CREATE|
+                IFS_FS_CORE_REMOVE|IFS_FS_CORE_RENAME|
+                IFS_FS_CORE_TRUNCATE)) ||
+                ((g->capabilities & (IFS_FS_CORE_MOUNT|
+                                     IFS_FS_CORE_STAT)) ==
+                    (IFS_FS_CORE_MOUNT|IFS_FS_CORE_STAT)));
+    }
     case IFS_FS_GROUP_HANDLES: {
         const IfsFsHandlesV1 *p=(const IfsFsHandlesV1 *)g;
         return IFS_MATCH(IFS_FS_HANDLE_OPEN,p->open && p->close) &&
@@ -481,14 +554,29 @@ static inline int ifs_fs_api_v2_valid(
         !a->runtime_profiles ||
         (a->runtime_profiles & ~IFS_FS_PROFILE_ALL) ||
         (a->group_mask & ~IFS_FS_GROUP_ALL) ||
-        !ifs_fs_common_api_valid(a->base_v1, expected_id) ||
         ((a->group_mask != 0u) != (a->query_group != NULL)))
         return 0;
+    if (a->base_v1) {
+        if (!ifs_fs_common_api_valid(a->base_v1, expected_id)) return 0;
+    } else {
+        const IfsFsCoreOpsV1 *core=(const IfsFsCoreOpsV1 *)
+            ifs_fs_group_v2(a,IFS_FS_GROUP_CORE);
+        if (!core || !(core->header.capabilities & IFS_FS_CORE_PROBE))
+            return 0; /* No V1 base: actual V2 probe is mandatory. */
+    }
     for (group=1u;group<=IFS_FS_GROUP_MAX;++group)
         if ((a->group_mask & IFS_FS_GROUP_BIT(group)) &&
             !ifs_fs_group_v2_callbacks_valid(ifs_fs_group_v2(a,group)))
             return 0;
     return 1;
+}
+/* New consumers can enforce the final single-ABI rule, rather than silently
+ * accepting V1 compatibility behind the V2 descriptor. */
+static inline int ifs_fs_api_v2_native_valid(
+    const IfsFsModuleApiV2 *api, const char *expected_id)
+{
+    return api && api->base_v1 == NULL &&
+           ifs_fs_api_v2_valid(api, expected_id);
 }
 #ifdef __cplusplus
 }

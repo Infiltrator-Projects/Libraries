@@ -49,6 +49,13 @@ bool infiltratr_filesystem_module_inspect_loaded_v2(
     const InfiltratrDynlib *library,
     const char *expected_format_id,
     InfiltratrFilesystemModuleDiscoveryV2 *out);
+/* Final migration path: accept genuine V2-only providers, never V1/legacy
+ * fallbacks and never a V2 descriptor whose base_v1 remains populated.
+ * This only inspects an already trusted, opened binary. */
+bool infiltratr_filesystem_module_inspect_loaded_v2_native(
+    const InfiltratrDynlib *library,
+    const char *expected_format_id,
+    InfiltratrFilesystemModuleDiscoveryV2 *out);
 #ifdef __cplusplus
 }
 #endif
