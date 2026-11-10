@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <infiltratr/dynlib.h>
 #include <infiltratr/filesystem_module.h>
+#include <infiltratr/filesystem_module_v2.h>
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -32,6 +33,22 @@ bool infiltratr_filesystem_module_inspect_loaded(
     const InfiltratrDynlib *library,
     const char *expected_format_id,
     InfiltratrFilesystemModuleDiscovery *out);
+/* V2 discovery is additive: the old discovery structure and exported
+ * function remain ABI-immutable for existing consumers. */
+typedef struct {
+    const IfsFsModuleApiV2 *v2; /* native V2 descriptor, if present */
+    const IfsFsModuleApiV1 *v1; /* verified base, possibly supplied by V2 */
+    const IfsFsLegacyPrefix *legacy_table;
+    uint32_t legacy_version;
+} InfiltratrFilesystemModuleDiscoveryV2;
+
+/* Inspect an already authenticated/loaded binary. V2 is authoritative if
+ * its export exists: invalid V2 NEVER falls back to V1 or legacy tables.
+ * This does no disk I/O, module opening, or mutation. */
+bool infiltratr_filesystem_module_inspect_loaded_v2(
+    const InfiltratrDynlib *library,
+    const char *expected_format_id,
+    InfiltratrFilesystemModuleDiscoveryV2 *out);
 #ifdef __cplusplus
 }
 #endif

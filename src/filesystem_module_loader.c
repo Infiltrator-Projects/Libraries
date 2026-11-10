@@ -59,3 +59,42 @@ bool infiltratr_filesystem_module_inspect_loaded(
     }
     return false;
 }
+
+bool infiltratr_filesystem_module_inspect_loaded_v2(
+    const InfiltratrDynlib *library,
+    const char *expected_format_id,
+    InfiltratrFilesystemModuleDiscoveryV2 *out)
+{
+    IfsFsModuleApiEntryV2 entry = NULL;
+    InfiltratrFilesystemModuleDiscovery v1 = {0};
+    if (!out) return false;
+    out->v2 = NULL;
+    out->v1 = NULL;
+    out->legacy_table = NULL;
+    out->legacy_version = 0u;
+    if (!infiltratr_dynlib_is_open(library) ||
+        !ifs_fs_format_id_valid(expected_format_id))
+        return false;
+
+    /* V2 exists: it is either valid or the module is rejected. A broken V2
+     * declaration can never silently select the old entry point. */
+    if (infiltratr_dynlib_symbol(library, IFS_FS_COMMON_EXPORT_V2,
+                                &entry, sizeof(entry))) {
+        const IfsFsModuleApiV2 *api;
+        if (!entry) return false;
+        api = entry();
+        if (!ifs_fs_api_v2_valid(api, expected_format_id)) return false;
+        out->v2 = api;
+        out->v1 = api->base_v1;
+        return true;
+    }
+    /* Preserve the previously qualified V1 and opaque-legacy fallback.
+     * The original ABI and search order remain entirely unchanged. */
+    if (!infiltratr_filesystem_module_inspect_loaded(library,
+                                                     expected_format_id, &v1))
+        return false;
+    out->v1 = v1.common_api;
+    out->legacy_table = v1.legacy_table;
+    out->legacy_version = v1.legacy_version;
+    return true;
+}
