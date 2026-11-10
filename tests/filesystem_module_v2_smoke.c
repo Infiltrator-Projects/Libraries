@@ -47,6 +47,33 @@ static const IfsFsGroupHeaderV2 *query(
     if(id==IFS_FS_GROUP_VOLUME)return &volume.header;
     return NULL;
 }
+/* A descriptor must not hide live callbacks behind absent capability bits.
+ * In particular, mount/open/dir/plan callback groups are indivisible. */
+static int orphan_unmount(void *volume) {
+    (void)volume;
+    return IFS_FS_OK;
+}
+static int mock_open(void *volume,const char *path,uint32_t flags,void **file) {
+    (void)volume;(void)path;(void)flags;(void)file;
+    return IFS_FS_UNSUPPORTED;
+}
+static int mock_close(void *volume,void *file) {
+    (void)volume;(void)file;
+    return IFS_FS_OK;
+}
+static int mock_open_dir(void *volume,const char *path,void **cursor) {
+    (void)volume;(void)path;(void)cursor;
+    return IFS_FS_UNSUPPORTED;
+}
+static int mock_map(void *volume,const char *path,uint64_t first,
+                    IfsFsExtentV2 *extents,uint32_t cap,uint32_t *written) {
+    (void)volume;(void)path;(void)first;(void)extents;(void)cap;(void)written;
+    return IFS_FS_UNSUPPORTED;
+}
+static void mock_release_plan(void *volume,void *plan) {
+    (void)volume;(void)plan;
+}
+
 int main(void) {
     IfsFsModuleApiV2 api={
         .abi_version=IFS_FS_COMMON_ABI_V2,
@@ -70,6 +97,32 @@ int main(void) {
     core.header.capabilities=IFS_FS_CORE_PROBE|IFS_FS_CORE_MOUNT;
     assert(!ifs_fs_api_v2_valid(&api,"fat12")); /* fake mount */
     core.header.capabilities=IFS_FS_CORE_PROBE;
+    core.unmount=orphan_unmount;
+    assert(!ifs_fs_api_v2_valid(&api,"fat12")); /* unadvertised unmount */
+    core.unmount=NULL;
+    assert(ifs_fs_api_v2_valid(&api,"fat12"));
+
+    IfsFsHandlesV2 handles={0};
+    handles.header=(IfsFsGroupHeaderV2){IFS_FS_GROUP_ABI_V2,
+        sizeof(IfsFsHandlesV2),IFS_FS_GROUP_HANDLES,0u,IFS_FS_HANDLE_OPEN};
+    handles.open=mock_open;
+    handles.close=mock_close;
+    assert(ifs_fs_group_v2_callbacks_valid(&handles.header));
+    handles.open_dir=mock_open_dir;
+    assert(!ifs_fs_group_v2_callbacks_valid(&handles.header)); /* orphan directory */
+    handles.open_dir=NULL;
+    handles.header.capabilities=IFS_FS_HANDLE_DIR;
+    handles.open=NULL;
+    assert(!ifs_fs_group_v2_callbacks_valid(&handles.header)); /* orphan close */
+
+    IfsFsDefragOpsV2 defrag={0};
+    defrag.header=(IfsFsGroupHeaderV2){IFS_FS_GROUP_ABI_V2,
+        sizeof(IfsFsDefragOpsV2),IFS_FS_GROUP_DEFRAG,0u,IFS_FS_DEFRAG_MAP};
+    defrag.map=mock_map;
+    assert(ifs_fs_group_v2_callbacks_valid(&defrag.header));
+    defrag.release_plan=mock_release_plan;
+    assert(!ifs_fs_group_v2_callbacks_valid(&defrag.header)); /* orphan plan release */
+
     core.header.abi_version=1u;
     assert(!ifs_fs_api_v2_valid(&api,"fat12")); /* previous group version */
     core.header.abi_version=IFS_FS_GROUP_ABI_V2;
