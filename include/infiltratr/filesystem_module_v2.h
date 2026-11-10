@@ -456,7 +456,8 @@ static inline int ifs_fs_group_v2_callbacks_valid(
     case IFS_FS_GROUP_CORE: {
         const IfsFsCoreOpsV2 *p=(const IfsFsCoreOpsV2 *)g;
         return IFS_MATCH(IFS_FS_CORE_PROBE,p->probe) &&
-            IFS_MATCH(IFS_FS_CORE_MOUNT,p->mount && p->unmount) &&
+            IFS_MATCH(IFS_FS_CORE_MOUNT,p->mount) &&
+            IFS_MATCH(IFS_FS_CORE_MOUNT,p->unmount) &&
             IFS_MATCH(IFS_FS_CORE_STAT,p->stat) &&
             IFS_MATCH(IFS_FS_CORE_LIST,p->directory_entry) &&
             IFS_MATCH(IFS_FS_CORE_READ,p->read) &&
@@ -475,12 +476,15 @@ static inline int ifs_fs_group_v2_callbacks_valid(
     }
     case IFS_FS_GROUP_HANDLES: {
         const IfsFsHandlesV2 *p=(const IfsFsHandlesV2 *)g;
-        return IFS_MATCH(IFS_FS_HANDLE_OPEN,p->open && p->close) &&
+        return IFS_MATCH(IFS_FS_HANDLE_OPEN,p->open) &&
+            IFS_MATCH(IFS_FS_HANDLE_OPEN,p->close) &&
             IFS_MATCH(IFS_FS_HANDLE_READ,p->pread) &&
             IFS_MATCH(IFS_FS_HANDLE_WRITE,p->pwrite) &&
             IFS_MATCH(IFS_FS_HANDLE_RESIZE,p->resize) &&
             IFS_MATCH(IFS_FS_HANDLE_SYNC,p->sync) &&
-            IFS_MATCH(IFS_FS_HANDLE_DIR,p->open_dir && p->next_dir && p->close_dir) &&
+            IFS_MATCH(IFS_FS_HANDLE_DIR,p->open_dir) &&
+            IFS_MATCH(IFS_FS_HANDLE_DIR,p->next_dir) &&
+            IFS_MATCH(IFS_FS_HANDLE_DIR,p->close_dir) &&
             (!(g->capabilities & (IFS_FS_HANDLE_READ|IFS_FS_HANDLE_WRITE|
               IFS_FS_HANDLE_RESIZE|IFS_FS_HANDLE_SYNC)) ||
               (g->capabilities & IFS_FS_HANDLE_OPEN));
@@ -515,7 +519,8 @@ static inline int ifs_fs_group_v2_callbacks_valid(
     case IFS_FS_GROUP_DEFRAG: {
         const IfsFsDefragOpsV2 *p=(const IfsFsDefragOpsV2 *)g;
         return IFS_MATCH(IFS_FS_DEFRAG_MAP,p->map) &&
-            IFS_MATCH(IFS_FS_DEFRAG_PLAN,p->plan && p->release_plan) &&
+            IFS_MATCH(IFS_FS_DEFRAG_PLAN,p->plan) &&
+            IFS_MATCH(IFS_FS_DEFRAG_PLAN,p->release_plan) &&
             IFS_MATCH(IFS_FS_DEFRAG_EXECUTE,p->execute) &&
             IFS_MATCH(IFS_FS_DEFRAG_VERIFY,p->verify) &&
             IFS_MATCH(IFS_FS_DEFRAG_RECOVER,p->recover) &&
