@@ -4,8 +4,8 @@
  *
  * ICU runtime ABI bridge.
  *
- * Independent calendar providers use ICU's stable C API without binding their
- * binaries to one ICU SONAME/symbol suffix.  ICU renames public C
+ * Calendar uses ICU's stable C API but deliberately does not bind its
+ * generic binary to one ICU SONAME/symbol suffix.  ICU renames public C
  * symbols at build time (for example ucal_open_74 and ucal_open_76).  This
  * bridge resolves the installed ICU major at runtime and exposes the ordinary
  * unsuffixed C names to the rest of Calendar.
