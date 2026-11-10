@@ -47,7 +47,9 @@ A change should leave the system easier to explain, or make clear why the additi
 
 ## Ownership and dependencies
 
-Project-owned semantics remain project-owned and testable. Dependencies are accepted when their documented contract is the stronger engineering choice; using a dependency must not surrender product policy to opaque behaviour.
+Project-owned semantics remain project-owned and testable. Dependencies are accepted only within the project's explicitly approved architecture; a perceived convenience or easier implementation is never permission to introduce a new third-party runtime dependency. No unapproved dependency or compatibility transport may override an owner's prohibition.
+
+**Project-wide prohibition: filesystem FUSE is not permitted.** This includes FUSE, CUSE, virtiofs, libfuse, fuse3, fusermount, FUSE-based hosts or proxies, and equivalent userspace filesystem request relays. None may be added to Infiltrator runtime software, the Kernel, filesystem modules, build tools, installers, package metadata, first-party CI dependencies or future migration paths. Missing direct kernel integration is an unfinished engineering task, not permission to insert a userspace translator. Hardware eFuse/OTP identifiers are unrelated and are not covered by this filesystem prohibition.
 
 Generic reusable mechanisms belong in the appropriate shared foundation only when the abstraction is genuinely broader than one product and at least as strong as the implementation it replaces. Product-specific semantics, manufacturer knowledge, filesystem policy, UI composition and other domain authority remain with the product that owns them.
 
