@@ -18,6 +18,21 @@ static void release(void *ctx,void *p){(void)ctx;(void)p;}
 static int scrub(void *v,uint32_t f,uint64_t *errors){
     (void)v;(void)f;if(errors)*errors=0;return IFS_FS_OK;
 }
+static int probe_native(const IfsFsHostRuntimeV2 *h,uint32_t *variant){
+    if(!ifs_fs_host_v2_valid(h) || !variant)return IFS_FS_INVALID;
+    *variant=12u;return IFS_FS_OK;
+}
+static const IfsFsCoreOpsV1 native_core={
+    .header={IFS_FS_GROUP_ABI_V1,sizeof(IfsFsCoreOpsV1),
+             IFS_FS_GROUP_CORE,0u,IFS_FS_CORE_PROBE},
+    .probe=probe_native
+};
+static const IfsFsGroupHeaderV2 *native_query(
+    uint32_t id,uint32_t minimum,uint32_t maximum){
+    return id==IFS_FS_GROUP_CORE &&
+        minimum<=IFS_FS_GROUP_ABI_V1 && maximum>=IFS_FS_GROUP_ABI_V1
+        ? &native_core.header : NULL;
+}
 static const IfsFsModuleApiV1 v1={
     .abi_version=IFS_FS_COMMON_ABI_V1,.structure_bytes=sizeof(IfsFsModuleApiV1),
     .format_id="fat12",.capabilities=IFS_FS_CAP_PROBE,.probe=probe
@@ -35,6 +50,38 @@ int main(void) {
     IfsFsHostRuntimeV2 h={0};
     IfsFsModuleApiV2 a={IFS_FS_COMMON_ABI_V2,sizeof(a),"fat12",
         IFS_FS_PROFILE_HOSTED,IFS_FS_GROUP_BIT(IFS_FS_GROUP_VOLUME),&v1,query};
+    /* The final Common V2 contract must validate WITHOUT any V1 table.
+     * Unknown capabilities, missing operations and invalid core groups fail. */
+    {
+        IfsFsModuleApiV2 native_module={
+            IFS_FS_COMMON_ABI_V2,sizeof(IfsFsModuleApiV2),"fat12",
+            IFS_FS_PROFILE_HOSTED,IFS_FS_GROUP_BIT(IFS_FS_GROUP_CORE),
+            NULL,native_query
+        };
+        IfsFsCoreOpsV1 broken=native_core;
+        assert(ifs_fs_api_v2_native_valid(&native_module,"fat12"));
+        assert(!ifs_fs_api_v2_native_valid(&native_module,"fat16"));
+        assert(ifs_fs_group_v2(&native_module,IFS_FS_GROUP_CORE)==
+               &native_core.header);
+        native_module.group_mask=0u;
+        assert(!ifs_fs_api_v2_valid(&native_module,"fat12"));
+        native_module.group_mask=IFS_FS_GROUP_BIT(IFS_FS_GROUP_CORE);
+        native_module.base_v1=&v1;
+        assert(ifs_fs_api_v2_valid(&native_module,"fat12"));
+        assert(!ifs_fs_api_v2_native_valid(&native_module,"fat12"));
+        native_module.base_v1=NULL;
+        /* Group bit and operation mask must agree with the callback. */
+        broken.header.capabilities=IFS_FS_CORE_MOUNT;
+        assert(!ifs_fs_group_v2_callbacks_valid(&broken.header));
+        broken=native_core;
+        broken.header.capabilities=IFS_FS_CORE_PROBE|IFS_FS_CORE_READ;
+        assert(!ifs_fs_group_v2_callbacks_valid(&broken.header));
+        broken=native_core;
+        broken.header.group_id=IFS_FS_GROUP_VOLUME;
+        assert(!ifs_fs_group_v2_header_valid(
+            &broken.header,IFS_FS_GROUP_CORE,sizeof(broken),
+            IFS_FS_CORE_ALL));
+    }
     assert(sizeof(IfsFsHostIoV1)==offsetof(IfsFsHostFormatIoV1,logical_sector_bytes));
     assert(ifs_fs_api_v2_valid(&a,"fat12"));
     assert(!ifs_fs_api_v2_valid(&a,"ntfs"));
