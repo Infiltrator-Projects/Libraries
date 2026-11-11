@@ -71,7 +71,7 @@ static void run_sector(uint32_t sector, uint32_t maximum)
     assert(ifs_fs_host_read_bytes_v2(&h,0u,NULL,1u)==IFS_FS_INVALID);
     assert(ifs_fs_host_read_bytes_v2(&h,MEDIUM,NULL,0u)==IFS_FS_OK);
     m->fail=1;
-    m->fail_at=0u;
+    m->fail_at=1024u - (1024u % sector);
     assert(ifs_fs_host_read_bytes_v2(&h,1024u,result,512u)==IFS_FS_IO_ERROR);
     m->fail=0;
     if(sector==65536u) {
