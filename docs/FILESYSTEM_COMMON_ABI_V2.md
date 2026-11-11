@@ -66,3 +66,14 @@ A release must have no historical ABI exports or fallback code.
 **This specification describes the strict intended architecture.**
 The independent repository migrations must still be qualified before
 deployed software can safely replace an older release.
+
+## Sector-aligned host reads
+
+`ifs_fs_host_read_bytes_v2` reads arbitrary metadata byte ranges using
+only complete, aligned host logical-sector transfers within the authenticated
+partition. The callback never receives a request larger than its advertised
+maximum transfer. Any sub-sector read uses host-owned scratch memory;
+failed reads return an error and must not be treated as a valid signature.
+Providers should use this helper for metadata at offsets such as 1024 on
+4K-logical-sector media instead of directly calling `read_at(1024, 512)`.
+The helper adds no platform or previous-ABI dependency.

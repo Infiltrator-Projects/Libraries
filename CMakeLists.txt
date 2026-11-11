@@ -122,6 +122,8 @@ if(INFILTRATR_COMMON_BUILD_TESTS)
     infiltratr_common_add_test(infiltratr-dynlib-smoke tests/dynlib_smoke.c InfiltratrCommon::Common)
     infiltratr_common_add_test(infiltratr-filesystem-module-v2-smoke
         tests/filesystem_module_v2_smoke.c InfiltratrCommon::Portable)
+    infiltratr_common_add_test(infiltratr-filesystem-module-v2-host-io
+        tests/filesystem_module_v2_io_contract.c InfiltratrCommon::Portable)
     add_library(infiltratr-fs-v2-good-fixture MODULE tests/filesystem_module_v2_native_fixture.c)
     target_include_directories(infiltratr-fs-v2-good-fixture PRIVATE include)
     add_library(infiltratr-fs-v2-bad-fixture MODULE tests/filesystem_module_v2_native_fixture.c)
