@@ -78,4 +78,7 @@ and `/System/Resources/Clocks` add capabilities. Custom implementations are buil
 only as those modules; applications never contain substitute custom algorithms.
 
 
-Filesystem integration now has a [V2 universal extension and host ABI](docs/FILESYSTEM_COMMON_ABI_V2.md) in addition to the immutable V1 API. Kernel and BOOT execution require independent loader qualification.
+The [Common V2 filesystem module and host ABI](docs/FILESYSTEM_COMMON_ABI_V2.md)
+defines filesystem discovery and operation capabilities. BOOT qualifies the
+firmware execution profile independently. Kernel integration requires its own
+loader and qualification.
