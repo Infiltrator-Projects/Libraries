@@ -13,6 +13,7 @@ static int write_at(void *ctx,uint64_t at,const void *src,uint32_t length) {
     return 0;
 }
 static int flush(void *ctx) {(void)ctx;return 0;}
+static uint64_t clock_ns(void *ctx) {(void)ctx;return 1u;}
 static void *alloc(void *ctx,size_t n) {
     static unsigned char bytes[4096];(void)ctx;
     return n<=sizeof(bytes)?bytes:NULL;
@@ -161,6 +162,18 @@ int main(void) {
     host.read_at=read_at;
     host.allocate=alloc;
     host.release=release;
+    assert(ifs_fs_host_v2_valid(&host));
+    host.monotonic_ns=clock_ns;
+    assert(!ifs_fs_host_v2_valid(&host)); /* unadvertised orphan clock */
+    host.monotonic_ns=NULL;
+    host.realtime_ns=clock_ns;
+    assert(!ifs_fs_host_v2_valid(&host)); /* opposite orphan clock */
+    host.capabilities|=IFS_FS_HOST_CLOCK;
+    assert(!ifs_fs_host_v2_valid(&host)); /* advertised but incomplete clocks */
+    host.monotonic_ns=clock_ns;
+    assert(ifs_fs_host_v2_valid(&host));
+    host.capabilities&=~IFS_FS_HOST_CLOCK;
+    host.monotonic_ns=NULL;host.realtime_ns=NULL;
     assert(ifs_fs_host_v2_valid(&host));
     assert(core.probe(&host,&variant)==IFS_FS_OK && variant==12u);
     assert(volume.format(&host,12u,NULL,0u)==IFS_FS_ACCESS);
