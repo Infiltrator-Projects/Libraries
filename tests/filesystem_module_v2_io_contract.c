@@ -11,7 +11,7 @@ typedef struct {
     uint8_t image[MEDIUM];
     uint32_t sector, maximum, calls;
     uint64_t fail_at;
-    int fail;
+    int fail, fail_write, fail_random;
 } Media;
 static int read_at(void *ctx, uint64_t at, void *out, uint32_t bytes)
 {
@@ -34,6 +34,24 @@ static void release(void *ctx,void *ptr)
 {
     (void)ctx;
     free(ptr);
+}
+static int write_at(void *ctx, uint64_t at, const void *in, uint32_t bytes)
+{
+    Media *m = (Media *)ctx;
+    assert(!(at % m->sector) && !(bytes % m->sector));
+    assert(bytes && bytes <= m->maximum);
+    assert(at <= MEDIUM && bytes <= MEDIUM - at);
+    if (m->fail_write) return -1;
+    memcpy(m->image + (size_t)at, in, bytes);
+    return 0;
+}
+static int flush(void *ctx) { (void)ctx; return 0; }
+static int random_bytes(void *ctx, void *out, uint32_t bytes)
+{
+    Media *m = ctx;
+    if (m->fail_random) return -1;
+    memset(out, 0xa5, bytes);
+    return 0;
 }
 static void run_sector(uint32_t sector, uint32_t maximum)
 {
@@ -77,7 +95,44 @@ static void run_sector(uint32_t sector, uint32_t maximum)
     if(sector==65536u) {
         h.volume_bytes=65000u;
         assert(ifs_fs_host_read_bytes_v2(&h,1024u,result,512u)==IFS_FS_INVALID);
+        h.volume_bytes=MEDIUM;
     }
+    assert(ifs_fs_host_write_bytes_v2(&h,0u,result,1u)==IFS_FS_ACCESS);
+    h.capabilities=IFS_FS_HOST_EXCLUSIVE | IFS_FS_HOST_DURABLE;
+    h.write_at=write_at;
+    h.flush=flush;
+    assert(ifs_fs_host_v2_valid(&h));
+    memset(result,0x6b,sizeof(result));
+    uint8_t before=m->image[4089u], after=m->image[13090u];
+    assert(ifs_fs_host_write_bytes_v2(&h,4090u,result,9000u)==IFS_FS_OK);
+    assert(memcmp(m->image+4090u,result,9000u)==0);
+    assert(m->image[4089u]==before && m->image[13090u]==after);
+    assert(ifs_fs_host_write_bytes_v2(&h,MEDIUM-32u,result,33u)==IFS_FS_INVALID);
+    assert(ifs_fs_host_write_bytes_v2(&h,0u,NULL,1u)==IFS_FS_INVALID);
+    assert(ifs_fs_host_write_bytes_v2(&h,MEDIUM,NULL,0u)==IFS_FS_OK);
+    m->fail_write=1;
+    assert(ifs_fs_host_write_bytes_v2(&h,0u,result,1u)==IFS_FS_IO_ERROR);
+    m->fail_write=0;
+    m->fail=1; m->fail_at=0;
+    assert(ifs_fs_host_write_bytes_v2(&h,1u,result,1u)==IFS_FS_IO_ERROR);
+    m->fail=0;
+    h.structure_bytes=IFS_FS_HOST_V2_BASE_BYTES;
+    assert(ifs_fs_host_v2_valid(&h));
+    assert(ifs_fs_host_random_bytes_v2(&h,result,16u)==IFS_FS_UNSUPPORTED);
+    /* The shorter host really has no storage for the new field. */
+    volatile size_t prefix_bytes = IFS_FS_HOST_V2_BASE_BYTES;
+    IfsFsHostRuntimeV2 *prefix = malloc(prefix_bytes);
+    assert(prefix);
+    memcpy(prefix, &h, IFS_FS_HOST_V2_BASE_BYTES);
+    assert(ifs_fs_host_v2_valid(prefix));
+    assert(ifs_fs_host_random_bytes_v2(prefix,result,16u)==IFS_FS_UNSUPPORTED);
+    free(prefix);
+    h.structure_bytes=sizeof(h); h.random_bytes=random_bytes;
+    assert(ifs_fs_host_random_bytes_v2(&h,result,16u)==IFS_FS_OK);
+    for (i=0;i<16u;++i) assert(result[i]==0xa5);
+    m->fail_random=1;
+    assert(ifs_fs_host_random_bytes_v2(&h,result,16u)==IFS_FS_IO_ERROR);
+    assert(ifs_fs_host_random_bytes_v2(&h,NULL,1u)==IFS_FS_INVALID);
     free(m);
 }
 int main(void)

@@ -74,6 +74,19 @@ only complete, aligned host logical-sector transfers within the authenticated
 partition. The callback never receives a request larger than its advertised
 maximum transfer. Any sub-sector read uses host-owned scratch memory;
 failed reads return an error and must not be treated as a valid signature.
+
+`ifs_fs_host_write_bytes_v2` maps byte ranges to bounded, aligned host writes;
+partial sectors use a read/modify/write buffer. It requires an exclusive,
+durable writable host. The caller must serialize overlapping operations. It
+does not flush automatically, and a failure can leave a prefix written, so the
+filesystem must use its transaction and recovery rules and request its own
+durability barriers.
+
+An optional `random_bytes` callback follows the original V2 host structure.
+Its availability is determined by `structure_bytes` and a non-null callback;
+hosts without it remain valid. The callback must return all requested bytes or
+an error. Providers requiring unique or unpredictable IDs must fail if entropy
+is unavailable, rather than substituting a timestamp or other weak value.
 Providers should use this helper for metadata at offsets such as 1024 on
 4K-logical-sector media instead of directly calling `read_at(1024, 512)`.
 The helper adds no platform or previous-ABI dependency.
