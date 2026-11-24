@@ -11,7 +11,14 @@ contract="$root/contract.json"
 version=$(jq -r .version "$contract")
 name=$(jq -r .name "$contract")
 mapfile -t assets < <(jq -r '.assets | keys[]' "$contract")
-((${#assets[@]}==3)) || { echo 'Release requires exactly three assets' >&2;exit 1; }
+slug=${GITHUB_REPOSITORY##*/}
+slug=${slug,,}
+expected_deb="infiltrator-${slug}_${version}_amd64.deb"
+expected_run="${slug}-${version}-native-installer.run"
+(("${#assets[@]}"==2)) || { echo 'Release requires exactly two uploaded assets' >&2;exit 1; }
+[[ $(printf '%s\n' "${assets[@]}") == "$(printf '%s\n' "$expected_deb" "$expected_run" | sort)" ]] || exit 1
+bash -n "$root/$expected_run"
+(( $(wc -c < "$root/$expected_run") < 16384 )) || exit 1
 for filename in "${assets[@]}";do
   [[ $filename != */* && -f "$root/$filename" ]] || exit 1
   actual=$(sha256sum "$root/$filename" | cut -d' ' -f1)

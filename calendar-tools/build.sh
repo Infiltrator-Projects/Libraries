@@ -54,7 +54,7 @@ fi
 source_revision=$(bash common/calendar-tools/source-revision.sh)
 # Only these tools are build-time requirements. The installed .so/PDF need none of them.
 prereqs=(gcc g++ msgfmt make pkg-config dpkg dpkg-deb readelf strip jq ps2pdf tar sha256sum awk sed)
-if [[ $command == release ]]; then prereqs+=(zip gzip); fi
+if [[ $command == release ]]; then prereqs+=(git); fi
 missing=()
 for bin in "${prereqs[@]}"; do command -v "$bin" >/dev/null || missing+=("$bin"); done
 for pc in $(jq -r '.build_dependencies[]' SOURCE-MANIFEST.json); do
@@ -66,7 +66,7 @@ if ((${#missing[@]})); then
     apt=(apt-get -o DPkg::Lock::Timeout=300)
     if ((EUID!=0)); then apt=(sudo "${apt[@]}"); fi
     "${apt[@]}" update
-    packages=(build-essential binutils pkg-config jq ghostscript tar gzip zip gettext locales)
+    packages=(build-essential binutils pkg-config jq ghostscript tar gzip git gettext locales)
     if jq -e '.build_dependencies | index("glib-2.0") != null' SOURCE-MANIFEST.json >/dev/null; then packages+=(libglib2.0-dev); fi
     if jq -e '.build_dependencies | index("icu-i18n") != null' SOURCE-MANIFEST.json >/dev/null; then packages+=(libicu-dev); fi
     "${apt[@]}" install -y --no-install-recommends "${packages[@]}"
@@ -173,17 +173,20 @@ case $command in
     output=$(realpath "$output")
     [[ -z $(find "$output" -mindepth 1 -maxdepth 1 -print -quit) ]] || { echo 'Release directory must be empty' >&2;exit 1; }
     build_package portable "$output"
-    temp=$(mktemp -d);trap 'rm -rf "$temp"' EXIT
-    mkdir -p "$temp/source"
-    tar -cf - --exclude='./.git' --exclude='*/.git' --exclude='./build' --exclude='./dist' --exclude='./.build' --exclude='*.pyc' . | tar -xf - -C "$temp/source"
-    printf '%s\n' "$source_revision" > "$temp/source/SOURCE-REVISION"
+    # Follow InfiltratorFS's exact-source network bootstrap contract.
+    # Only commit identities and installation instructions enter the RUN.
+    [[ "$repository" =~ ^Calendar-[A-Za-z0-9-]+$ ]] || exit 1
+    [[ $(git rev-parse HEAD) == "$source_revision" ]] || exit 1
+    common_revision=$(git ls-tree "$source_revision" -- common | awk '$1 == "160000" {print $3}')
+    [[ "$common_revision" =~ ^[0-9a-f]{40}$ ]] || exit 1
+    [[ $(git -C common rev-parse HEAD) == "$common_revision" ]] || exit 1
     prefix="${slug}-${version}"
-    (cd "$temp" && mv source "$prefix" && zip -qr "$output/${prefix}-source.zip" "$prefix" && mv "$prefix" source)
-    (cd "$temp" && tar -czf "$temp/payload.tar.gz" source)
-    hash=$(sha256sum "$temp/payload.tar.gz" | cut -d' ' -f1)
-    sed "s/@PAYLOAD_SHA256@/$hash/g" common/calendar-tools/run-header.sh > "$output/${prefix}-native-installer.run"
-    cat "$temp/payload.tar.gz" >> "$output/${prefix}-native-installer.run"
+    sed -e "s/@REPOSITORY@/$repository/g" -e "s/@VERSION@/$version/g" \
+        -e "s/@SOURCE_COMMIT@/$source_revision/g" -e "s/@COMMON_COMMIT@/$common_revision/g" \
+        common/calendar-tools/run-header.sh > "$output/${prefix}-native-installer.run"
     chmod 0755 "$output/${prefix}-native-installer.run"
-    [[ $(find "$output" -maxdepth 1 -type f | wc -l) == 3 ]] || { echo 'Expected exactly 3 release assets' >&2;exit 1; }
+    bash -n "$output/${prefix}-native-installer.run"
+    [[ $(wc -c < "$output/${prefix}-native-installer.run") -lt 16384 ]] || exit 1
+    [[ $(find "$output" -maxdepth 1 -type f | wc -l) == 2 ]] || { echo 'Expected exactly 2 uploaded release assets' >&2;exit 1; }
     printf 'Native, Python-free release generated: %s\n' "$prefix";;
 esac

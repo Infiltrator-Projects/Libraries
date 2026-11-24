@@ -207,21 +207,23 @@ Json fetch_one(json_object* entry, const fs::path& directory) {
             repository + " is older than independent resource baseline");
     const string slug = lowercase(str(entry, "repository"));
     const string filename = str(entry, "package") + "_" + version + "_amd64.deb";
-    const std::set<string> names{filename, slug + "-" + version + "-native-installer.run",
-                                   slug + "-" + version + "-source.zip"};
+    const std::set<string> names{filename, slug + "-" + version + "-native-installer.run"};
+    auto legacy_names = names;
+    legacy_names.insert(slug + "-" + version + "-source.zip");
     json_object* assets = get(release.get(), "assets");
     require(json_object_is_type(assets, json_type_array) &&
-            json_object_array_length(assets) == 3,
-            repository + " does not have the required three release assets");
+            (json_object_array_length(assets) == 2 || json_object_array_length(assets) == 3),
+            repository + " does not have the required release assets");
     std::set<string> observed;
     json_object* package_asset = nullptr;
-    for (int i = 0; i < 3; ++i) {
+    for (size_t i = 0; i < json_object_array_length(assets); ++i) {
         json_object* asset = json_object_array_get_idx(assets, i);
         const string name = str(asset, "name");
-        observed.insert(name);
+        require(observed.insert(name).second, repository + " duplicate asset name");
         if (name == filename) package_asset = asset;
     }
-    require(observed == names && package_asset, repository + " release asset names mismatch");
+    require((observed == names || observed == legacy_names) && package_asset,
+            repository + " release asset names mismatch");
     const string expected_url = "https://github.com/" + repository +
                                 "/releases/download/" + tag + "/" + filename;
     const string digest = optional_str(package_asset, "digest");
