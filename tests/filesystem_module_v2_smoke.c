@@ -41,11 +41,28 @@ static IfsFsVolumeOpsV2 volume={
         IFS_FS_GROUP_VOLUME,0u,IFS_FS_VOLUME_FORMAT},
     .format=format
 };
+static int allocation_map(void *volume_context,uint64_t first,
+    IfsFsAllocationRangeV2 *ranges,uint32_t capacity,uint32_t *written)
+{
+    (void)volume_context;(void)first;(void)ranges;(void)capacity;
+    *written=0u;
+    return IFS_FS_UNSUPPORTED;
+}
+static IfsFsAllocationOpsV2 allocation={
+    .header={IFS_FS_GROUP_ABI_V2,sizeof(IfsFsAllocationOpsV2),
+        IFS_FS_GROUP_ALLOCATION,0u,IFS_FS_ALLOCATION_MAP},
+    .map=allocation_map
+};
+static int mock_mount(const IfsFsHostRuntimeV2 *h,void **v,IfsFsVolumeInfoV2 *i)
+{
+    (void)h;(void)v;(void)i;return IFS_FS_UNSUPPORTED;
+}
 static const IfsFsGroupHeaderV2 *query(
     uint32_t id,uint32_t min,uint32_t max) {
     if(min>IFS_FS_GROUP_ABI_V2 || max<IFS_FS_GROUP_ABI_V2)return NULL;
     if(id==IFS_FS_GROUP_CORE)return &core.header;
     if(id==IFS_FS_GROUP_VOLUME)return &volume.header;
+    if(id==IFS_FS_GROUP_ALLOCATION)return &allocation.header;
     return NULL;
 }
 static int mounted_volume_query(void *mount_context, IfsFsVolumeInfoV2 *info)
@@ -151,6 +168,46 @@ int main(void) {
     api.abi_version=1u;
     assert(!ifs_fs_api_v2_valid(&api,"fat12"));
     api.abi_version=IFS_FS_COMMON_ABI_V2;
+
+    /* The additional Common V2 group is optional; old V2 descriptors
+     * remain valid. Advertised allocation requires a mounted lifecycle
+     * and a real callback pointer, not a root-file MAP convention. */
+    api.group_mask|=IFS_FS_GROUP_BIT(IFS_FS_GROUP_ALLOCATION);
+    assert(!ifs_fs_api_v2_valid(&api,"fat12"));
+    core.header.capabilities|=IFS_FS_CORE_MOUNT;
+    core.mount=mock_mount;core.unmount=orphan_unmount;
+    assert(ifs_fs_api_v2_valid(&api,"fat12"));
+    allocation.map=NULL;
+    assert(!ifs_fs_api_v2_valid(&api,"fat12"));
+    allocation.map=allocation_map;
+    allocation.header.structure_bytes=sizeof(IfsFsGroupHeaderV2);
+    assert(!ifs_fs_api_v2_valid(&api,"fat12"));
+    allocation.header.structure_bytes=sizeof(IfsFsAllocationOpsV2);
+    assert(ifs_fs_api_v2_valid(&api,"fat12"));
+    IfsFsAllocationRangeV2 page[2]={{0u,512u,IFS_FS_SPACE_ALLOCATED,0u},
+                                  {512u,512u,IFS_FS_SPACE_UNKNOWN,0u}};
+    uint64_t next=0u,unknown=0u;
+    assert(ifs_fs_allocation_page_v2_valid(2048u,0u,IFS_FS_OK,page,2u,2u,&next,&unknown));
+    assert(next==1024u && unknown==512u);
+    assert(!ifs_fs_allocation_page_v2_valid(2048u,next,IFS_FS_END,page,2u,0u,&next,&unknown));
+    page[0]=(IfsFsAllocationRangeV2){1024u,1024u,IFS_FS_SPACE_FREE,0u};
+    assert(ifs_fs_allocation_page_v2_valid(2048u,1024u,IFS_FS_OK,page,2u,1u,&next,&unknown));
+    assert(next==2048u && unknown==512u);
+    assert(ifs_fs_allocation_page_v2_valid(2048u,next,IFS_FS_END,page,2u,0u,&next,&unknown));
+    assert(!ifs_fs_allocation_page_v2_valid(2048u,next,IFS_FS_END,page,2u,1u,&next,&unknown));
+    page[0]=(IfsFsAllocationRangeV2){1u,512u,IFS_FS_SPACE_FREE,0u};
+    next=0u;unknown=0u;
+    assert(!ifs_fs_allocation_page_v2_valid(2048u,0u,IFS_FS_OK,page,2u,1u,&next,&unknown));
+    assert(next==0u && unknown==0u);
+    page[0]=(IfsFsAllocationRangeV2){0u,2049u,IFS_FS_SPACE_FREE,0u};
+    assert(!ifs_fs_allocation_page_v2_valid(2048u,0u,IFS_FS_OK,page,2u,1u,&next,&unknown));
+    page[0]=(IfsFsAllocationRangeV2){0u,512u,99u,0u};
+    assert(!ifs_fs_allocation_page_v2_valid(2048u,0u,IFS_FS_OK,page,2u,1u,&next,&unknown));
+    page[0]=(IfsFsAllocationRangeV2){0u,512u,IFS_FS_SPACE_FREE,1u};
+    assert(!ifs_fs_allocation_page_v2_valid(2048u,0u,IFS_FS_OK,page,2u,1u,&next,&unknown));
+    assert(!ifs_fs_allocation_page_v2_valid(2048u,0u,IFS_FS_OK,page,2u,0u,&next,&unknown));
+    api.group_mask&=~IFS_FS_GROUP_BIT(IFS_FS_GROUP_ALLOCATION);
+    core.header.capabilities=IFS_FS_CORE_PROBE;core.mount=NULL;core.unmount=NULL;
 
     host.abi_version=IFS_FS_HOST_ABI_V2;
     host.structure_bytes=sizeof(host);
