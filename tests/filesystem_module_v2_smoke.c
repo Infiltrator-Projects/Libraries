@@ -57,12 +57,27 @@ static int mock_mount(const IfsFsHostRuntimeV2 *h,void **v,IfsFsVolumeInfoV2 *i)
 {
     (void)h;(void)v;(void)i;return IFS_FS_UNSUPPORTED;
 }
+static int default_profile(IfsFsFormatProfileV2 *p)
+{
+    if(!p || p->structure_bytes<sizeof(*p))return IFS_FS_INVALID;
+    *p=(IfsFsFormatProfileV2){.structure_bytes=sizeof(*p),
+        .format_variant=12u,.probe_variant=12u,.exact_block_bytes=65536u,
+        .layout=IFS_FS_LAYOUT_MULTI_EXTENT,.minimum_bytes=65536u,
+        .recommended_bytes=255u*1024u*1024u,.maximum_bytes=255u*1024u*1024u};
+    return IFS_FS_OK;
+}
+static IfsFsFormatProfileOpsV2 profile_ops={
+    .header={IFS_FS_GROUP_ABI_V2,sizeof(IfsFsFormatProfileOpsV2),
+             IFS_FS_GROUP_FORMAT_PROFILE,0u,IFS_FS_FORMAT_PROFILE_DEFAULT},
+    .get_default=default_profile
+};
 static const IfsFsGroupHeaderV2 *query(
     uint32_t id,uint32_t min,uint32_t max) {
     if(min>IFS_FS_GROUP_ABI_V2 || max<IFS_FS_GROUP_ABI_V2)return NULL;
     if(id==IFS_FS_GROUP_CORE)return &core.header;
     if(id==IFS_FS_GROUP_VOLUME)return &volume.header;
     if(id==IFS_FS_GROUP_ALLOCATION)return &allocation.header;
+    if(id==IFS_FS_GROUP_FORMAT_PROFILE)return &profile_ops.header;
     return NULL;
 }
 static int mounted_volume_query(void *mount_context, IfsFsVolumeInfoV2 *info)
@@ -115,6 +130,29 @@ int main(void) {
     assert(!ifs_fs_api_v2_valid(&api,"ntfs"));
     assert(ifs_fs_group_v2(&api,IFS_FS_GROUP_CORE)==&core.header);
     assert(ifs_fs_group_v2(&api,IFS_FS_GROUP_VOLUME)==&volume.header);
+    api.group_mask|=IFS_FS_GROUP_BIT(IFS_FS_GROUP_FORMAT_PROFILE);
+    assert(ifs_fs_api_v2_valid(&api,"fat12"));
+    assert(ifs_fs_group_v2(&api,IFS_FS_GROUP_FORMAT_PROFILE)==&profile_ops.header);
+    IfsFsFormatProfileV2 profile={.structure_bytes=sizeof(profile)};
+    assert(profile_ops.get_default(&profile)==IFS_FS_OK);
+    assert(ifs_fs_format_profile_v2_valid(&profile));
+    profile.exact_block_bytes=1000u;
+    assert(!ifs_fs_format_profile_v2_valid(&profile));
+    assert(default_profile(&profile)==IFS_FS_OK);
+    profile.maximum_bytes=profile.minimum_bytes;
+    assert(!ifs_fs_format_profile_v2_valid(&profile));
+    assert(default_profile(&profile)==IFS_FS_OK);
+    profile.flags=UINT32_MAX;
+    assert(!ifs_fs_format_profile_v2_valid(&profile));
+    assert(default_profile(&profile)==IFS_FS_OK);
+    profile.reserved=1u;
+    assert(!ifs_fs_format_profile_v2_valid(&profile));
+    profile_ops.get_default=NULL;
+    assert(!ifs_fs_api_v2_valid(&api,"fat12"));
+    profile_ops.get_default=default_profile;
+    api.group_mask&=~IFS_FS_GROUP_BIT(IFS_FS_GROUP_VOLUME);
+    assert(!ifs_fs_api_v2_valid(&api,"fat12"));
+    api.group_mask=IFS_FS_GROUP_BIT(IFS_FS_GROUP_CORE)|IFS_FS_GROUP_BIT(IFS_FS_GROUP_VOLUME);
     api.group_mask=0;
     assert(!ifs_fs_api_v2_valid(&api,"fat12")); /* no CORE: reject */
     api.group_mask=IFS_FS_GROUP_BIT(IFS_FS_GROUP_CORE);
