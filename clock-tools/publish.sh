@@ -35,7 +35,7 @@ if gh release view "$tag" --json isDraft > /dev/null 2>&1; then
   [[ $(gh release view "$tag" --json isDraft --jq .isDraft) == true ]] || { echo 'Refusing to overwrite immutable published release' >&2;exit 1; }
   gh release upload "$tag" "${paths[@]}" --clobber
 else
-  gh release create "$tag" "${paths[@]}" --target "$GITHUB_SHA" --draft --title "$name $version" --notes 'Native compiled clock, illustrated PDF, and Python-free build/installation. Exact payload and provider ABI checked.'
+  gh release create "$tag" "${paths[@]}" --target "$GITHUB_SHA" --draft --title "$name $version" --notes 'Native compiled temporal resource and provider-specific PDF manual. Exact payload and provider ABI checked.'
 fi
 check_remote() {
   local directory=$(mktemp -d)

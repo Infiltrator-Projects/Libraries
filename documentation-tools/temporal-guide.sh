@@ -12,16 +12,9 @@ id=$(jq -er '.id | strings | select(length>0)' SOURCE-MANIFEST.json)
 name=$(jq -er '.name | strings | select(length>0)' SOURCE-MANIFEST.json)
 work=$(mktemp -d); trap 'rm -rf "$work"' EXIT
 source=docs/GUIDE.json
-if [[ ! -f $source ]]; then
-    # Older clocks have not yet migrated their prose to GUIDE.json. Retain the
-    # existing verified model and limits once; do not fabricate a clock face.
-    summary=$(awk 'NR>3 && NF && $0 !~ /^#/ && $0 !~ /^\*\*/ {print; exit}' README.md)
-    scope=$(sed -n 's/^\*\*Historical scope\/accuracy:\*\* //p' README.md | head -1)
-    [[ -n $summary && -n $scope ]] || { echo 'Missing provider model or scope' >&2; exit 1; }
-    source="$work/legacy.json"
-    jq -n --arg title "$name" --arg intro "$summary" --arg limits "$scope" '{title:$title,intro:$intro,limits:$limits}' > "$source"
-fi
-jq -e '(.intro | type == "string" and length > 0) and (.limits | type == "string" and length > 0)' "$source" >/dev/null
+[[ -f $source ]] || { echo 'Missing canonical docs/GUIDE.json' >&2; exit 1; }
+jq -e '(.title | type == "string" and length > 0) and (.intro | type == "string" and length > 0) and (.limits | type == "string" and length > 0) and (.example | type == "string" and length > 0) and (.history | type == "string" and length > 0) and (((.sources // []) | length > 0) or ((.source // "") | length > 0))' "$source" >/dev/null
+name=$(jq -er '.title' "$source")
 # Preserve provider-specific data, not the old presentation-only labels. A
 # section appears once in the PDF; exact duplicate paragraphs are suppressed.
 jq -r '
@@ -31,11 +24,13 @@ jq -r '
    item("Origin and epoch";.origin), item("Origin and epoch";.epoch),
    item("Structure";.structure), item("Year and leap rule";.year_rule),
    item("Structure";.caption_detail),
+   item("Cycle note";.diagram_caption),
    (.steps[]? | item(.heading;.text)),
-   (if (.sections|type)=="array" then
-       .sections[] | item("Period or cycle"; (.name + "  |  " + (.days|tostring)))
+   (if (.sections|type)=="array" and (.sections|length)>0 then
+       item("@grid";"sections")
+    elif (.month_names|type)=="array" and (.month_names|length)>0 then
+       item("@grid";"month_names")
     else empty end),
-   (if (.month_names|type)=="array" then item("Month sequence";(.month_names|join(", "))) else empty end),
    item("Additional days";.extra_days), item("Calendar rules";.pattern_note),
    item("Additional details";.after_note), item("Worked example";.example),
    item("History";.history), item("Implemented model";.model), item("Limits";.limits),
@@ -54,8 +49,11 @@ cat > "$ps" <<'PS'
 /txt { /size exch def /font exch def /y exch def /x exch def /str exch def
  font findfont size scalefont setfont x y moveto
  /w str stringwidth pop def w 485 gt { gsave x y translate 485 w div 1 scale 0 0 moveto str show grestore } { str show } ifelse } bind def
+/celltxt { /size exch def /font exch def /y exch def /x exch def /str exch def
+ font findfont size scalefont setfont x y moveto
+ /w str stringwidth pop def w 223 gt { gsave x y translate 223 w div 1 scale 0 0 moveto str show grestore } { str show } ifelse } bind def
 PS
-escape(){ printf '%s' "$1" | iconv -f UTF-8 -t ASCII//TRANSLIT -c | sed -e 's/\\/\\\\/g' -e 's/(/\\(/g' -e 's/)/\\)/g'; }
+escape(){ printf '%s' "$1" | iconv -f UTF-8 -t ASCII//TRANSLIT | sed -e 's/\\/\\\\/g' -e 's/(/\\(/g' -e 's/)/\\)/g'; }
 line(){ printf '(%s) 55 %s /%s %s txt\n' "$(escape "$1")" "$2" "$3" "$4" >> "$ps"; }
 p=0; y=0; last=''
 endpage(){
@@ -91,8 +89,52 @@ paragraph(){
     done < <(printf '%s\n' "$value" | fold -s -w 76)
     y=$((y-8))
 }
+# Render a real provider-defined sequence, not an invented calendar face.
+# The boxes are equal-sized because the values may be dates, lengths or
+# cycle labels rather than comparable quantities. Preserve their exact order.
+period_grid(){
+    local mode=$1 title name value cell col x row_y n=0
+    if [[ $mode == sections ]]; then
+        title='Period or cycle'
+        jq -er '.sections[] | [(.name|strings), (.days|tostring)] | @tsv' "$source" > "$work/grid"
+    else
+        title='Month sequence'
+        jq -er '.month_names | to_entries[] | [(.value|strings), ((.key+1)|tostring)] | @tsv' "$source" > "$work/grid"
+    fi
+    if ((y<175)); then startpage; fi
+    heading "$title"
+    row_y=$y
+    while IFS=$'\t' read -r name value; do
+        col=$((n%2)); x=$((55+col*248))
+        if ((col==0)); then
+            if ((row_y<106)); then startpage; heading "$title"; row_y=$y; fi
+        fi
+        printf '0.94 0.95 0.96 setrgbcolor %s %s 237 35 rectfill\n' "$x" "$((row_y-32))" >> "$ps"
+        printf '0.13 0.20 0.30 setrgbcolor (%s) %s %s /Helvetica-Bold 10 celltxt\n' "$(escape "$name")" "$((x+7))" "$((row_y-10))" >> "$ps"
+        printf '0.27 0.35 0.42 setrgbcolor (%s) %s %s /Helvetica 9 celltxt\n' "$(escape "$value")" "$((x+7))" "$((row_y-24))" >> "$ps"
+        n=$((n+1))
+        if ((n%2==0)); then row_y=$((row_y-41)); fi
+    done < "$work/grid"
+    if ((n%2)); then row_y=$((row_y-41)); fi
+    y=$((row_y-10)); last=''
+}
 startpage
-while IFS=$'\t' read -r section value; do [[ -n $value ]] && paragraph "$section" "$value"; done < "$work/sections"
+while IFS=
+if [[ $kind == calendar ]]; then
+    paragraph 'Using this resource' 'Select this calendar in a compatible InfiltratorOS application. It changes the displayed calendar and date navigation, not the underlying instant or stored event order.'
+else
+    paragraph 'Using this resource' 'Select this clock in a compatible InfiltratorOS application. The provider controls its notation and visible update interval. Seconds and alternate presentation are available only where supported.'
+fi
+paragraph 'Installed component' 'The package owns this manual and its native shared-object resource. Removing the package removes its own files; other installed resources are unaffected.'
+endpage
+printf '%%%%Trailer\n%%%%Pages: %s\n%%%%EOF\n' "$p" >> "$ps"
+mkdir -p "$(dirname "$output")"
+ps2pdf -dCompatibilityLevel=1.4 "$ps" "$work/guide.pdf"
+[[ $(head -c 5 "$work/guide.pdf") == '%PDF-' ]] || { echo 'PDF header verification failed' >&2; exit 1; }
+\t' read -r section value; do
+    [[ -n $value ]] || continue
+    if [[ $section == @grid ]]; then period_grid "$value"; else paragraph "$section" "$value"; fi
+done < "$work/sections"
 if [[ $kind == calendar ]]; then
     paragraph 'Using this resource' 'Select this calendar in a compatible InfiltratorOS application. It changes the displayed calendar and date navigation, not the underlying instant or stored event order.'
 else
@@ -104,3 +146,4 @@ printf '%%%%Trailer\n%%%%Pages: %s\n%%%%EOF\n' "$p" >> "$ps"
 mkdir -p "$(dirname "$output")"
 ps2pdf -dCompatibilityLevel=1.4 "$ps" "$output"
 [[ $(head -c 5 "$output") == '%PDF-' ]] || { echo 'PDF header verification failed' >&2; exit 1; }
+cp "$work/guide.pdf" "$output"
