@@ -119,19 +119,7 @@ period_grid(){
     y=$((row_y-10)); last=''
 }
 startpage
-while IFS=
-if [[ $kind == calendar ]]; then
-    paragraph 'Using this resource' 'Select this calendar in a compatible InfiltratorOS application. It changes the displayed calendar and date navigation, not the underlying instant or stored event order.'
-else
-    paragraph 'Using this resource' 'Select this clock in a compatible InfiltratorOS application. The provider controls its notation and visible update interval. Seconds and alternate presentation are available only where supported.'
-fi
-paragraph 'Installed component' 'The package owns this manual and its native shared-object resource. Removing the package removes its own files; other installed resources are unaffected.'
-endpage
-printf '%%%%Trailer\n%%%%Pages: %s\n%%%%EOF\n' "$p" >> "$ps"
-mkdir -p "$(dirname "$output")"
-ps2pdf -dCompatibilityLevel=1.4 "$ps" "$work/guide.pdf"
-[[ $(head -c 5 "$work/guide.pdf") == '%PDF-' ]] || { echo 'PDF header verification failed' >&2; exit 1; }
-\t' read -r section value; do
+while IFS=$'\t' read -r section value; do
     [[ -n $value ]] || continue
     if [[ $section == @grid ]]; then period_grid "$value"; else paragraph "$section" "$value"; fi
 done < "$work/sections"
