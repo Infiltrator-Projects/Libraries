@@ -132,6 +132,6 @@ paragraph 'Installed component' 'The package owns this manual and its native sha
 endpage
 printf '%%%%Trailer\n%%%%Pages: %s\n%%%%EOF\n' "$p" >> "$ps"
 mkdir -p "$(dirname "$output")"
-ps2pdf -dCompatibilityLevel=1.4 "$ps" "$output"
-[[ $(head -c 5 "$output") == '%PDF-' ]] || { echo 'PDF header verification failed' >&2; exit 1; }
+ps2pdf -dCompatibilityLevel=1.4 "$ps" "$work/guide.pdf"
+[[ $(head -c 5 "$work/guide.pdf") == '%PDF-' ]] || { echo 'PDF header verification failed' >&2; exit 1; }
 cp "$work/guide.pdf" "$output"
