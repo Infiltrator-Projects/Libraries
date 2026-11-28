@@ -7,19 +7,9 @@
  */
 #ifndef INFILTRATR_FILESYSTEM_RO_SESSIONS_V2_H
 #define INFILTRATR_FILESYSTEM_RO_SESSIONS_V2_H
-#include <infiltratr/filesystem_module_v2.h>
-#include <stdint.h>
-#if defined(_MSC_VER) && !defined(__clang__)
-/* MSVC's /std:c11 mode does not enable <stdatomic.h> for this target.
- * InterlockedExchange is a full-barrier atomic exchange on supported CPUs. */
-#include <intrin.h>
-typedef volatile long IfsFsRoGuardV2;
-#define IFS_FS_RO_GUARD_INIT_V2 0
-#else
-#include <stdatomic.h>
-typedef atomic_flag IfsFsRoGuardV2;
-#define IFS_FS_RO_GUARD_INIT_V2 ATOMIC_FLAG_INIT
-#endif
+#include <infiltratr/filesystem_session_v2.h>
+typedef IfsFsSessionGuardV2 IfsFsRoGuardV2;
+#define IFS_FS_RO_GUARD_INIT_V2 IFS_FS_SESSION_GUARD_INIT_V2
 
 #define IFS_FS_RO_MAX_SESSIONS_V2 32u
 
@@ -38,20 +28,12 @@ typedef struct {
 
 static inline void ifs_fs_ro_sessions_lock_v2(IfsFsReadOnlySessionsV2 *r)
 {
-#if defined(_MSC_VER) && !defined(__clang__)
-    while (_InterlockedExchange(&r->guard, 1) != 0) {}
-#else
-    while (atomic_flag_test_and_set_explicit(&r->guard, memory_order_acquire)) {}
-#endif
+    ifs_fs_session_lock_v2(&r->guard);
 }
 
 static inline void ifs_fs_ro_sessions_unlock_v2(IfsFsReadOnlySessionsV2 *r)
 {
-#if defined(_MSC_VER) && !defined(__clang__)
-    (void)_InterlockedExchange(&r->guard, 0);
-#else
-    atomic_flag_clear_explicit(&r->guard, memory_order_release);
-#endif
+    ifs_fs_session_unlock_v2(&r->guard);
 }
 
 /* The opaque cookie is never dereferenced, and is never reused. Salt it
