@@ -1,4 +1,5 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
+#include <infiltratr/filesystem_media_v2.h>
 #include <infiltratr/filesystem_module_v2.h>
 #include <assert.h>
 #include <string.h>
@@ -114,7 +115,35 @@ static void mock_release_plan(void *volume_context,void *plan) {
     (void)volume_context;(void)plan;
 }
 
+static IfsFsVolumeMediaOpsV2 media_extension;
+static const IfsFsGroupHeaderV2 *media_query(uint32_t id,uint32_t min,uint32_t max)
+{
+    if (min>IFS_FS_GROUP_ABI_V2 || max<IFS_FS_GROUP_ABI_V2) return NULL;
+    if (id==IFS_FS_GROUP_VOLUME) return &media_extension.volume.header;
+    if (id==IFS_FS_GROUP_CORE) return &core.header;
+    return NULL;
+}
+static int media_inspect_fixture(const IfsFsMediaTargetV2 *t,IfsFsMediaInfoV2 *info)
+{(void)t;(void)info;return IFS_FS_UNSUPPORTED;}
+static void media_extension_test(void)
+{
+    IfsFsModuleApiV2 module={IFS_FS_COMMON_ABI_V2,sizeof(module),"media",
+        IFS_FS_PROFILE_HOSTED,IFS_FS_GROUP_BIT(IFS_FS_GROUP_CORE)|
+        IFS_FS_GROUP_BIT(IFS_FS_GROUP_VOLUME),media_query};
+    media_extension.volume=volume;
+    assert(!ifs_fs_volume_media_v2(&module));
+    media_extension.volume.header.structure_bytes=sizeof(media_extension);
+    media_extension.media_abi=IFS_FS_GROUP_ABI_V2;
+    media_extension.media_capabilities=IFS_FS_MEDIA_INSPECT;
+    assert(!ifs_fs_volume_media_v2(&module)); /* advertised without callback */
+    media_extension.inspect=media_inspect_fixture;
+    assert(ifs_fs_volume_media_v2(&module)==&media_extension);
+    assert(ifs_fs_group_v2(&module,IFS_FS_GROUP_VOLUME)==&media_extension.volume.header);
+    media_extension.media_reserved=1;
+    assert(!ifs_fs_volume_media_v2(&module));
+}
 int main(void) {
+    media_extension_test();
     IfsFsModuleApiV2 api={
         .abi_version=IFS_FS_COMMON_ABI_V2,
         .structure_bytes=sizeof(IfsFsModuleApiV2),

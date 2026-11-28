@@ -90,3 +90,10 @@ is unavailable, rather than substituting a timestamp or other weak value.
 Providers should use this helper for metadata at offsets such as 1024 on
 4K-logical-sector media instead of directly calling `read_at(1024, 512)`.
 The helper adds no platform or previous-ABI dependency.
+
+
+### Offline volume operations
+
+The optional VOLUME tail in `infiltratr/filesystem_media_v2.h` exposes inspection, allocation runs, label updates, resizing, validation, repair, retirement of bad storage units and discard. An older client uses the unchanged format-capable VOLUME prefix. A newer client checks `ifs_fs_volume_media_v2` and the separate media capabilities before invoking an operation. No file namespace is required.
+
+The target contains the existing V2 host and an optional provider format variant. A zero variant requests recognition. A historical format with ambiguous on-disk encoding may require an explicit producer variant for inspection or mutation. Labels have explicit byte lengths. An absent free-space flag means the storage format or host could not establish live free space. Cursors and physical ranges are partition-relative bytes. All mutation needs a verified exclusive, durable host lease. Retirement is idempotent and trim may touch only proven available space. A module can refuse an operation on a particular format revision. Cancellation before mutation returns `IFS_FS_BUSY`.
