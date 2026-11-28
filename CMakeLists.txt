@@ -128,6 +128,8 @@ if(INFILTRATR_COMMON_BUILD_TESTS)
         tests/filesystem_ro_sessions_v2.c InfiltratrCommon::Portable)
     infiltratr_common_add_test(infiltratr-filesystem-session-v2
         tests/filesystem_session_v2.c InfiltratrCommon::Portable)
+    infiltratr_common_add_test(infiltratr-filesystem-block-map-v2
+        tests/filesystem_block_map_v2.c InfiltratrCommon::Portable)
     add_library(infiltratr-fs-v2-good-fixture MODULE tests/filesystem_module_v2_native_fixture.c)
     target_include_directories(infiltratr-fs-v2-good-fixture PRIVATE include)
     add_library(infiltratr-fs-v2-bad-fixture MODULE tests/filesystem_module_v2_native_fixture.c)
